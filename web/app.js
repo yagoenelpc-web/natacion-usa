@@ -562,7 +562,7 @@ async function meetView(id, tab = "pruebas", silent = false) {
   $app.innerHTML = `
   <a class="back" href="#/">‹ ${T("Inicio")}</a>
   <section class="mhero" style="--tint:${tint}">
-    <div class="mtop">${meetBadge({ org: meet.org, name: meet.name }, 60)}<div><h1>${esc(meet.name)}</h1><p>${esc(fmtRange(meet.start, meet.end))}${uniqueEvents(meet).length ? ` · ${uniqueEvents(meet).length} pruebas` : ""}</p>${live ? liveTag() : ""}</div></div>
+    <div class="mtop">${meetBadge({ org: meet.org, name: meet.name }, 60)}<div><h1>${esc(meet.name)}</h1><p>${esc(fmtRange(meet.start, meet.end))}${uniqueEvents(meet).length ? ` · ${uniqueEvents(meet).length} ${T("pruebas")}` : ""}</p>${live ? liveTag() : ""}</div></div>
     ${teams.length ? `<div class="strip">${teams.map((t) => `<a href="#/m/${enc(id)}/t/${enc(t)}" title="${esc(t)}">${crest(t, 40)}</a>`).join("")}</div>` : ""}
     ${standings && tab === "pruebas" && standings.scores[0] ? `<a class="leader" href="#/m/${enc(id)}/clasificacion">${crest(standings.scores[0].t, 28)}<span>${T("Lidera {t} con {p} pts", { t: `<b>${esc(standings.scores[0].t)}</b>`, p: esc(standings.scores[0].pts) })}</span><span class="chev">›</span></a>` : ""}
   </section>
@@ -867,10 +867,18 @@ window.addEventListener("hashchange", route);
 route();
 
 // Si la web de alojamiento pone un distintivo flotante abajo, sube la barra de pestañas.
-setTimeout(() => {
+function checkBadge() {
   const ours = new Set([document.querySelector(".top"), $app, document.querySelector(".tabbar")]);
-  const extra = [...document.body.children].some((el) => !ours.has(el) && el.tagName !== "SCRIPT" && getComputedStyle(el).position === "fixed");
+  const extra = [...document.body.children]
+    .filter((el) => !ours.has(el) && !["SCRIPT", "STYLE", "LINK", "NOSCRIPT"].includes(el.tagName))
+    .some((el) => [el, ...el.querySelectorAll("*")].some((x) => {
+      const cs = getComputedStyle(x);
+      const r = x.getBoundingClientRect();
+      return cs.position === "fixed" && r.height > 0 && r.bottom > innerHeight - 160;
+    }));
   document.body.classList.toggle("has-badge", extra);
-}, 2500);
+}
+[1500, 4000, 9000].forEach((ms) => setTimeout(checkBadge, ms));
+new MutationObserver(() => setTimeout(checkBadge, 300)).observe(document.body, { childList: true });
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});

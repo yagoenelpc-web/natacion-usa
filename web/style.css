@@ -354,3 +354,4 @@ body.has-badge { padding-bottom: calc(150px + env(safe-area-inset-bottom)); }
 .tabbar { width: min(400px, calc(100% - 32px)); }
 .tabbar a em { font-style: normal; }
 .urow > span.dtag { flex: none; }
+.links { flex-wrap: wrap; } .links a { white-space: nowrap; }
