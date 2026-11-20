@@ -35,11 +35,27 @@ async function pool(items, n, fn) {
 const titleOf = (wiki) => decodeURIComponent((wiki || "").split("/wiki/")[1] || "").replace(/_/g, " ");
 const athTitle = (t) => t.replace(/\s+(men's\s+and\s+women's\s+|men's\s+|women's\s+)?swimming(\s+and\s+diving)?$/i, "").trim();
 
+// 0) Artículos equivocados (p. ej. Tampa → "Spartans"): el título debe contener el nombre de la universidad.
+const STOP = /^(university|college|state|of|the|at|and|saint|st\.?|institute|technology)$/i;
+const words = (x) => (x || "").toLowerCase().replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w.length > 2 && !STOP.test(w));
+let fixedTitles = 0;
+for (const u of unis) {
+  const t = titleOf(u.wiki).toLowerCase();
+  const key = [...words(u.n), ...words(u.full)];
+  if (key.length && !key.some((w) => t.includes(w))) {
+    u.wiki = "https://en.wikipedia.org/wiki/" + encodeURIComponent(`${u.n} ${u.nick || ""}`.trim().replace(/ /g, "_"));
+    delete u.logo; delete u.web;
+    u._badLogo = true;
+    fixedTitles++;
+  }
+}
+console.log("artículos corregidos:", fixedTitles, unis.filter((u) => u._badLogo).map((u) => u.n).join(", "));
+
 // 1) Wikidata: webs y logos.
 const titles = new Set();
 for (const u of unis) {
   const t = titleOf(u.wiki);
-  u._t = [t, athTitle(t)].filter(Boolean);
+  u._t = [t, athTitle(t), !u.logo && u.nick ? `${u.n} ${u.nick}` : "", !u.logo && u.nick ? `${u.full.replace(/^(The )?University of /i, "").replace(/ (University|College)$/i, "")} ${u.nick}` : ""].filter(Boolean);
   u._i = u.full;
   for (const x of [...u._t, u._i]) titles.add(x);
 }
@@ -97,7 +113,7 @@ async function alive(url) {
   } catch { return null; }
 }
 const clean = (w) => !w ? "" : (w.startsWith("http") ? w : "https://" + w).replace(/,$/, "").replace(/\/+$/, "");
-const OLD = (u) => /wikipedia|usnews|archive\.org|\.pdf$|\/(x|news|search|documents)\//i.test(u.web || "") ? "" : u.web;
+const OLD = (u) => u._badLogo ? "" : /wikipedia|usnews|archive\.org|\.pdf$|\/(x|news|search|documents)\//i.test(u.web || "") ? "" : u.web;
 let webOk = 0, athOk = 0;
 await pool(unis, 12, async (u) => {
   const cands = [...new Set([clean(u._aweb), clean(OLD(u))].filter(Boolean))];
@@ -215,7 +231,7 @@ await pool(unis.filter((u) => u.web), 12, async (u) => {
 console.log("con resultados en sidearmstats:", hy, unis.filter((u) => u.hytek).slice(0, 30).map((u) => u.n + "=" + u.hytek).join(" "));
 
 for (const u of unis) {
-  delete u._t; delete u._i; delete u._aweb; delete u._uweb; delete u._ath;
+  delete u._t; delete u._i; delete u._aweb; delete u._uweb; delete u._ath; delete u._badLogo;
   for (const k of Object.keys(u)) if (u[k] === "" || u[k] == null) delete u[k];
 }
 console.log("ejemplos:", JSON.stringify(unis.filter((u) => ["Texas", "Kenyon", "Drury", "SMU", "Florida", "Queens (NC)"].includes(u.n))).slice(0, 4000));

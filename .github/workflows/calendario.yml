@@ -1,0 +1,27 @@
+name: Calendarios y plantillas
+
+on:
+  schedule:
+    - cron: "40 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: datos-app
+  cancel-in-progress: false
+
+jobs:
+  calendario:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: scripts/datos-rama.sh bajar
+      - run: node scripts/build_calendario.mjs
+      - name: Guardar
+        run: scripts/datos-rama.sh subir

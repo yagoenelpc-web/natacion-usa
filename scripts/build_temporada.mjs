@@ -51,6 +51,7 @@ for (const f of feeds) {
   const x = await get(f);
   if (x) for (const m of parseFeed(x)) found.push({ url: m.url, name: m.name, article: m.article, src: "swimswam" });
 }
+for (const l of (await readJSON("web/data/calendario.json", { live: [] })).live || []) found.push({ url: normalizeMeetUrl(l), src: "web" });
 for (const u of unis.filter((u) => u.hytek)) found.push({ url: `https://www.sidearmstats.com/${u.hytek}/swim/evtindex.htm`, host: u.n, src: "hytek" });
 console.log("candidatas:", found.length);
 let added = 0, updated = 0;
@@ -169,7 +170,8 @@ const sources = [
 const swimmers = new Map();
 const keyOf = (n, t) => (n + "|" + t).toLowerCase().replace(/\s+/g, " ");
 // Incremental: las competiciones ya terminadas y leídas no se vuelven a descargar.
-const prevSw = await readJSON("web/data/nadadores.json", { swimmers: [], done: [] });
+let prevSw = await readJSON("web/data/nadadores.json", { swimmers: [], done: [] });
+if (prevSw.v !== 2) prevSw = { swimmers: [], done: [] };
 const doneMeets = new Set(prevSw.done || []);
 if (doneMeets.size) for (const s of prevSw.swimmers) swimmers.set(keyOf(s.n, s.t), { ...s, b: { ...s.b }, m: [...s.m] });
 const finished = (s) => s.start && Date.parse(s.end || s.start) < now - 2 * 864e5;
@@ -197,6 +199,7 @@ await pool(todo, 3, async (s) => {
       if (name.split(" ").length < 2) continue;
       const k = keyOf(name, r.t);
       const sw = swimmers.get(k) || { n: name, t: r.t, g, y: "", b: {}, m: [] };
+      if (r.n.includes(",") && !sw.l) sw.l = r.n.split(",")[0].trim();
       if (r.y && /^(FR|SO|JR|SR|5Y|GR)$/i.test(r.y)) sw.y = r.y.toUpperCase();
       const evn = short(ev.title);
       if (!sw.b[evn] || secs(r.m) < secs(sw.b[evn][0])) sw.b[evn] = [r.m.replace(/[A-Za-z!#$&*@^]+$/, ""), s.name];
@@ -205,7 +208,7 @@ await pool(todo, 3, async (s) => {
     }
   }
 });
-const list = [...swimmers.values()].map((s) => ({ n: s.n, t: s.t, ...(s.g ? { g: s.g } : {}), ...(s.y ? { y: s.y } : {}), b: Object.fromEntries(Object.entries(s.b).sort((a, b) => a[0].localeCompare(b[0]))), m: s.m.slice(-8) }));
+const list = [...swimmers.values()].map((s) => ({ n: s.n, t: s.t, ...(s.l ? { l: s.l } : {}), ...(s.g ? { g: s.g } : {}), ...(s.y ? { y: s.y } : {}), b: Object.fromEntries(Object.entries(s.b).sort((a, b) => a[0].localeCompare(b[0]))), m: s.m.slice(-8) }));
 list.sort((a, b) => a.n.localeCompare(b.n));
-await writeFile("web/data/nadadores.json", JSON.stringify({ updated: isoDay(now), meets: sources.length, done: [...doneMeets], swimmers: list }));
+await writeFile("web/data/nadadores.json", JSON.stringify({ v: 2, updated: isoDay(now), meets: sources.length, done: [...doneMeets], swimmers: list }));
 console.log("nadadores:", list.length, "pruebas leídas:", evCount, "competiciones:", sources.length, "tamaño:", JSON.stringify(list).length);
