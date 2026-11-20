@@ -96,7 +96,8 @@ function parsePdfMeet(text, url) {
       continue;
     }
     if (/Team Scores|Team Rankings|Combined Team|Scores\s*-|^\s*Scores\s*$/i.test(l)) cur = { lines: tail, head: "" };
-    if (cur) cur.lines.push(l);
+    // Los PDF dejan sangría delante del puesto ("    1 Donlon, Claire"): se quita para que lo entienda el lector HY-TEK.
+    if (cur) cur.lines.push(l.replace(/^\s+(?=(?:\d{1,3}|-{2,3}|\*\d{1,3})\s+[A-Za-z'])/, "").replace(/^-{3}(?=\s)/, "--"));
   }
   const events = [];
   for (const b of order) {
@@ -231,6 +232,7 @@ await pool(cand, 6, async (c) => {
   if (!meet.events.length || swims < 4) { done[c.url] = 0; empty++; return; }
   meet.start ||= c.d || "";
   meet.end ||= meet.start;
+  meet.name = (meet.name || "").replace(/(\s+-\s+copied)+$/i, "").trim();
   if (!meet.name || meet.name.length < 4 || /^(results?|dual meet)$/i.test(meet.name)) meet.name = c.o ? `${c.uni} ${/^(at|vs)\b/i.test(c.o) ? "" : "vs "}${c.o}`.replace(/\s+/g, " ") : c.uni;
   const id = "r:" + createHash("sha1").update(sigOf(meet)).digest("hex").slice(0, 12);
   done[c.url] = id;
