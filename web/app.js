@@ -96,6 +96,7 @@ const EN = {
   "puntos": "points",
   "No hay campeonatos con resultados ahora mismo.": "No meets with results right now.",
   "Buscar universidad": "Search university",
+  "Convertir tiempo": "Convert time", "Cerrar": "Close", "Libre": "Free", "Espalda": "Back", "Braza": "Breast", "Mariposa": "Fly", "Estilos": "IM", "Yardas (25 yd)": "Yards (25 yd)", "Piscina corta (25 m)": "Short course (25 m)", "Piscina larga (50 m)": "Long course (50 m)", "Conversión aproximada con los factores habituales (yardas ×1,11 y virajes de 25 m). Úsala como orientación.": "Approximate conversion using the usual factors (yards ×1.11 and 25 m turns). Use it as a guide.",
   "Compitiendo ahora": "Competing now", "Última competición": "Last meet", "Próxima competición": "Next meet", "¿Dónde compite?": "Where are they competing?", "Ahora mismo no está compitiendo.": "Not competing right now.", "Ver resultados aquí": "See results here", "Ver en la web de la universidad": "See on the school's site", "en casa": "at home",
   "Todas": "All", "Hombres": "Men", "Mujeres": "Women", "Saltos": "Diving", "Todos": "All",
   "Conferencia": "Conference", "Estado": "State", "Equipos": "Teams", "Filtros": "Filters",
@@ -769,15 +770,34 @@ async function fillWinners(meet, live) {
   });
 }
 
-function resultRow(r, relay, id, fav) {
+// Busca al nadador de un resultado en la lista de nadadores (para su foto y su perfil).
+let swByUni = null;
+function findSwimmer(sw, name, team) {
+  if (!sw?.length) return null;
+  const low = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z\s'-]/g, "").trim();
+  if (!swByUni) {
+    swByUni = new Map();
+    for (const x of sw) { const k = x.u ? x.u.n : low(x.t); if (!swByUni.has(k)) swByUni.set(k, []); swByUni.get(k).push(x); }
+  }
+  const full = name.includes(",") ? name.split(",").map((x) => x.trim()).filter(Boolean).reverse().join(" ") : name;
+  const u = findUni(team);
+  const list = swByUni.get(u ? u.n : low(team)) || [];
+  const n = low(full), tk = n.split(/\s+/), last = name.includes(",") ? low(name.split(",")[0]).split(/[\s-]+/)[0] : tk[tk.length - 1], first = tk[0];
+  return list.find((x) => low(x.n) === n) || list.find((x) => { const xt = low(x.n).split(/\s+/); return xt.slice(1).join(" ").split(/[\s-]+/).includes(last) && (xt[0].startsWith(first) || first.startsWith(xt[0])); }) || null;
+}
+
+function resultRow(r, relay, id, fav, sw, title) {
   const place = /^\d+$/.test(r.p) ? `<span class="place p${r.p}">${r.p}</span>` : `<span class="place dq">${esc(r.p)}</span>`;
   const extra = [];
   if (r.sw && r.sw.length) extra.push(`<div class="swimmers">${r.sw.map(esc).join(" · ")}</div>`);
   if (r.sp && r.sp.length) extra.push(`<div class="splits">${r.sp.map((s, i) => `<span><small>${(i + 1) * (r.sp.length > 8 ? 25 : 50)}</small>${esc(s)}</span>`).join("")}</div>`);
+  const x = relay ? null : findSwimmer(sw, r.n, r.t);
+  const pic = x?.img ? `<span class="rphoto"><img src="${esc(x.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('nophoto')"><i>${crest(r.t, 18)}</i></span>` : crest(r.t);
+  const nm = esc(relay ? r.t + (r.l ? " " + r.l : "") : x ? x.n : r.n);
   return `<details class="rrow ${fav ? "fav" : ""}"><summary>
-    ${place}${crest(r.t)}
-    <span class="who"><strong>${esc(relay ? r.t + (r.l ? " " + r.l : "") : r.n)}</strong><small>${relay ? "" : esc(r.t) + (r.y ? " · " + esc(r.y) : "")}</small></span>
-    <span class="time"><strong>${esc(r.m)}</strong>${r.pv ? `<small>${esc(r.pv)}</small>` : ""}${r.pts ? `<em>${esc(r.pts)} pts</em>` : ""}</span>
+    ${place}${pic}
+    <span class="who">${x ? `<a class="rname" href="#/n/${x.i}"><strong>${nm}</strong></a>` : `<strong>${nm}</strong>`}<small>${relay ? "" : esc(r.t) + (r.y ? " · " + esc(r.y) : "")}</small></span>
+    <span class="time" data-conv="${esc(r.m)}" data-ev="${esc(title || "")}" role="button" title="${T("Convertir tiempo")}"><strong>${esc(r.m)}</strong>${r.pv ? `<small>${esc(r.pv)}</small>` : ""}${r.pts ? `<em>${esc(r.pts)} pts</em>` : ""}</span>
   </summary>${extra.join("") || `<div class="splits muted">${T("Sin parciales")}</div>`}
   <a class="tlink" href="#/m/${enc(id)}/t/${enc(r.t)}">${T("Ver todo de {t}", { t: esc(r.t) })} ›</a></details>`;
 }
@@ -797,6 +817,7 @@ async function eventView(id, key, silent = false) {
     return scheduleRefresh((s) => eventView(id, key, s));
   }
   setTitle(ev.title);
+  const sw = await loadSwimmers().catch(() => []);
   const f = favs();
   const onlyFav = store.get("onlyFav", false) && f.size;
   let lastSec = null;
@@ -808,7 +829,7 @@ async function eventView(id, key, silent = false) {
         lastSec = r.s;
         h = `<div class="sec">${esc(lang() === "en" ? r.s : SECTION_ES[r.s] || r.s)}</div>`;
       }
-      return h + resultRow(r, ev.relay, id, isFav(r.t, f));
+      return h + resultRow(r, ev.relay, id, isFav(r.t, f), sw, ev.title);
     })
     .join("");
   $app.innerHTML = `
@@ -1285,3 +1306,69 @@ function checkBadge() {
 new MutationObserver(() => setTimeout(checkBadge, 300)).observe(document.body, { childList: true });
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+
+
+// Conversor de tiempos: yardas (25 yd), piscina corta (25 m) y piscina larga (50 m).
+// Factores estándar: yardas↔metros ×1,11 (500/1000/1650 yd → 400/800/1500 m en piscina larga: ×0,8925 / ×0,8925 / ×1,02)
+// y piscina corta↔larga sumando el tiempo de los virajes extra por cada 50 m (libre 0,8 s, espalda 0,6, braza 1,0, mariposa 0,7, estilos 0,8).
+const secsOf = (t) => { const m = /(\d+):(\d{1,2}\.\d+)|(\d+\.\d+)/.exec(t || ""); return m ? (m[3] ? +m[3] : +m[1] * 60 + +m[2]) : NaN; };
+const fmtSecs = (x) => { if (!isFinite(x) || x <= 0) return "—"; const m = Math.floor(x / 60), r = (x - m * 60).toFixed(2).padStart(5, "0"); return m ? `${m}:${r}` : (+r).toFixed(2); };
+function eventSpec(title) {
+  const t = String(title || "").toLowerCase();
+  const dist = +(/(\d{2,4})\s*(?:yard|yd|y\b|meter|metre|m\b|lc|sc)/.exec(t)?.[1] || /\b(50|100|200|400|500|800|1000|1500|1650)\b/.exec(t)?.[1] || 0);
+  const course = /yard|\byd\b|\by\b/.test(t) ? "Y" : /\blc\b|long course|lcm/.test(t) ? "L" : /meter|metre|\bm\b|scm|\bsc\b/.test(t) ? "S" : "";
+  const stroke = /medley relay|\bim\b|individual medley/.test(t) ? "im" : /back/.test(t) ? "back" : /breast/.test(t) ? "breast" : /fly|butter/.test(t) ? "fly" : "free";
+  return { dist, course, stroke };
+}
+const TURN = { free: 0.8, back: 0.6, breast: 1.0, fly: 0.7, im: 0.8 };
+const Y2M = { 500: [400, 0.8925], 1000: [800, 0.8925], 1650: [1500, 1.02] };
+const M2Y = { 400: [500, 0.8925], 800: [1000, 0.8925], 1500: [1650, 1.02] };
+function convertTime(sec, dist, course, stroke) {
+  // Todo pasa por piscina corta en metros (SCM).
+  // Para 500/1000/1650 yd el factor va directo a piscina larga (400/800/1500 m).
+  let scm, mdist;
+  if (course === "Y") { const y = Y2M[dist]; mdist = y ? y[0] : dist; scm = y ? sec * y[1] - (mdist / 50) * TURN[stroke] : sec * 1.11; }
+  else if (course === "L") { mdist = dist; scm = sec - (dist / 50) * TURN[stroke]; }
+  else { mdist = dist; scm = sec; }
+  const lcm = scm + (mdist / 50) * TURN[stroke];
+  const yb = M2Y[mdist];
+  const scy = yb ? lcm / yb[1] : scm / 1.11;
+  return { Y: [yb ? yb[0] : mdist, scy], S: [mdist, scm], L: [mdist, lcm] };
+}
+function openConverter(time, title) {
+  const ev = eventSpec(title);
+  const sec = secsOf(time);
+  document.querySelector(".convpop")?.remove();
+  const sel = (name, val, opts) => `<select name="${name}">${opts.map(([v, l]) => `<option value="${v}"${v == val ? " selected" : ""}>${l}</option>`).join("")}</select>`;
+  const box = document.createElement("div");
+  box.className = "convpop";
+  box.innerHTML = `<div class="convcard" role="dialog" aria-label="${T("Convertir tiempo")}">
+    <button class="convx" aria-label="${T("Cerrar")}">×</button>
+    <h3>⏱️ ${T("Convertir tiempo")}</h3>
+    <div class="convform">
+      <input name="t" inputmode="decimal" value="${esc(time.replace(/[^0-9:.]/g, ""))}">
+      ${sel("d", ev.dist || 100, [[50, "50"], [100, "100"], [200, "200"], [400, "400"], [500, "500"], [800, "800"], [1000, "1000"], [1500, "1500"], [1650, "1650"]])}
+      ${sel("s", ev.stroke, [["free", T("Libre")], ["back", T("Espalda")], ["breast", T("Braza")], ["fly", T("Mariposa")], ["im", T("Estilos")]])}
+      ${sel("c", ev.course || "Y", [["Y", T("Yardas (25 yd)")], ["S", T("Piscina corta (25 m)")], ["L", T("Piscina larga (50 m)")]])}
+    </div>
+    <div class="convout"></div>
+    <p class="sub">${T("Conversión aproximada con los factores habituales (yardas ×1,11 y virajes de 25 m). Úsala como orientación.")}</p>
+  </div>`;
+  document.body.appendChild(box);
+  const f = (n) => box.querySelector(`[name=${n}]`);
+  const draw = () => {
+    const s0 = secsOf(f("t").value), d = +f("d").value, c = f("c").value, st = f("s").value;
+    const r = convertTime(s0, d, c, st);
+    const row = (k, label) => `<div class="convrow ${k === c ? "on" : ""}"><span>${label}</span><small>${r[k][0]} ${k === "Y" ? "yd" : "m"}</small><b>${fmtSecs(r[k][1])}</b></div>`;
+    box.querySelector(".convout").innerHTML = row("Y", T("Yardas (25 yd)")) + row("S", T("Piscina corta (25 m)")) + row("L", T("Piscina larga (50 m)"));
+  };
+  box.addEventListener("input", draw);
+  box.addEventListener("click", (e) => { if (e.target === box || e.target.closest(".convx")) box.remove(); });
+  if (!isFinite(sec)) f("t").value = "";
+  draw();
+}
+document.addEventListener("click", (e) => {
+  const el = e.target.closest?.("[data-conv]");
+  if (el) { e.preventDefault(); e.stopPropagation(); openConverter(el.dataset.conv, el.dataset.ev); return; }
+  if (e.target.closest?.("a.rname")) e.stopPropagation();
+}, true);
