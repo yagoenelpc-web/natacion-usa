@@ -446,3 +446,22 @@ details.season { margin: 8px 0; }
 details.season > summary { cursor: pointer; font-weight: 800; padding: 10px 4px; list-style: none; }
 details.season > summary::before { content: "▸ "; }
 details.season[open] > summary::before { content: "▾ "; }
+.flag { font-size: 0.8em; vertical-align: 0.08em; margin-left: 2px; }
+details.bio { margin: 10px 2px 4px; }
+details.bio > summary { display: inline-block; cursor: pointer; list-style: none; color: var(--brand); font-weight: 800; font-size: 13px; padding: 4px 12px; border-radius: 999px; background: rgba(10, 124, 255, 0.1); }
+details.bio > summary::-webkit-details-marker { display: none; }
+details.bio > summary::after { content: " ▾"; }
+details.bio[open] > summary::after { content: " ▴"; }
+details.bio .biofacts { margin-top: 10px; display: block; padding: 8px 16px; }
+.biotext { margin-top: 10px; padding: 14px 16px; border-radius: var(--r-md); background: rgba(255, 255, 255, 0.7); line-height: 1.5; font-size: 14.5px; }
+.biotext h4 { margin: 12px 0 4px; font-size: 14px; }
+.biotext p { margin: 0 0 8px; }
+.biosrc { display: inline-block; margin-top: 8px; font-size: 13px; font-weight: 700; color: var(--brand); }
+small.biolink { color: var(--brand) !important; font-weight: 800; }
+.staff .face { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .biotext { background: rgba(20, 30, 50, 0.7); } }
+:root[data-theme="dark"] .biotext { background: rgba(20, 30, 50, 0.7); }
+.biofacts .nrow { padding: 7px 0; font-size: 13px; border-bottom: 1px solid rgba(0,0,0,.06); }
+.biofacts .nrow b { font-size: 14px; text-align: right; }
+.biofacts .nrow:last-child { border-bottom: 0; }
+input.msearch { width: 100%; box-sizing: border-box; margin: 4px 0 10px; font-size: 16px; padding: 12px 16px; border-radius: 999px; }
