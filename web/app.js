@@ -32,6 +32,8 @@ const $app = document.getElementById("app");
 
 // ---------- idioma ----------
 const EN = {
+  "Aún no tiene marcas en los resultados guardados de esta temporada.": "No times yet in this season's saved results.", "En la plantilla oficial de su universidad": "On their school's official roster",
+  "Calendario y resultados": "Schedule and results", "próximamente": "upcoming", "Y {n} más en la ficha de cada universidad.": "And {n} more on each school's page.",
   "Encuentros entre universidades": "Dual meets", "Ranking NCAA": "NCAA ranking", "Ranking: puesto en los últimos campeonatos NCAA/NAIA (♂ chicos, ♀ chicas).": "Ranking: place at the last NCAA/NAIA championships (♂ men, ♀ women).",
   "Datos de Wikipedia (CC BY-SA), Wikidata y webs oficiales.": "Data from Wikipedia (CC BY-SA), Wikidata and official sites.", "No puntuó": "Did not score", "Solo se publican campeón y subcampeón": "Only champion and runner-up are published", "de {n}": "of {n}",
   "Entrenador principal": "Head coach", "Entrenador (mujeres)": "Women's head coach", "Esta universidad no publica su equipo técnico en un formato que se pueda leer.": "This school doesn't publish its staff in a readable format.",
@@ -297,7 +299,7 @@ let swimmers = null;
 async function loadSwimmers() {
   if (swimmers) return swimmers;
   await loadLogos().catch(() => {});
-  const d = await loadData("nadadores");
+  const [d, pl] = await Promise.all([loadData("nadadores"), loadData("plantillas")]);
   const secs = (t) => { const m = /^(?:(\d+):)?(\d+\.\d+)/.exec(t || ""); return m ? (+m[1] || 0) * 60 + +m[2] : Infinity; };
   const merged = new Map();
   for (const x of d?.swimmers || []) {
@@ -315,6 +317,37 @@ async function loadSwimmers() {
     for (const [ev, v] of Object.entries(x.b)) if (!prev.b[ev] || secs(v[0]) < secs(prev.b[ev][0])) prev.b[ev] = v;
     for (const m of x.m) if (!prev.m.includes(m)) prev.m.push(m);
   }
+  // Plantillas oficiales: completan nombres cortados por los resultados ("Alvar Zornoza Quiros" → "Alvaro Zornoza Quiros")
+  // y añaden a los nadadores que aún no han competido.
+  const low = (t) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const byUni = new Map();
+  for (const [name, p] of Object.entries(pl?.plant || {})) {
+    const u = unis.find((x) => x.n === name);
+    if (!u) continue;
+    const list = [];
+    for (const [g, names] of Object.entries(p)) for (const full of names) {
+      const tk = full.trim().split(/\s+/);
+      list.push({ full, first: tk[0], last: tk.slice(1).join(" "), g: g === "X" ? "" : g, used: false });
+    }
+    byUni.set(u, list);
+  }
+  for (const x of merged.values()) {
+    const ro = x.u && byUni.get(x.u);
+    if (!ro) continue;
+    const last = x.l || x.n.split(/\s+/).slice(1).join(" ");
+    const first = x.l ? x.n.slice(0, x.n.length - x.l.length).trim() : x.n.split(/\s+/)[0];
+    const lt = low(last).split(/[\s-]+/)[0];
+    const f = low(first);
+    const r = ro.find((r) => !r.used && low(r.last).split(/[\s-]+/)[0] === lt && (low(r.first).startsWith(f) || f.startsWith(low(r.first))));
+    if (!r) continue;
+    r.used = true;
+    const fn = r.first.length > first.length ? r.first : first;
+    const ln = r.last.length > last.length ? r.last : last;
+    x.n = `${fn} ${ln}`;
+    x.g ||= r.g;
+    x.ro = true;
+  }
+  for (const [u, ro] of byUni) for (const r of ro) if (!r.used) merged.set("ro|" + u.n + "|" + r.full, { n: r.full, t: u.n, u, g: r.g, b: {}, m: [], ro: true });
   swimmers = [...merged.values()].sort((a, b) => a.n.localeCompare(b.n)).map((x, i) => ({ ...x, i }));
   swimmers.updated = d?.updated || "";
   return swimmers;
@@ -580,12 +613,14 @@ async function homeView() {
     <h2>${T("En directo")}</h2>
     ${live.length ? live.map(meetCard).join("") : `<div class="card muted">${T("Ahora mismo no hay ningún campeonato en directo.")}${next ? ` ${T("El próximo es")} <a href="#/m/${enc(next.id)}">${esc(next.name)}</a>, ${daysUntil(next.start) === 1 ? T("mañana") : T("dentro de {n} días", { n: daysUntil(next.start) })}.` : ""}</div>`}
   </section>
+  <div id="duals"></div>
   ${f.length ? `<section><h2>${T("Mis universidades")}</h2><div class="chips">${f.map((t) => `<a class="chip" href="#/u/${enc(t)}">${crest(t, 22)}${esc(t)}</a>`).join("")}</div></section>` : ""}
   ${upcoming.length ? `<section><h2>${T("Próximamente")}</h2>${upcoming.filter((s) => !s.pending).map(meetCard).join("")}${
     upcoming.some((s) => s.pending) ? `<details class="announced"><summary>${T("Anunciados, aún sin resultados")} (${upcoming.filter((s) => s.pending).length})</summary>${upcoming.filter((s) => s.pending).map(meetCard).join("")}</details>` : ""
   }</section>` : ""}
   ${Object.keys(ORG).filter((o) => byOrg[o]).map((o) => `<section><h2 class="orgh">${o === "conf" ? "" : orgLogo(o, 26)} ${esc(ORG[o].full)}</h2>${byOrg[o].map(meetCard).join("")}</section>`).join("")}
-  <p class="foot">${lang() === "en" ? `Data from public HY-TEK results pages. Live meets also found via the <a href="https://swimswam.com" target="_blank" rel="noopener">SwimSwam</a> RSS feed. Times are unofficial until published as official.` : `Datos de las páginas públicas de resultados HY-TEK. Competiciones en directo encontradas también gracias al canal RSS de <a href="https://swimswam.com" target="_blank" rel="noopener">SwimSwam</a>. Los tiempos son oficiosos hasta su publicación oficial.`}</p>`;
+  <p class="foot">${lang() === "en" ? `Dual meets and calendars from each school's official site. Data from public HY-TEK results pages. Live meets also found via the <a href="https://swimswam.com" target="_blank" rel="noopener">SwimSwam</a> RSS feed. Times are unofficial until published as official.` : `Duales y calendarios de la web oficial de cada universidad. Datos de las páginas públicas de resultados HY-TEK. Competiciones en directo encontradas también gracias al canal RSS de <a href="https://swimswam.com" target="_blank" rel="noopener">SwimSwam</a>. Los tiempos son oficiosos hasta su publicación oficial.`}</p>`;
+  dualsSection().then((h) => { const el = document.getElementById("duals"); if (el) el.outerHTML = h; }).catch(() => {});
 }
 
 // Universidad anfitriona a partir del nombre ("2026 Tennessee Invitational" → Tennessee).
@@ -882,7 +917,8 @@ async function uniView(name) {
   const u = unis.find((x) => x.n === name) || findUni(name);
   if (!u) return errorView("Universidad no encontrada.");
   setTitle(u.n);
-  const [ranks, sw] = await Promise.all([loadRanks().catch(() => new Map()), loadSwimmers().catch(() => [])]);
+  const [ranks, sw, calD] = await Promise.all([loadRanks().catch(() => new Map()), loadSwimmers().catch(() => []), loadData("calendario")]);
+  const games = calD?.cal?.[u.n] || [];
   const r = ranks.get(u);
   const team = sw.filter((x) => x.u === u);
   const info = logoIndex ? matchTeam(logoIndex, u.n) || matchTeam(logoIndex, u.full) : null;
@@ -931,12 +967,44 @@ async function uniView(name) {
   </div>
   <a class="btn wide" href="#/u/${enc(u.n)}">🏊 ${T("Ver sus resultados")}</a>
   ${u.hytek ? `<a class="btn wide alt" href="#/m/${enc(`https://www.sidearmstats.com/${u.hytek}/swim/evtindex.htm`)}">⏱️ ${T("Su última competición en casa")}</a>` : ""}
+  ${games.length ? `<h2>📅 ${T("Calendario y resultados")} <span class="count">${games.length}</span></h2><div class="list">${games.map((g) => gameRow(u.n, g)).join("")}</div>` : ""}
   <h2>👥 ${T("Equipo técnico y contacto")} ${staff.length ? `<span class="count">${staff.length}</span>` : ""}</h2>
   ${staffHtml}
   <h2>🏊 ${T("Nadadores")} ${team.length ? `<span class="count">${team.length}</span>` : ""}</h2>
   ${teamHtml}
   <div class="links">${link(web, T("Web oficial"))}${link(u.uweb, T("Web de la universidad"))}${link(u.staffUrl || u.staffMUrl, T("Equipo técnico"))}${link(u.staffWUrl, T("Equipo técnico (mujeres)"))}${link(u.rosterUrl || u.rosterMUrl, T("Plantilla oficial"))}${link(u.rosterWUrl, T("Plantilla oficial (mujeres)"))}${link(u.wiki, "Wikipedia")}</div>
   <p class="foot">${T("Nadadores sacados de los resultados públicos de esta temporada y de los últimos NCAA. Datos de Wikipedia (CC BY-SA), Wikidata y la web oficial de la universidad.")}</p>`;
+}
+
+function gameRow(team, g, both = false) {
+  const today = todayUS();
+  const when = g.d ? fmtDate(g.d) : g.dt || "";
+  const won = /^W\b/i.test(g.r || ""), lost = /^L\b/i.test(g.r || "");
+  const link = g.live || g.res || g.recap;
+  const href = g.live ? `#/m/${enc(normalizeMeetUrl(g.live))}` : link;
+  const inner = `${both ? crest(team, 30) : ""}<span class="vs">${g.at === "at" ? "@" : "vs"}</span>${crest(g.o, 30)}<span class="uinfo"><b>${both ? `${esc(team)} ${g.at === "at" ? "@" : "vs"} ` : ""}${esc(g.o)}</b><small>${esc([when, g.g === "M" ? "♂" : g.g === "W" ? "♀" : "", g.d && g.d >= today && !g.r ? T("próximamente") : ""].filter(Boolean).join(" · "))}</small></span>${g.r ? `<span class="res ${won ? "w" : lost ? "l" : ""}">${esc(g.r)}</span>` : ""}${link ? `<span class="chev">${g.live ? "›" : "↗"}</span>` : ""}`;
+  return link ? `<a class="urow game" href="${esc(href)}" ${g.live ? "" : 'target="_blank" rel="noopener"'}>${inner}</a>` : `<div class="urow game">${inner}</div>`;
+}
+async function dualsSection() {
+  const d = await loadData("calendario");
+  if (!d?.cal) return "";
+  const today = todayUS();
+  const from = new Date(Date.now() - 10 * 864e5).toISOString().slice(0, 10);
+  const to = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+  const seen = new Set();
+  const list = [];
+  const fav = favs();
+  for (const [team, games] of Object.entries(d.cal))
+    for (const g of games) {
+      if (!g.d || g.d < from || g.d > to || /invit|invite|classic|championship|intrasquad|scarlet|time trial|last chance|of \d+ teams/i.test(g.o + " " + (g.r || "")) || !findUni(g.o)) continue;
+      const k = [g.d, ...[team, g.o].map((x) => (findUni(x)?.n || x).toLowerCase()).sort()].join("|");
+      if (seen.has(k)) continue;
+      seen.add(k);
+      list.push({ team, g, fav: isFav(team, fav) || isFav(g.o, fav) });
+    }
+  if (!list.length) return "";
+  list.sort((a, b) => b.fav - a.fav || (a.g.d >= today) - (b.g.d >= today) || (a.g.d >= today ? a.g.d.localeCompare(b.g.d) : b.g.d.localeCompare(a.g.d)));
+  return `<section><h2>⚔️ ${T("Encuentros entre universidades")} <span class="count">${list.length}</span></h2><div class="list">${list.slice(0, 25).map((x) => gameRow(x.team, x.g, true)).join("")}</div>${list.length > 25 ? `<p class="sub">${T("Y {n} más en la ficha de cada universidad.", { n: list.length - 25 })}</p>` : ""}</section>`;
 }
 
 async function swimmersView() {
@@ -983,9 +1051,9 @@ async function swimmerView(i) {
     <div class="mtop"><span class="bigcrest">${crest(uname, 76)}</span><div><h1>${esc(x.n)}</h1><p>${x.u ? `<a href="#/uni/${enc(x.u.n)}">${esc(x.u.full || x.u.n)}</a>` : esc(x.t)}</p><p>${esc([x.g === "W" ? T("Mujeres") : x.g === "M" ? T("Hombres") : "", yr].filter(Boolean).join(" · "))}</p></div></div>
   </section>
   <h2>⏱️ ${T("Mejores marcas")}</h2>
-  <div class="list">${Object.entries(x.b).map(([ev, [t, m]]) => `<div class="srow"><span class="uinfo"><b>${esc(ev)}</b><small>${esc(m)}</small></span><span class="time">${esc(t)}</span></div>`).join("")}</div>
-  <h2>📅 ${T("Competiciones")}</h2>
-  <div class="card">${x.m.map((m) => `<div class="mline">${esc(m)}</div>`).join("")}</div>
+  ${Object.keys(x.b).length ? `<div class="list">${Object.entries(x.b).map(([ev, [t, m]]) => `<div class="srow"><span class="uinfo"><b>${esc(ev)}</b><small>${esc(m)}</small></span><span class="time">${esc(t)}</span></div>`).join("")}</div>` : `<div class="card muted">${T("Aún no tiene marcas en los resultados guardados de esta temporada.")}</div>`}
+  ${x.m.length ? `<h2>📅 ${T("Competiciones")}</h2><div class="card">${x.m.map((m) => `<div class="mline">${esc(m)}</div>`).join("")}</div>` : ""}
+  ${x.ro ? `<p class="sub center">✅ ${T("En la plantilla oficial de su universidad")}</p>` : ""}
   ${x.u ? `<a class="btn wide" href="#/uni/${enc(x.u.n)}">🎓 ${T("Ver universidad")}</a>` : ""}
   <p class="foot">${T("Marcas oficiosas de los resultados públicos (Y = yardas, M = metros).")}</p>`;
 }

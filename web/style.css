@@ -227,7 +227,7 @@ main { max-width: 720px; margin: 0 auto; padding: 14px 16px 24px; }
 .sname { flex: 1; font-weight: 700; min-width: 0; }
 .pts { font-weight: 800; font-size: 18px; font-variant-numeric: tabular-nums; }
 .pts small { color: var(--muted); font-weight: 600; }
-.urow > span:not(.crest):not(.rk):not(.avatar):not(.chev), .srow > span.uinfo { flex: 1; font-weight: 600; min-width: 0; }
+.urow > span:not(.crest):not(.rk):not(.avatar):not(.chev):not(.vs):not(.res), .srow > span.uinfo { flex: 1; font-weight: 600; min-width: 0; }
 .more { display: block; text-align: center; color: var(--brand); font-weight: 700; padding: 14px; }
 
 .podium { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 10px; align-items: end; margin: 4px 0 16px; }
@@ -373,3 +373,9 @@ body.has-badge { padding-bottom: calc(150px + env(safe-area-inset-bottom)); }
 .mline:last-child { border-bottom: 0; }
 .btn.alt { background: rgba(10, 100, 224, 0.12); color: var(--brand); box-shadow: none; margin-top: -4px; }
 .fact b a { color: var(--brand); word-break: break-all; }
+.urow.game { gap: 8px; }
+.urow.game .vs { flex: none; font-size: 11px; font-weight: 800; color: var(--muted); }
+.res { flex: none; font-size: 12px; font-weight: 800; padding: 3px 8px; border-radius: 8px; background: rgba(127, 127, 127, 0.14); max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.res.w { background: rgba(30, 170, 90, 0.16); color: #14894a; }
+.res.l { background: rgba(255, 45, 85, 0.12); color: var(--live); }
+.sub.center { text-align: center; }
