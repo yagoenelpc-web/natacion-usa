@@ -1,0 +1,9 @@
+{
+  "name": "natacion-usa",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/js/*.test.js",
+    "dev": "node scripts/dev.mjs"
+  }
+}

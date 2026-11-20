@@ -1,0 +1,36 @@
+// Hace capturas de la app (tamaño móvil) con el servidor local en marcha.
+import { chromium } from "playwright";
+import { mkdir } from "node:fs/promises";
+
+const out = process.argv[2] || "capturas";
+const base = process.env.BASE || "http://localhost:8888/";
+await mkdir(out, { recursive: true });
+const browser = await chromium.launch();
+const page = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+const errors = [];
+page.on("pageerror", (e) => errors.push(String(e)));
+page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+
+async function shot(name, hash, wait = "main :is(.mcard,.erow,.rrow,.srow,.trow,.urow,.card,.empty)") {
+  await page.goto(base + hash);
+  await page.waitForSelector(wait, { timeout: 90000 }).catch(() => errors.push("sin contenido: " + name));
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: `${out}/${name}.png`, fullPage: true });
+  return page;
+}
+
+await shot("1-portada", "#/");
+const meet = await page.$$eval("a.mcard", (as) => as.map((a) => a.getAttribute("href")));
+console.log("campeonatos en portada:", meet.length);
+const ncaa = (await page.$$eval("a.mcard", (as) => as.map((a) => [a.getAttribute("href"), a.textContent]))).find(([, t]) => /NCAA Division I/i.test(t));
+const target = ncaa ? ncaa[0] : "#/m/NCAA-Division-I-Men-2026";
+await shot("2-campeonato", target);
+await shot("3-clasificacion", target + "/clasificacion");
+const ev = await page.goto(base + target).then(() => page.waitForSelector("a.erow", { timeout: 60000 })).then(() => page.$$eval("a.erow", (as) => as.map((a) => a.getAttribute("href"))));
+if (ev.length) {
+  await shot("4-prueba", ev[Math.min(3, ev.length - 1)]);
+  await shot("5-relevo", ev[1]);
+}
+await shot("6-universidades", "#/u");
+console.log("errores:", errors);
+await browser.close();

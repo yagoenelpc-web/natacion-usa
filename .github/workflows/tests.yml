@@ -19,3 +19,24 @@ jobs:
         env:
           NATACION_LIVE: "1"
         run: pytest -q -s tests/test_live.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Pruebas de la app web
+        run: npm test
+      - name: App web contra las webs reales
+        env:
+          NATACION_LIVE: "1"
+        run: node --test --test-reporter=spec tests/js/live.test.js
+      - name: Capturas de la app en tamaño móvil
+        run: |
+          npm install --no-save playwright@1.48.2
+          npx playwright install --with-deps chromium
+          (node scripts/dev.mjs > dev.log 2>&1 &)
+          sleep 2
+          node scripts/capturas.mjs capturas
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: capturas
+          path: capturas/

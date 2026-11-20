@@ -3,3 +3,6 @@ __pycache__/
 .venv/
 natacion.db
 .pytest_cache/
+node_modules/
+capturas/
+dev.log
