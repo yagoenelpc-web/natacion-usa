@@ -292,7 +292,7 @@ for (const { entry, meet } of newMeets) {
     if (!/\d/.test(evn)) continue;
     for (const r of ev.results) {
       if (!r.n || !r.t || r.t.length < 2 || !r.m || secs(r.m) === Infinity || !/[a-z]{2}/i.test(r.n) || /^\d|^[A-Z0-9-]+$/.test(r.n.trim())) continue;
-      const name = (r.n.includes(",") ? r.n.split(",").map((x) => x.trim()).filter(Boolean).reverse().join(" ") : r.n).replace(/\s+/g, " ").trim();
+      const name = (r.n.includes(",") ? r.n.split(",").map((x) => x.trim()).filter(Boolean).reverse().join(" ") : r.n).replace(/\s+/g, " ").trim().replace(/\s+[A-Z]\.?(?=\s)/g, "");
       const tk = low(name).split(" ");
       if (tk.length < 2) continue;
       const k = keyOf(name, r.t);
