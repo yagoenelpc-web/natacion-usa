@@ -62,9 +62,10 @@ const NOISE = /HY-TEK'?s MEET MANAGER|Hy-Tek'?s MEET MANAGER|MEET MANAGER \d|Sit
 // Convierte el texto de un PDF de resultados HY-TEK en { name, start, end, events: [ev...] } (mismo formato que parseEvent).
 function parsePdfMeet(text, url) {
   // Programas, psych sheets y horarios no son resultados (llevan marcas de inscripción).
-  if (/Meet Program|Psych Sheet|Heat Sheet|Session Report|Entry List|Entries -|Timeline|Order of Events/i.test(text.slice(0, 3000))) return { name: "", start: "", end: "", events: [] };
+  const kind = /Meet Program|Psych Sheet|Heat Sheet|Session Report|Entry List|Entries -|Timeline|Order of Events/i.exec(text.slice(0, 3000));
+  if (kind) return { name: "", start: "", end: "", events: [], why: kind[0] };
   // Dos columnas de pruebas en la misma línea: no se puede leer bien.
-  if (/(?:Event|#)\s*\d+\s+(?:Women|Men|Girls|Boys|Mixed)\b.{5,}\s{3,}\(?(?:Event|#)\s*\d+\s+(?:Women|Men|Girls|Boys|Mixed)\b/i.test(text)) return { name: "", start: "", end: "", events: [] };
+  if (/(?:Event|#)\s*\d+\s+(?:Women|Men|Girls|Boys|Mixed)\b.{5,}\s{3,}\(?(?:Event|#)\s*\d+\s+(?:Women|Men|Girls|Boys|Mixed)\b/i.test(text)) return { name: "", start: "", end: "", events: [], why: "dos columnas" };
   const pages = text.split("\f");
   let name = "", start = "", end = "";
   const lines = [];
@@ -153,9 +154,9 @@ const plant = (await readJSON("web/data/plantillas.json", { plant: {} })).plant;
 const idx = await readJSON("web/data/encuentros.json", { v: 1, meets: [], done: {} });
 const done = process.env.FRESH ? {} : idx.done || {};
 // Nueva versión del lector: se vuelve a leer todo (y se quitan de los nadadores las marcas de la versión anterior).
-const VER = 4;
+const VER = 5;
 const RESET = idx.v !== VER;
-if (RESET) { for (const k of Object.keys(done)) delete done[k]; idx.meets = []; }
+if (RESET) { for (const k of Object.keys(done)) delete done[k]; idx.meets = []; idx.pastDone = []; }
 const meetsById = new Map((idx.meets || []).map((m) => [m.id, m]));
 if (RESET) await rm("web/data/m", { recursive: true, force: true });
 const inArchive = new Set(archivo.meets.map((m) => m.url.split("#")[0]));
@@ -226,6 +227,7 @@ const compact = (ev) => ({
 await mkdir("web/data/m", { recursive: true });
 let ok = 0, empty = 0, fail = 0, samples = 0;
 const dbg = { np: 0, pe: 0 };
+const whyC = {};
 const newMeets = [];
 await pool(cand, 6, async (c) => {
   let meet = null;
@@ -251,7 +253,7 @@ await pool(cand, 6, async (c) => {
     if (!meet) { fail++; return; }
   }
   const swims = meet.events.reduce((a, e) => a + e.results.length, 0);
-  if (!meet.events.length || swims < 4) { if (DEBUG && dbg.pe++ < 6) console.log("SIN-PRUEBAS", c.url, meet.events.length, swims, "\n" + (meet.text || "").split("\n").slice(0, 25).join("\n")); done[c.url] = 0; empty++; return; }
+  if (!meet.events.length || swims < 4) { whyC[meet.why || (meet.events.length ? "pocas filas" : "sin pruebas")] = (whyC[meet.why || (meet.events.length ? "pocas filas" : "sin pruebas")] || 0) + 1; if (DEBUG && dbg.pe++ < 6) console.log("SIN-PRUEBAS", c.url, meet.events.length, swims, "\n" + (meet.text || "").split("\n").slice(0, 25).join("\n")); done[c.url] = 0; empty++; return; }
   meet.start ||= c.d || "";
   meet.end ||= meet.start;
   meet.name = (meet.name || "").replace(/(\s+-\s+copied)+$/i, "").trim();
@@ -266,6 +268,7 @@ await pool(cand, 6, async (c) => {
   await writeFile(`web/data/m/${id.slice(2)}.json`, JSON.stringify({ n: entry.n, d: entry.d, e: entry.e, u: entry.u, src: c.url, ev: meet.events.map(compact) }));
   ok++;
 });
+console.log("motivos sin resultados:", JSON.stringify(whyC));
 console.log("leídos ahora:", ok, "sin resultados:", empty, "fallos:", fail, "· encuentros guardados:", meetsById.size, "· minutos:", ((Date.now() - T0) / 60e3).toFixed(1));
 
 // ---------- Mejores marcas ----------
