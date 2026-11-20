@@ -159,7 +159,17 @@ async function loadSummaries() {
     const id = meetIdFromUrl(c.url);
     const cached = store.get("s:" + id);
     if (cached && cached.status === "done" && Date.now() - cached.t < 7 * 864e5) return cached;
-    const m = await loadMeetIndex(id);
+    if (cached && cached.pending && Date.now() - cached.t < 864e5) return cached;
+    let m;
+    try {
+      m = await loadMeetIndex(id);
+    } catch {
+      // Aún sin página de resultados: campeonato futuro anunciado en el catálogo.
+      if (+c.year < year) return null;
+      const s = { id, name: c.name.replace(/-/g, " "), org: organization(c.name), start: null, end: null, status: "upcoming", events: 0, pending: true, t: Date.now() };
+      store.set("s:" + id, s);
+      return s;
+    }
     const s = { id, name: m.name || c.name, org: organization(m.name + " " + c.name), start: m.start, end: m.end, status: m.status, events: uniqueEvents(m).length, t: Date.now() };
     store.set("s:" + id, s);
     return s;
@@ -256,11 +266,12 @@ function setTab(name) {
 
 // ---------- vistas ----------
 function meetCard(s) {
-  let when = fmtRange(s.start, s.end);
+  let when = s.pending ? `Temporada ${s.id.match(/(19|20)\d{2}/)?.[0] || ""} · resultados aún no publicados` : fmtRange(s.start, s.end);
   if (s.status === "upcoming" && s.start) {
     const d = daysUntil(s.start);
     when += d === 1 ? " · mañana" : ` · en ${d} días`;
   }
+  if (s.pending) return `<div class="mcard upcoming pending">${orgLogo(s.org)}<div class="mbody"><strong>${esc(s.name)}</strong><span class="sub">${esc(when)}</span></div></div>`;
   return `<a class="mcard ${s.status}" href="#/m/${enc(s.id)}">
     ${orgLogo(s.org)}
     <div class="mbody">
@@ -282,7 +293,8 @@ async function homeView() {
     return errorView("No se pudo cargar la lista de campeonatos. Comprueba la conexión.");
   }
   const live = list.filter((s) => s.status === "live");
-  const upcoming = list.filter((s) => s.status === "upcoming").sort((a, b) => (a.start || "").localeCompare(b.start || ""));
+  const upcoming = list.filter((s) => s.status === "upcoming").sort((a, b) => (a.start || "9999").localeCompare(b.start || "9999"));
+  const next = upcoming.find((s) => s.start);
   const done = list.filter((s) => s.status === "done").sort((a, b) => (b.start || "").localeCompare(a.start || ""));
   const f = [...favs()];
   const byOrg = {};
@@ -296,7 +308,7 @@ async function homeView() {
   </section>
   <section>
     <h2>En directo</h2>
-    ${live.length ? live.map(meetCard).join("") : `<div class="card muted">Ahora mismo no hay ningún campeonato en directo.${upcoming[0] ? ` El próximo es <a href="#/m/${enc(upcoming[0].id)}">${esc(upcoming[0].name)}</a>, ${daysUntil(upcoming[0].start) === 1 ? "mañana" : `dentro de ${daysUntil(upcoming[0].start)} días`}.` : ""}</div>`}
+    ${live.length ? live.map(meetCard).join("") : `<div class="card muted">Ahora mismo no hay ningún campeonato en directo.${next ? ` El próximo es <a href="#/m/${enc(next.id)}">${esc(next.name)}</a>, ${daysUntil(next.start) === 1 ? "mañana" : `dentro de ${daysUntil(next.start)} días`}.` : ""}</div>`}
   </section>
   ${f.length ? `<section><h2>Mis universidades</h2><div class="chips">${f.map((t) => `<a class="chip" href="#/u/${enc(t)}">${crest(t, 22)}${esc(t)}</a>`).join("")}</div></section>` : ""}
   ${upcoming.length ? `<section><h2>Próximamente</h2>${upcoming.map(meetCard).join("")}</section>` : ""}

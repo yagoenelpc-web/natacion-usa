@@ -36,6 +36,9 @@ console.log("errores:", errors);
 if (process.env.CAPTURAS_LOG) {
   // Las capturas también van al registro, para poder verlas sin descargar artefactos.
   const { readdir, readFile } = await import("node:fs/promises");
-  for (const f of (await readdir(out)).sort()) console.log(`@@CAPTURA ${f} ${(await readFile(`${out}/${f}`)).toString("base64")}`);
+  for (const f of (await readdir(out)).sort()) {
+    const b64 = (await readFile(`${out}/${f}`)).toString("base64");
+    for (let i = 0; i < b64.length; i += 3000) console.log(`@@CAPTURA ${f} ${b64.slice(i, i + 3000)}`);
+  }
 }
 await browser.close();
