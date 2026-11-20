@@ -384,20 +384,25 @@ function meetBadge(s, size = 36) {
 }
 
 async function findStandings(meet, live) {
+  const teams = new Set();
+  const take = (ev) => ev.results.forEach((r) => r.t && teams.add(r.t));
   if (meet.lastEventUrl) {
     try {
       const last = await loadEvent(meet.lastEventUrl, live);
-      if (last.scores.length) return last;
+      take(last);
+      if (last.scores.length) return { standings: last, teams: last.scores.map((s) => s.t) };
     } catch {}
   }
   const evs = uniqueEvents(meet).sort((a, b) => b.number - a.number);
   for (const e of evs.slice(0, 6)) {
     try {
       const ev = await loadEvent(e.url, live);
-      if (ev.scores.length) return ev;
+      take(ev);
+      if (ev.scores.length) return { standings: ev, teams: ev.scores.map((s) => s.t) };
     } catch {}
   }
-  return null;
+  // Sin clasificación publicada: universidades vistas en las últimas pruebas.
+  return { standings: null, teams: [...teams].filter((t) => !/^(unattached|unat)$/i.test(t)).sort() };
 }
 
 function podium(scores, id) {
@@ -421,8 +426,7 @@ async function meetView(id, tab = "pruebas", silent = false) {
   }
   setTitle(meet.name);
   const live = meet.status === "live";
-  const standings = await findStandings(meet, live);
-  const teams = standings ? standings.scores.map((s) => s.t) : [];
+  const { standings, teams } = await findStandings(meet, live);
   const host = meet.org === "conf" ? hostOf(meet.name) : null;
   const tint = host ? host.info.color : { ncaa: "#0a5bb5", usas: "#b3123a", usms: "#11306b" }[meet.org] || "#0b3d91";
 
@@ -444,7 +448,7 @@ async function meetView(id, tab = "pruebas", silent = false) {
       : `<div class="card muted">La clasificación aparecerá cuando haya pruebas puntuables terminadas.</div>`;
   } else {
     body = teams.length
-      ? `<div class="grid">${teams.map((t) => `<a class="tcard" href="#/m/${enc(id)}/t/${enc(t)}">${crest(t, 56)}<span>${esc(t)}</span></a>`).join("")}</div>`
+      ? `${standings ? "" : `<p class="sub pad">Universidades vistas en las últimas pruebas</p>`}<div class="grid">${teams.map((t) => `<a class="tcard" href="#/m/${enc(id)}/t/${enc(t)}">${crest(t, 56)}<span>${esc(t)}</span></a>`).join("")}</div>`
       : `<div class="card muted">La lista de universidades aparecerá cuando haya resultados.</div>`;
   }
 
@@ -633,5 +637,12 @@ document.addEventListener("click", (e) => {
 document.addEventListener("touchmove", (e) => e.touches.length > 1 && e.preventDefault(), { passive: false });
 window.addEventListener("hashchange", route);
 route();
+
+// Si la web de alojamiento pone un distintivo flotante abajo, sube la barra de pestañas.
+setTimeout(() => {
+  const ours = new Set([document.querySelector(".top"), $app, document.querySelector(".tabbar")]);
+  const extra = [...document.body.children].some((el) => !ours.has(el) && el.tagName !== "SCRIPT" && getComputedStyle(el).position === "fixed");
+  document.body.classList.toggle("has-badge", extra);
+}, 2500);
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});

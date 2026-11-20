@@ -276,3 +276,5 @@ input[type="search"]:focus { border-color: var(--brand2); }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   :root { --glass: rgba(255, 255, 255, 0.92); }
 }
+body.has-badge .tabbar { bottom: calc(68px + env(safe-area-inset-bottom)); }
+body.has-badge { padding-bottom: calc(150px + env(safe-area-inset-bottom)); }
