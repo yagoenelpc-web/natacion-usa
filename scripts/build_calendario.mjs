@@ -9,9 +9,9 @@ const UA = { "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (
 const data = JSON.parse(await readFile("web/data/unis.json", "utf8"));
 const unis = data.unis;
 const PATHS = {
-  "": ["/sports/swimming-and-diving", "/sports/swimming", "/sports/swim-and-dive", "/sports/swimming-diving"],
-  M: ["/sports/mens-swimming-and-diving", "/sports/mens-swimming"],
-  W: ["/sports/womens-swimming-and-diving", "/sports/womens-swimming"],
+  "": ["/sports/swimming-and-diving", "/sports/swimming", "/sports/swim-and-dive", "/sports/swimming-diving", "/sports/sd", "/sports/swim"],
+  M: ["/sports/mens-swimming-and-diving", "/sports/mens-swimming", "/sports/mens-swimming-diving", "/sports/mswim", "/sports/m-swim", "/sports/m-swimdive"],
+  W: ["/sports/womens-swimming-and-diving", "/sports/womens-swimming", "/sports/womens-swimming-diving", "/sports/wswim", "/sports/w-swim", "/sports/w-swimdive"],
 };
 async function get(url) {
   try {
@@ -104,6 +104,17 @@ function roster(html, base) {
     const img = /<img[^>]+src="(https:\/\/images\.sidearmdev\.com\/[^"]+)"/.exec(b.slice(0, 6000))?.[1] || "";
     if (!out.has(dec(n))) out.set(dec(n), img ? abs(img) : "");
   }
+  // Webs de WMT (Learfield): tarjetas "roster-card-item".
+  if (!out.size) {
+    const cut = html.search(/<[^>]+class="[^"]*roster-staff-members/);
+    const body = cut > 0 ? html.slice(0, cut) : html;
+    for (const b of body.split(/class="roster-card-item"/).slice(1)) {
+      const n = /roster-card-item__name[^>]*>([^<]+)</.exec(b)?.[1];
+      if (!n) continue;
+      const img = /<img[^>]+(?:data-src|src)="((?!data:)[^"]+)"/.exec(b.slice(0, 3000))?.[1] || "";
+      if (!out.has(dec(n))) out.set(dec(n), img ? abs(img) : "");
+    }
+  }
   // Webs clásicas: datos estructurados (schema.org Person) con foto.
   if (!out.size) for (const p of jsonLd(html).filter((x) => x["@type"] === "Person" && x.name)) out.set(dec(p.name), p.image?.url ? abs(p.image.url) : "");
   if (!out.size) for (const m of html.matchAll(/aria-label="([^"]+?) - View Profile"/g)) out.set(dec(m[1]), "");
@@ -113,6 +124,9 @@ function roster(html, base) {
 
 const cal = {}, plant = {}, liveLinks = new Set();
 let logosAdded = 0;
+// Webs deportivas mal detectadas en algunas universidades.
+const FIX = { Tennessee: "https://utsports.com", Omaha: "https://omavs.com", "Indiana State": "https://gosycamores.com", "Mount St. Mary's": "https://mountathletics.com", "Central Connecticut": "https://ccsubluedevils.com", Missouri: "https://mutigers.com" };
+for (const u of unis) if (FIX[u.n]) u.web = FIX[u.n];
 const todo = unis.filter((u) => u.web);
 await pool(todo, 10, async (u) => {
   const base = u.web.replace(/^(https?:\/\/[^/]+).*$/, "$1");
