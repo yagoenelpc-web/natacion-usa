@@ -379,3 +379,7 @@ body.has-badge { padding-bottom: calc(150px + env(safe-area-inset-bottom)); }
 .res.w { background: rgba(30, 170, 90, 0.16); color: #14894a; }
 .res.l { background: rgba(255, 45, 85, 0.12); color: var(--live); }
 .sub.center { text-align: center; }
+.ext { display: flex; gap: 10px; margin: 10px 0 14px; }
+.extbtn { flex: 1; text-align: center; padding: 12px 10px; border-radius: 999px; font-weight: 800; font-size: 14px; color: #fff; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15); }
+.extbtn.sc { background: linear-gradient(135deg, #0a7cff, #00b4d8); }
+.extbtn.usas { background: linear-gradient(135deg, #0b2a6b, #c8102e); }

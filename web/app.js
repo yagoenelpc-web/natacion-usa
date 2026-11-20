@@ -722,6 +722,7 @@ async function meetView(id, tab = "pruebas", silent = false) {
     ${teams.length ? `<div class="strip">${teams.map((t) => `<a href="#/m/${enc(id)}/t/${enc(t)}" title="${esc(t)}">${crest(t, 40)}</a>`).join("")}</div>` : ""}
     ${standings && tab === "pruebas" && standings.scores[0] ? `<a class="leader" href="#/m/${enc(id)}/clasificacion">${crest(standings.scores[0].t, 28)}<span>${T("Lidera {t} con {p} pts", { t: `<b>${esc(standings.scores[0].t)}</b>`, p: esc(standings.scores[0].pts) })}</span><span class="chev">›</span></a>` : ""}
   </section>
+  ${extButtons([[SC(meet.name.replace(/\b(19|20)\d{2}\b/g, "").trim()), "SwimCloud", "sc"], [USAS_MEET(meet.name.replace(/\b(19|20)\d{2}\b/g, "").trim()), "USA Swimming", "usas"]])}
   ${(store.get("s:" + id) || {}).article ? `<a class="article" href="${esc(store.get("s:" + id).article)}" target="_blank" rel="noopener">${T("Crónica en SwimSwam")} ↗</a>` : ""}
   ${live && meet.lastEventUrl ? `<a class="lastev" href="#/m/${enc(id)}/e/${enc(eventKey(meet.lastEventUrl))}">⚡ ${T("Última prueba terminada")}</a>` : ""}
   <nav class="seg">${tabs.map(([k, l]) => `<a class="${k === tab ? "on" : ""}" href="#/m/${enc(id)}${k === "pruebas" ? "" : "/" + k}">${l}</a>`).join("")}</nav>
@@ -972,10 +973,18 @@ async function uniView(name) {
   ${staffHtml}
   <h2>🏊 ${T("Nadadores")} ${team.length ? `<span class="count">${team.length}</span>` : ""}</h2>
   ${teamHtml}
+  ${extButtons([[SC(u.full || u.n), "SwimCloud", "sc"], [USAS_SWIMMER(u.full || u.n), "USA Swimming", "usas"]])}
   <div class="links">${link(web, T("Web oficial"))}${link(u.uweb, T("Web de la universidad"))}${link(u.staffUrl || u.staffMUrl, T("Equipo técnico"))}${link(u.staffWUrl, T("Equipo técnico (mujeres)"))}${link(u.rosterUrl || u.rosterMUrl, T("Plantilla oficial"))}${link(u.rosterWUrl, T("Plantilla oficial (mujeres)"))}${link(u.wiki, "Wikipedia")}</div>
   <p class="foot">${T("Nadadores sacados de los resultados públicos de esta temporada y de los últimos NCAA. Datos de Wikipedia (CC BY-SA), Wikidata y la web oficial de la universidad.")}</p>`;
 }
 
+// Botones que abren SwimCloud y USA Swimming ya buscando lo que estás viendo (sin copiar enlaces).
+const SC = (q) => "https://www.swimcloud.com/search/?q=" + enc(q);
+const USAS_MEET = (q) => "https://data.usaswimming.org/datahub/usas/meetsearch?query=" + enc(q);
+const USAS_SWIMMER = (q) => "https://data.usaswimming.org/datahub/usas/individualsearch?query=" + enc(q);
+function extButtons(items) {
+  return `<div class="ext">${items.map(([href, label, cls]) => `<a class="extbtn ${cls}" href="${esc(href)}" target="_blank" rel="noopener">${label} ↗</a>`).join("")}</div>`;
+}
 function gameRow(team, g, both = false) {
   const today = todayUS();
   const when = g.d ? fmtDate(g.d) : g.dt || "";
@@ -1054,6 +1063,7 @@ async function swimmerView(i) {
   ${Object.keys(x.b).length ? `<div class="list">${Object.entries(x.b).map(([ev, [t, m]]) => `<div class="srow"><span class="uinfo"><b>${esc(ev)}</b><small>${esc(m)}</small></span><span class="time">${esc(t)}</span></div>`).join("")}</div>` : `<div class="card muted">${T("Aún no tiene marcas en los resultados guardados de esta temporada.")}</div>`}
   ${x.m.length ? `<h2>📅 ${T("Competiciones")}</h2><div class="card">${x.m.map((m) => `<div class="mline">${esc(m)}</div>`).join("")}</div>` : ""}
   ${x.ro ? `<p class="sub center">✅ ${T("En la plantilla oficial de su universidad")}</p>` : ""}
+  ${extButtons([[SC(x.n), "SwimCloud", "sc"], [USAS_SWIMMER(x.n), "USA Swimming", "usas"]])}
   ${x.u ? `<a class="btn wide" href="#/uni/${enc(x.u.n)}">🎓 ${T("Ver universidad")}</a>` : ""}
   <p class="foot">${T("Marcas oficiosas de los resultados públicos (Y = yardas, M = metros).")}</p>`;
 }
