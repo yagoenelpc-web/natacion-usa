@@ -219,7 +219,16 @@ const newMeets = [];
 await pool(cand, 6, async (c) => {
   let meet = null;
   if (isPdf(c.url)) {
-    const r = await get(c.url, true);
+    let r = await get(c.url, true);
+    // Sidearm: /documents/...pdf es una página que enseña el PDF; el archivo real está en su CDN.
+    if (r && /html/i.test(r.type)) {
+      const html = r.body.toString("utf8");
+      const links = [...html.matchAll(/(?:https?:)?\/\/[^"'\s<>()]+?\.pdf(?:\?[^"'\s<>]*)?/gi)].map((m) => (m[0].startsWith("//") ? "https:" + m[0] : m[0]).replace(/&amp;/g, "&"));
+      const file = c.url.split("/").pop().split("?")[0].toLowerCase();
+      const best = links.find((l) => l.toLowerCase().includes(file) && l !== c.url) || links.find((l) => /cloudfront|sidearm/i.test(l) && l !== c.url);
+      if (best) r = await get(best, true);
+      else if (DEBUG && dbg.np < 6) console.log("SIN-ENLACE-PDF", c.url, (html.match(/[^"'\s]*documents[^"'\s]*/g) || []).slice(0, 8).join(" "));
+    }
     if (!r) { if (DEBUG && fail < 4) console.log("FALLO", c.url); fail++; return; }
     if (!/pdf/i.test(r.type) && r.body.slice(0, 4).toString() !== "%PDF") { if (DEBUG && dbg.np++ < 6) console.log("NO-PDF", c.url, "→", r.url, r.type, r.body.slice(0, 200).toString().replace(/\s+/g, " ")); done[c.url] = 0; empty++; return; }
     const text = pdfText(r.body);
