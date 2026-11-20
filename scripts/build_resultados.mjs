@@ -49,6 +49,8 @@ const iso = (mdY) => { const m = /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(mdY || "")
 const TMP = join(tmpdir(), "res-pdf");
 await mkdir(TMP, { recursive: true });
 let tmpN = 0;
+// Algunos PDF pierden las ligaduras "fi"/"fl" ("Butter ly", "Fair ield").
+const fixLig = (t) => t.replace(/Butter\s?ly/g, "Butterfly").replace(/([A-Za-z])\s(ield|ields)\b/g, "$1f$2").replace(/\b(Of|Of)\s(icial)/g, "$1f$2").replace(/\bFinals\b/g, "Finals");
 function pdfText(buf) {
   const f = join(TMP, `${tmpN++ % 64}.pdf`);
   writeFileSync(f, buf);
@@ -146,9 +148,12 @@ const archivo = await readJSON("web/data/archivo.json", { meets: [] });
 const plant = (await readJSON("web/data/plantillas.json", { plant: {} })).plant;
 const idx = await readJSON("web/data/encuentros.json", { v: 1, meets: [], done: {} });
 const done = process.env.FRESH ? {} : idx.done || {};
-// Versión 2 del lector: vuelve a probar los enlaces que antes no dieron resultados.
-if (idx.v !== 2) for (const k of Object.keys(done)) if (!done[k]) delete done[k];
+// Nueva versión del lector: se vuelve a leer todo (y se quitan de los nadadores las marcas de la versión anterior).
+const VER = 3;
+const RESET = idx.v !== VER;
+if (RESET) { for (const k of Object.keys(done)) delete done[k]; idx.meets = []; }
 const meetsById = new Map((idx.meets || []).map((m) => [m.id, m]));
+if (RESET) await rm("web/data/m", { recursive: true, force: true });
 const inArchive = new Set(archivo.meets.map((m) => m.url.split("#")[0]));
 const skipHost = /swimcloud\.com|active\.com|meetmobile|usaswimming\.org|swimmingworld|swimswam\.com|youtube|facebook|twitter|instagram|flickr|smugmug/i;
 const isPdf = (u) => /\.pdf($|\?)/i.test(u);
@@ -233,7 +238,7 @@ await pool(cand, 6, async (c) => {
     }
     if (!r) { if (DEBUG && fail < 4) console.log("FALLO", c.url); fail++; return; }
     if (!/pdf/i.test(r.type) && r.body.slice(0, 4).toString() !== "%PDF") { if (DEBUG && dbg.np++ < 6) console.log("NO-PDF", c.url, "→", r.url, r.type, r.body.slice(0, 200).toString().replace(/\s+/g, " ")); done[c.url] = 0; empty++; return; }
-    const text = pdfText(r.body);
+    const text = fixLig(pdfText(r.body));
     if (DEBUG > 1 && samples < 3 && text) { samples++; console.log("=== MUESTRA", c.url, "\n" + text.split("\n").slice(0, 70).join("\n")); }
     meet = parsePdfMeet(text, c.url);
     if (DEBUG) meet.text = text;
@@ -265,6 +270,10 @@ const short = (title) => title.replace(/^(Women|Men|Girls|Boys|Mixed)\s+/i, "").
 const sexOf = (t) => (/women|girls/i.test(t) ? "W" : /\bmen\b|boys/i.test(t) ? "M" : "");
 const sw = await readJSON("web/data/nadadores.json", { v: 2, swimmers: [], done: [] });
 const keyOf = (n, t) => (n + "|" + t).toLowerCase().replace(/\s+/g, " ");
+if (RESET) {
+  sw.mi = {};
+  sw.swimmers = sw.swimmers.map((s) => ({ ...s, b: Object.fromEntries(Object.entries(s.b).filter(([, v]) => !String(v[2] || "").startsWith("r:"))), m: s.m.filter((x) => !x.startsWith("r:")) })).filter((s) => Object.keys(s.b).length || s.m.length);
+}
 const map = new Map(sw.swimmers.map((s) => [keyOf(s.n, s.t), s]));
 // Nadadores actuales (plantillas): los de temporadas pasadas solo se añaden si siguen en una plantilla.
 const current = new Set();
@@ -282,7 +291,7 @@ for (const { entry, meet } of newMeets) {
     const evn = short(ev.title);
     if (!/\d/.test(evn)) continue;
     for (const r of ev.results) {
-      if (!r.n || !r.t || !r.m || secs(r.m) === Infinity || !/[a-z]/i.test(r.n)) continue;
+      if (!r.n || !r.t || r.t.length < 2 || !r.m || secs(r.m) === Infinity || !/[a-z]{2}/i.test(r.n) || /^\d|^[A-Z0-9-]+$/.test(r.n.trim())) continue;
       const name = (r.n.includes(",") ? r.n.split(",").map((x) => x.trim()).filter(Boolean).reverse().join(" ") : r.n).replace(/\s+/g, " ").trim();
       const tk = low(name).split(" ");
       if (tk.length < 2) continue;
@@ -304,11 +313,12 @@ for (const { entry, meet } of newMeets) {
 }
 // Las competiciones de cada nadador, de la más antigua a la más reciente (se muestran las últimas).
 const dateOfM = (x) => (mi[x] ? mi[x][1] : (archivo.meets.find((a) => a.name === x)?.start || "")) || "";
-const list = [...map.values()].map((s) => ({ ...s, m: s.m.slice().sort((a, b) => dateOfM(a).localeCompare(dateOfM(b))).slice(-12) }));
+const slim = (b) => Object.fromEntries(Object.entries(b).map(([k, v]) => [k, v[2] && mi[v[2]] ? [v[0], "", v[2]] : v]));
+const list = [...map.values()].map(({ y: yy, ...s }) => ({ ...s, ...(yy ? { y: yy } : {}), b: slim(s.b), m: s.m.slice().sort((a, b) => dateOfM(a).localeCompare(dateOfM(b))).slice(-12) }));
 list.sort((a, b) => a.n.localeCompare(b.n));
 await writeFile("web/data/nadadores.json", JSON.stringify({ ...sw, swimmers: list, mi }));
 const meets = [...meetsById.values()].sort((a, b) => (b.d || "").localeCompare(a.d || ""));
-await writeFile("web/data/encuentros.json", JSON.stringify({ v: 2, updated: new Date().toISOString().slice(0, 10), meets, done, pastDone: [...pastDone] }));
+await writeFile("web/data/encuentros.json", JSON.stringify({ v: VER, updated: new Date().toISOString().slice(0, 10), meets, done, pastDone: [...pastDone] }));
 console.log("nadadores:", list.length, "marcas nuevas o mejoradas:", marks, "· con marcas:", list.filter((s) => Object.keys(s.b).length).length);
 console.log("ejemplos:", meets.slice(0, 15).map((m) => `${m.d} ${m.n} [${m.u.join(", ")}] ${m.ev} pruebas`).join("\n"));
 await rm(TMP, { recursive: true, force: true });
