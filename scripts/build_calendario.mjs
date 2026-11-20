@@ -94,12 +94,21 @@ function schedule(html, base, uname) {
   }
   return { games: games.filter((g) => !g.d || g.d >= seasonStart), live: [...live] };
 }
-function roster(html) {
-  const names = new Set();
-  for (const p of jsonLd(html).filter((x) => x["@type"] === "Person" && x.name)) names.add(dec(p.name));
-  if (!names.size) for (const m of html.matchAll(/aria-label="([^"]+?) - View Profile"/g)) names.add(dec(m[1]));
-  if (!names.size) for (const m of html.matchAll(/class="sidearm-roster-player-name"[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>/gi)) names.add(dec(m[1]));
-  return [...names].filter((n) => /^[\p{L}'’.\- ]{3,60}$/u.test(n) && n.includes(" "));
+function roster(html, base) {
+  const out = new Map();
+  const abs = (u) => { try { return new URL(u.replace(/&amp;/g, "&"), base).href; } catch { return ""; } };
+  // Webs nuevas de Sidearm: tarjetas de persona con "Nombre full bio" y su foto.
+  for (const b of html.split(/data-test-id="s-person-details__root"/).slice(1)) {
+    const n = /aria-label="([^"]+?) full bio"/.exec(b)?.[1];
+    if (!n) continue;
+    const img = /<img[^>]+src="(https:\/\/images\.sidearmdev\.com\/[^"]+)"/.exec(b.slice(0, 6000))?.[1] || "";
+    if (!out.has(dec(n))) out.set(dec(n), img ? abs(img) : "");
+  }
+  // Webs clásicas: datos estructurados (schema.org Person) con foto.
+  if (!out.size) for (const p of jsonLd(html).filter((x) => x["@type"] === "Person" && x.name)) out.set(dec(p.name), p.image?.url ? abs(p.image.url) : "");
+  if (!out.size) for (const m of html.matchAll(/aria-label="([^"]+?) - View Profile"/g)) out.set(dec(m[1]), "");
+  if (!out.size) for (const m of html.matchAll(/class="sidearm-roster-player-name"[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>/gi)) out.set(dec(m[1]), "");
+  return [...out].filter(([n]) => /^[\p{L}'’.\- ]{3,60}$/u.test(n) && n.includes(" ")).map(([n, img]) => (img ? [n, img] : [n]));
 }
 
 const cal = {}, plant = {}, liveLinks = new Set();
@@ -112,26 +121,34 @@ await pool(todo, 10, async (u) => {
   let siteLogo = "";
   let foundCombined = false;
   for (const who of want) {
-    if (who && foundCombined && !(u.men && u.women)) break;
+    if (who && foundCombined) break;
     for (const p of PATHS[who]) {
       const s = await get(base + p + "/schedule");
-      if (!s || !/schedule/i.test(s.url)) continue;
-      const r = schedule(s.html, s.url, u.n);
-      for (const g of r.games) if (!games.some((x) => x.d === g.d && x.o === g.o)) games.push(who ? { ...g, g: who } : g);
-      r.live.forEach((l) => liveLinks.add(l));
-      siteLogo ||= /"image":\{"url":"(https?:\/\/[^"]+\/images\/logos\/site\/[^"]+)"/.exec(s.html)?.[1] || "";
+      let got = false;
+      if (s && /schedule/i.test(s.url)) {
+        const r = schedule(s.html, s.url, u.n);
+        for (const g of r.games) if (!games.some((x) => x.d === g.d && x.o === g.o)) games.push(who ? { ...g, g: who } : g);
+        r.live.forEach((l) => liveLinks.add(l));
+        siteLogo ||= /"image":\{"url":"(https?:\/\/[^"]+\/images\/logos\/site\/[^"]+)"/.exec(s.html)?.[1] || "";
+        got = r.games.length > 0;
+      }
       const ro = await get(base + p + "/roster");
-      if (ro && /roster/i.test(ro.url)) names[who] = roster(ro.html);
-      if (!who) foundCombined = true;
-      break;
+      if (ro && /roster/i.test(ro.url)) {
+        const list = roster(ro.html, ro.url);
+        if (list.length) { names[who] = list; got = true; }
+      }
+      if (got) {
+        if (!who && names[""].length) foundCombined = true;
+        break;
+      }
     }
   }
   if (games.length) cal[u.n] = games.sort((a, b) => (a.d || "").localeCompare(b.d || "")).slice(0, 40);
-  const all = [...new Set([...names[""], ...names.M, ...names.W])];
+  const all = [...names[""], ...names.M, ...names.W];
   if (all.length) plant[u.n] = { ...(names.M.length ? { M: names.M } : {}), ...(names.W.length ? { W: names.W } : {}), ...(names[""].length ? { X: names[""] } : {}) };
   if (siteLogo && (!u.logo || u._badLogo)) { u.logo = siteLogo; logosAdded++; }
 });
-console.log("calendarios:", Object.keys(cal).length, "plantillas:", Object.keys(plant).length, "nadadores en plantillas:", Object.values(plant).reduce((a, p) => a + (p.M?.length || 0) + (p.W?.length || 0) + (p.X?.length || 0), 0), "escudos añadidos:", logosAdded, "enlaces directo:", liveLinks.size);
+console.log("calendarios:", Object.keys(cal).length, "plantillas:", Object.keys(plant).length, "nadadores en plantillas:", Object.values(plant).reduce((a, p) => a + (p.M?.length || 0) + (p.W?.length || 0) + (p.X?.length || 0), 0), "con foto:", Object.values(plant).flatMap((p) => [...(p.M || []), ...(p.W || []), ...(p.X || [])]).filter((x) => x[1]).length, "D-I con plantilla:", unis.filter((u) => u.div === "D1" && plant[u.n]).length, "de", unis.filter((u) => u.div === "D1").length, "escudos añadidos:", logosAdded, "enlaces directo:", liveLinks.size);
 console.log("ejemplo Drury:", JSON.stringify(cal.Drury || []).slice(0, 800));
 console.log("enlaces:", [...liveLinks].slice(0, 30).join(" "));
 await writeFile("web/data/calendario.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), live: [...liveLinks], cal }));
