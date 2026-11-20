@@ -4,7 +4,13 @@ for (const u of urls) {
   try {
     const r = await fetch(u, { headers: { "User-Agent": "Mozilla/5.0 (results app)" }, signal: AbortSignal.timeout(20000) });
     const t = await r.text();
-    console.log("@@URL", u, r.status, t.length);
+    console.log("@@URL", u, r.status, t.length, "→", r.url);
+    if (process.env.GREP === "MARCAS") {
+      const marks = ["s-person-details__root", "roster-card-item", '"@type":"Person"', "sidearm-roster-player", "View Profile", "roster__list", "player-card", "roster-list", "__NUXT", "__NEXT_DATA__", "s-person-card", "rosterTable", "roster_table", "table"];
+      console.log(marks.map((m) => m + "=" + (t.split(m).length - 1)).join("  ") + "  | " + (/<title>([^<]*)/.exec(t)?.[1] || "").trim());
+      console.log("@@FIN");
+      continue;
+    }
     if (process.env.GREP) {
       const re = new RegExp(process.env.GREP, "gi");
       let k = 0;
