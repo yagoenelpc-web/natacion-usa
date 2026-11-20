@@ -399,13 +399,14 @@ async function findStandings(meet, live) {
       if (last.scores.length) return { standings: last, teams: last.scores.map((s) => s.t) };
     } catch {}
   }
-  const evs = uniqueEvents(meet).sort((a, b) => b.number - a.number);
-  for (const e of evs.slice(0, 6)) {
-    try {
-      const ev = await loadEvent(e.url, live);
-      take(ev);
-      if (ev.scores.length) return { standings: ev, teams: ev.scores.map((s) => s.t) };
-    } catch {}
+  // Busca hacia atrás, de 6 en 6, la última prueba con clasificación.
+  const evs = uniqueEvents(meet).sort((a, b) => b.number - a.number).slice(0, 60);
+  for (let i = 0; i < evs.length; i += 6) {
+    const got = (await pool(evs.slice(i, i + 6), 6, (e) => loadEvent(e.url, live))).filter((ev) => ev && ev.results.length);
+    got.forEach(take);
+    const best = got.filter((ev) => ev.scores.length).sort((a, b) => (b.number ?? 0) - (a.number ?? 0))[0];
+    if (best) return { standings: best, teams: best.scores.map((s) => s.t) };
+    if (got.length) break;
   }
   // Sin clasificación publicada: universidades vistas en las últimas pruebas.
   return { standings: null, teams: [...teams].filter((t) => !/^(unattached|unat)$/i.test(t)).sort() };
