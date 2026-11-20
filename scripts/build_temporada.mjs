@@ -210,13 +210,13 @@ await pool(todo, 3, async (s) => {
       if (r.n.includes(",") && !sw.l) sw.l = r.n.split(",")[0].trim();
       if (r.y && /^(FR|SO|JR|SR|5Y|GR)$/i.test(r.y)) sw.y = r.y.toUpperCase();
       const evn = short(ev.title);
-      if (!sw.b[evn] || secs(r.m) < secs(sw.b[evn][0])) sw.b[evn] = [r.m.replace(/[A-Za-z!#$&*@^]+$/, ""), s.name];
+      if (!sw.b[evn] || secs(r.m) < secs(sw.b[evn][0])) sw.b[evn] = [r.m.replace(/[A-Za-z!#$&*@^]+$/, ""), s.name, s.url];
       if (!sw.m.includes(s.name)) sw.m.push(s.name);
       swimmers.set(k, sw);
     }
   }
 });
-const list = [...swimmers.values()].map((s) => ({ n: s.n, t: s.t, ...(s.l ? { l: s.l } : {}), ...(s.g ? { g: s.g } : {}), ...(s.y ? { y: s.y } : {}), b: Object.fromEntries(Object.entries(s.b).sort((a, b) => a[0].localeCompare(b[0]))), m: s.m.slice(-8) }));
+const list = [...swimmers.values()].map((s) => ({ n: s.n, t: s.t, ...(s.l ? { l: s.l } : {}), ...(s.g ? { g: s.g } : {}), ...(s.y ? { y: s.y } : {}), b: Object.fromEntries(Object.entries(s.b).sort((a, b) => a[0].localeCompare(b[0]))), m: s.m.slice(-12) }));
 list.sort((a, b) => a.n.localeCompare(b.n));
-await writeFile("web/data/nadadores.json", JSON.stringify({ v: 2, updated: isoDay(now), meets: sources.length, done: [...doneMeets], swimmers: list }));
+await writeFile("web/data/nadadores.json", JSON.stringify({ v: 2, updated: isoDay(now), meets: sources.length, done: [...doneMeets], swimmers: list, mi: prevSw.mi || {} }));
 console.log("nadadores:", list.length, "pruebas leídas:", evCount, "competiciones:", sources.length, "tamaño:", JSON.stringify(list).length);

@@ -138,7 +138,7 @@ function roster(html, base) {
 const EXTRA = {
   "Grand Canyon": { M: [["Mario Perez Torrado", "https://images.sidearmdev.com/crop?url=https%3A%2F%2Fdxbhsrqyrr690.cloudfront.net%2Fsidearm.nextgen.sites%2Fgculopes.com%2Fimages%2F2025%2F10%2F1%2Fmario.png&width=200&height=200&type=webp"]] },
 };
-const cal = {}, plant = {}, liveLinks = new Set();
+const cal = {}, plant = {}, liveLinks = new Set(), srcs = {};
 let logosAdded = 0, athFound = 0;
 // Webs deportivas mal detectadas en algunas universidades.
 const FIX = { Tennessee: "https://utsports.com", Omaha: "https://omavs.com", "Indiana State": "https://gosycamores.com", "Mount St. Mary's": "https://mountathletics.com", "Central Connecticut": "https://ccsubluedevils.com", Missouri: "https://mutigers.com", Arkansas: "https://arkansasrazorbacks.com", "Arizona State": "https://thesundevils.com", "Saint John's": "https://gojohnnies.com", "Saint Benedict": "https://gobennies.com", Manchester: "https://muspartans.com", "Minnesota State Moorhead": "https://msumdragons.com", Denison: "https://denisonbigred.com", "Knox Prairie": "https://prairiefire.knox.edu" };
@@ -163,6 +163,7 @@ await pool(todo, 10, async (u) => {
         r.live.forEach((l) => liveLinks.add(l));
         siteLogo ||= /"image":\{"url":"(https?:\/\/[^"]+\/images\/logos\/site\/[^"]+)"/.exec(s.html)?.[1] || "";
         got = r.games.length > 0;
+        if (got) (srcs[u.n] ||= []).push(who + "|" + s.url);
       }
       const ro = await get(base + p + "/roster");
       if (ro && /roster/i.test(ro.url)) {
@@ -186,7 +187,7 @@ await pool(todo, 10, async (u) => {
       if (ro) { const list = roster(ro.html, ro.url); if (list.length) names[who] = list; }
       if (!games.length) {
         const s2 = await get(base + p + "/schedule");
-        if (s2) for (const g of schedule(s2.html, s2.url, u.n).games) games.push(who ? { ...g, g: who } : g);
+        if (s2) { const gs = schedule(s2.html, s2.url, u.n).games; for (const g of gs) games.push(who ? { ...g, g: who } : g); if (gs.length) (srcs[u.n] ||= []).push(who + "|" + s2.url); }
       }
     }
   }
@@ -211,6 +212,6 @@ await pool(todo, 10, async (u) => {
 console.log("calendarios:", Object.keys(cal).length, "plantillas:", Object.keys(plant).length, "nadadores en plantillas:", Object.values(plant).reduce((a, p) => a + (p.M?.length || 0) + (p.W?.length || 0) + (p.X?.length || 0), 0), "con foto:", Object.values(plant).flatMap((p) => [...(p.M || []), ...(p.W || []), ...(p.X || [])]).filter((x) => x[1]).length, "D-I con plantilla:", unis.filter((u) => u.div === "D1" && plant[u.n]).length, "de", unis.filter((u) => u.div === "D1").length, "escudos añadidos:", logosAdded, "enlaces directo:", liveLinks.size, "webs de deportes encontradas:", athFound);
 console.log("ejemplo Drury:", JSON.stringify(cal.Drury || []).slice(0, 800));
 console.log("enlaces:", [...liveLinks].slice(0, 30).join(" "));
-await writeFile("web/data/calendario.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), live: [...liveLinks], cal }));
+await writeFile("web/data/calendario.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), live: [...liveLinks], cal, src: srcs }));
 await writeFile("web/data/plantillas.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), plant }));
 await writeFile("web/data/unis.json", JSON.stringify(data));

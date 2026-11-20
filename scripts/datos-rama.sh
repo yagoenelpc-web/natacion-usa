@@ -13,7 +13,7 @@ case "$1" in
     cp -r web/data "$tmp/"
     if git fetch -q origin datos 2>/dev/null; then git worktree add -q "$tmp/wt" origin/datos; else git worktree add -q --detach "$tmp/wt" HEAD; fi
     cd "$tmp/wt"
-    mkdir -p web/data && cp "$tmp"/data/*.json web/data/
+    mkdir -p web/data && cp -r "$tmp"/data/. web/data/
     git add web/data
     if git diff --cached --quiet; then echo "sin cambios"; exit 0; fi
     git commit -q -m "Datos actualizados $(date -u +%F\ %H:%M)"
