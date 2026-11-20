@@ -51,7 +51,15 @@ for (const f of feeds) {
   const x = await get(f);
   if (x) for (const m of parseFeed(x)) found.push({ url: m.url, name: m.name, article: m.article, src: "swimswam" });
 }
-for (const l of (await readJSON("web/data/calendario.json", { live: [] })).live || []) found.push({ url: normalizeMeetUrl(l), src: "web" });
+const calJ = await readJSON("web/data/calendario.json", { live: [], cal: {} });
+for (const l of calJ.live || []) found.push({ url: normalizeMeetUrl(l), src: "web" });
+// Resultados HY-TEK enlazados desde el calendario de cada universidad (más nadadores con sus marcas).
+const seenRes = new Set(found.map((f) => f.url));
+for (const g of Object.values(calJ.cal || {}).flat()) for (const l of [g.res, g.live]) {
+  if (!l || !/\.htm$/i.test(l) || !/sidearmstats|evtindex|\/index\.htm$/i.test(l)) continue;
+  const url = normalizeMeetUrl(l);
+  if (!seenRes.has(url)) { seenRes.add(url); found.push({ url, src: "web" }); }
+}
 for (const u of unis.filter((u) => u.hytek)) found.push({ url: `https://www.sidearmstats.com/${u.hytek}/swim/evtindex.htm`, host: u.n, src: "hytek" });
 console.log("candidatas:", found.length);
 let added = 0, updated = 0;
