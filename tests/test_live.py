@@ -59,8 +59,10 @@ def test_live_all_events_parse():
         assert isinstance(html, str), f"{e.name}: {html}"
         ev = hytek.parse_event(html, e.url)
         print(f"{e.number:>3} {e.name:<40} resultados={len(ev.results):>3} relevo={ev.is_relay} equipos={len(ev.teams)}")
-        if not ev.results:
+        if len(ev.results) < 3:
             empty.append(e.name)
+            if len(empty) <= 3:
+                print("--- HTML crudo de", e.name, "---\n" + "\n".join(html.splitlines()[:45]))
     assert not empty, f"pruebas sin resultados leídos: {empty}"
 
 
