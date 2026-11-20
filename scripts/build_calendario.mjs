@@ -9,9 +9,9 @@ const UA = { "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (
 const data = JSON.parse(await readFile("web/data/unis.json", "utf8"));
 const unis = data.unis;
 const PATHS = {
-  "": ["/sports/swimming-and-diving", "/sports/swimming", "/sports/swim-and-dive", "/sports/swimming-diving", "/sports/sd", "/sports/swim"],
-  M: ["/sports/mens-swimming-and-diving", "/sports/mens-swimming", "/sports/mens-swimming-diving", "/sports/mswim", "/sports/m-swim", "/sports/m-swimdive"],
-  W: ["/sports/womens-swimming-and-diving", "/sports/womens-swimming", "/sports/womens-swimming-diving", "/sports/wswim", "/sports/w-swim", "/sports/w-swimdive"],
+  "": ["/sports/swimming-and-diving", "/sports/swimming", "/sports/swim-and-dive", "/sports/swimming-diving", "/sports/sd", "/sports/swim", "/sports/swimdive"],
+  M: ["/sports/mens-swimming-and-diving", "/sports/mens-swimming", "/sports/mens-swimming-diving", "/sports/mswim", "/sports/m-swim", "/sports/m-swimdive", "/sports/mswimdive"],
+  W: ["/sports/womens-swimming-and-diving", "/sports/womens-swimming", "/sports/womens-swimming-diving", "/sports/wswim", "/sports/w-swim", "/sports/w-swimdive", "/sports/wswimdive"],
 };
 async function get(url) {
   try {
@@ -109,7 +109,11 @@ function roster(html, base) {
   if (!out.size) {
     const alts = [...html.matchAll(/<img[^>]*\balt="([^"]+)"[^>]*\btitle="([^"]+)"/g)].map((m) => [dec(m[1]).toLowerCase(), m[2]]);
     const photo = (name) => {
-      const t = alts.find(([a]) => a.startsWith(name.toLowerCase()))?.[1];
+      const low = name.toLowerCase();
+      // Presto y otras: <img alt="Nombre" src|data-src="foto real">
+      const direct = [...html.matchAll(/<img[^>]*>/g)].map((m) => m[0]).find((tag) => (/\balt="([^"]*)"/.exec(tag)?.[1] || "").toLowerCase().startsWith(low) && /(?:data-src|src)="(?!data:)[^"]+\.(?:jpe?g|png|webp)/i.test(tag));
+      if (direct) return abs(/(?:data-src|src)="((?!data:)[^"]+)"/.exec(direct.replace(/\bsrc="data:[^"]*"/, ""))[1]);
+      const t = alts.find(([a]) => a.startsWith(low))?.[1];
       if (!t) return "";
       const i = html.indexOf(JSON.stringify(dec(t)) + ",");
       if (i < 0) return "";
@@ -118,7 +122,7 @@ function roster(html, base) {
       const small = urls.join(" ").match(/https:\S+rs:fit:(?:480|300|360|600):\S+/)?.[0];
       return small || urls[0] || "";
     };
-    for (const m of html.matchAll(/<a href="([^"]*\/roster\/player\/[^"]+)"[^>]*>([\s\S]{0,1500}?)<\/a>/g)) {
+    for (const m of html.matchAll(/<a [^>]*?href="([^"]*\/(?:roster\/player|bios)\/[^"]+)"[^>]*>([\s\S]{0,1500}?)<\/a>/g)) {
       const n = dec(m[2].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
       if (!n || out.has(n) || !/^[\p{L}'’.\- ]{3,60}$/u.test(n)) continue;
       out.set(n, photo(n));
@@ -135,17 +139,19 @@ const EXTRA = {
   "Grand Canyon": { M: [["Mario Perez Torrado", "https://images.sidearmdev.com/crop?url=https%3A%2F%2Fdxbhsrqyrr690.cloudfront.net%2Fsidearm.nextgen.sites%2Fgculopes.com%2Fimages%2F2025%2F10%2F1%2Fmario.png&width=200&height=200&type=webp"]] },
 };
 const cal = {}, plant = {}, liveLinks = new Set();
-let logosAdded = 0;
+let logosAdded = 0, athFound = 0;
 // Webs deportivas mal detectadas en algunas universidades.
 const FIX = { Tennessee: "https://utsports.com", Omaha: "https://omavs.com", "Indiana State": "https://gosycamores.com", "Mount St. Mary's": "https://mountathletics.com", "Central Connecticut": "https://ccsubluedevils.com", Missouri: "https://mutigers.com" };
 for (const u of unis) if (FIX[u.n]) u.web = FIX[u.n];
 const todo = unis.filter((u) => u.web);
 await pool(todo, 10, async (u) => {
-  const base = u.web.replace(/^(https?:\/\/[^/]+).*$/, "$1");
+  let base = u.web.replace(/^(https?:\/\/[^/]+).*$/, "$1");
   const want = u.men && u.women ? ["", "M", "W"] : u.men ? ["", "M"] : ["", "W"];
   const games = [], names = { M: [], W: [], "": [] };
   let siteLogo = "";
   let foundCombined = false;
+  for (let pass = 0; pass < 2; pass++) {
+  foundCombined = false;
   for (const who of want) {
     if (who && foundCombined) break;
     for (const p of PATHS[who]) {
@@ -184,6 +190,15 @@ await pool(todo, 10, async (u) => {
       }
     }
   }
+  if (names[""].length || names.M.length || names.W.length || games.length || pass) break;
+  // La web guardada es la de la universidad: buscamos su enlace "Athletics" y probamos allí.
+  const uhome = await get(base + "/");
+  const ath = /<a[^>]+href="(https?:\/\/[^"]+)"[^>]*>\s*(?:<[^>]+>\s*)*(?:Athletics|Varsity Athletics|Intercollegiate Athletics)\s*</i.exec(uhome?.html || "")?.[1] || /href="(https?:\/\/(?:www\.)?(?:athletics\.[^"\/]+|[a-z0-9-]*(?:athletics|sports)\.(?:com|org|net))[^"]*)"/i.exec(uhome?.html || "")?.[1];
+  if (!ath) break;
+  const nb = ath.replace(/^(https?:\/\/[^/]+).*$/, "$1");
+  if (nb === base) break;
+  base = nb; u.uweb ||= u.web; u.web = nb; athFound++;
+  }
   if (games.length) cal[u.n] = games.sort((a, b) => (a.d || "").localeCompare(b.d || "")).slice(0, 40);
   const staffSet = new Set((u.staff || []).map((x) => x.n.toLowerCase()));
   for (const k of Object.keys(names)) names[k] = names[k].filter(([n]) => !staffSet.has(n.toLowerCase()));
@@ -193,7 +208,7 @@ await pool(todo, 10, async (u) => {
   if (all.length) plant[u.n] = { ...(names.M.length ? { M: names.M } : {}), ...(names.W.length ? { W: names.W } : {}), ...(names[""].length ? { X: names[""] } : {}) };
   if (siteLogo && (!u.logo || u._badLogo)) { u.logo = siteLogo; logosAdded++; }
 });
-console.log("calendarios:", Object.keys(cal).length, "plantillas:", Object.keys(plant).length, "nadadores en plantillas:", Object.values(plant).reduce((a, p) => a + (p.M?.length || 0) + (p.W?.length || 0) + (p.X?.length || 0), 0), "con foto:", Object.values(plant).flatMap((p) => [...(p.M || []), ...(p.W || []), ...(p.X || [])]).filter((x) => x[1]).length, "D-I con plantilla:", unis.filter((u) => u.div === "D1" && plant[u.n]).length, "de", unis.filter((u) => u.div === "D1").length, "escudos añadidos:", logosAdded, "enlaces directo:", liveLinks.size);
+console.log("calendarios:", Object.keys(cal).length, "plantillas:", Object.keys(plant).length, "nadadores en plantillas:", Object.values(plant).reduce((a, p) => a + (p.M?.length || 0) + (p.W?.length || 0) + (p.X?.length || 0), 0), "con foto:", Object.values(plant).flatMap((p) => [...(p.M || []), ...(p.W || []), ...(p.X || [])]).filter((x) => x[1]).length, "D-I con plantilla:", unis.filter((u) => u.div === "D1" && plant[u.n]).length, "de", unis.filter((u) => u.div === "D1").length, "escudos añadidos:", logosAdded, "enlaces directo:", liveLinks.size, "webs de deportes encontradas:", athFound);
 console.log("ejemplo Drury:", JSON.stringify(cal.Drury || []).slice(0, 800));
 console.log("enlaces:", [...liveLinks].slice(0, 30).join(" "));
 await writeFile("web/data/calendario.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), live: [...liveLinks], cal }));
