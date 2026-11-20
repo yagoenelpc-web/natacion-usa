@@ -375,6 +375,7 @@ async function loadArchive() {
     events: m.events,
     article: m.article,
     via: m.src,
+    host: m.host || "",
   }));
 }
 
@@ -598,7 +599,7 @@ async function homeView() {
   setTab("home");
   setTitle("");
   loading("Buscando campeonatos…");
-  await Promise.all([loadBrands().catch(() => {}), loadLogos().catch(() => {})]);
+  await Promise.all([loadBrands().catch(() => {}), loadLogos().catch(() => {}), loadUnis().catch(() => {})]);
   let list;
   try {
     list = await loadAllMeets();
@@ -634,22 +635,31 @@ async function homeView() {
 }
 
 // Universidad anfitriona a partir del nombre ("2026 Tennessee Invitational" → Tennessee).
+function logoFor(team) {
+  let info = logoIndex ? matchTeam(logoIndex, team) : null;
+  if (!(info && info.logo) && uniIndex) {
+    const u = matchTeam(uniIndex, team);
+    if (u && u.logo) info = { ...u, color: info ? info.color : u.color };
+  }
+  return info && info.logo ? info : null;
+}
 function hostOf(name) {
-  if (!logoIndex || !name) return null;
+  if ((!logoIndex && !uniIndex) || !name) return null;
   const words = name.replace(/\b(19|20)\d{2}\b/g, " ").replace(/[^\w&'(). -]/g, " ").split(/\s+/).filter(Boolean);
   for (let n = Math.min(4, words.length); n >= 1; n--) {
     for (let i = 0; i + n <= words.length; i++) {
       const cand = words.slice(i, i + n).join(" ");
       if (cand.length < 3 || /^(the|of|and|invite|invitational|fall|winter|men'?s|women'?s|swimming|diving|championships?|meet|open|day)$/i.test(cand)) continue;
-      const info = matchTeam(logoIndex, cand);
-      if (info && info.logo) return { team: cand, info };
+      const info = logoFor(cand);
+      if (info) return { team: cand, info };
     }
   }
   return null;
 }
 function meetBadge(s, size = 36) {
-  if (s.org === "conf") {
-    const h = hostOf(s.name);
+  if (s.org === "conf" || s.org === "dual") {
+    const hi = s.host && logoFor(s.host);
+    const h = hi ? { team: s.host, info: hi } : hostOf(s.name);
     if (h) return `<span class="org host" style="width:${size}px;height:${size}px;--hc:${h.info.color}"><img src="${esc(h.info.logo)}" alt=""></span>`;
   }
   return orgLogo(s.org, size);
@@ -984,13 +994,18 @@ async function uniView(name) {
   ${staffHtml}
   <h2>🏊 ${T("Nadadores")} ${team.length ? `<span class="count">${team.length}</span>` : ""}</h2>
   ${teamHtml}
-  ${extButtons([[SC(u.full || u.n), "SwimCloud", "sc"], [USAS_SWIMMER(u.full || u.n), "USA Swimming", "usas"]])}
+  ${extButtons([[SC_TEAM(u.full || u.n), "SwimCloud", "sc"], [USAS_SWIMMER(u.full || u.n), "USA Swimming", "usas"]])}
   <div class="links">${link(web, T("Web oficial"))}${link(u.uweb, T("Web de la universidad"))}${link(u.staffUrl || u.staffMUrl, T("Equipo técnico"))}${link(u.staffWUrl, T("Equipo técnico (mujeres)"))}${link(u.rosterUrl || u.rosterMUrl, T("Plantilla oficial"))}${link(u.rosterWUrl, T("Plantilla oficial (mujeres)"))}${link(u.wiki, "Wikipedia")}</div>
   <p class="foot">${T("Nadadores sacados de los resultados públicos de esta temporada y de los últimos NCAA. Datos de Wikipedia (CC BY-SA), Wikidata y la web oficial de la universidad.")}</p>`;
 }
 
 // Botones que abren SwimCloud y USA Swimming ya buscando lo que estás viendo (sin copiar enlaces).
 const SC = (q) => "https://www.swimcloud.com/search/?q=" + enc(q);
+// Salto directo a la ficha exacta de SwimCloud: el buscador abre su primer resultado (no leemos nada de SwimCloud).
+const JUMP = (site, q) => "https://duckduckgo.com/?q=" + enc("\\" + q + " site:" + site);
+const SC_SWIMMER = (name, uni) => JUMP("swimcloud.com/swimmer", `${name} ${uni || ""}`.trim());
+const SC_TEAM = (uni) => JUMP("swimcloud.com/team", uni);
+const SC_MEET = (name, year) => JUMP("swimcloud.com/results", `${name} ${year || ""}`.trim());
 const USAS_MEET = (q) => "https://data.usaswimming.org/datahub/usas/meetsearch?query=" + enc(q);
 const USAS_SWIMMER = (q) => "https://data.usaswimming.org/datahub/usas/individualsearch?query=" + enc(q);
 // Meet Mobile no tiene web por competición: abre la app (o su tienda) y deja copiado el nombre para buscarlo.
@@ -1004,7 +1019,7 @@ document.addEventListener("click", (e) => {
 });
 const meetButtons = (name) => {
   const q = name.replace(/\b(19|20)\d{2}\b/g, "").trim();
-  return extButtons([[SC(q), "SwimCloud", "sc"], [USAS_MEET(q), "USA Swimming", "usas"], [MM(), "Meet Mobile", "mm", q]]);
+  return extButtons([[SC_MEET(q, name.match(/\b(19|20)\d{2}\b/)?.[0] || todayUS().slice(0, 4)), "SwimCloud", "sc"], [USAS_MEET(q), "USA Swimming", "usas"], [MM(), "Meet Mobile", "mm", q]]);
 };
 const words = (t) => new Set(String(t || "").toLowerCase().replace(/\b(19|20)\d{2}\b/g, "").split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !/^(the|and|invitational|invite|meet|vs|swimming|diving|swim|dive|university|college|womens|mens|women|men)$/.test(w)));
 // Busca en las competiciones guardadas la que corresponde a una fecha del calendario de la universidad.
@@ -1149,7 +1164,7 @@ async function swimmerView(i) {
   ${Object.keys(x.b).length ? `<div class="list">${Object.entries(x.b).map(([ev, [t, m]]) => `<div class="srow"><span class="uinfo"><b>${esc(ev)}</b><small>${esc(m)}</small></span><span class="time">${esc(t)}</span></div>`).join("")}</div>` : `<div class="card muted">${T("Aún no tiene marcas en los resultados guardados de esta temporada.")}</div>`}
   ${x.m.length ? `<h2>📅 ${T("Competiciones")}</h2><div class="card">${x.m.map((m) => `<div class="mline">${esc(m)}</div>`).join("")}</div>` : ""}
   ${x.ro ? `<p class="sub center">✅ ${T("En la plantilla oficial de su universidad")}</p>` : ""}
-  ${extButtons([[SC(x.n), "SwimCloud", "sc"], [USAS_SWIMMER(x.n), "USA Swimming", "usas"]])}
+  ${extButtons([[SC_SWIMMER(x.n, x.u ? x.u.n : x.t), "SwimCloud", "sc"], [USAS_SWIMMER(x.n), "USA Swimming", "usas"]])}
   ${x.u ? `<a class="btn wide" href="#/uni/${enc(x.u.n)}">🎓 ${T("Ver universidad")}</a>` : ""}
   <p class="foot">${T("Marcas oficiosas de los resultados públicos (Y = yardas, M = metros).")}</p>`;
 }
