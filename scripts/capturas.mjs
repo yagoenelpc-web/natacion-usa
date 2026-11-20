@@ -34,6 +34,8 @@ if (ev.length) {
   await shot("5-relevo", ev[1]);
 }
 await shot("6-universidades", "#/u");
+await shot("7-ficha", "#/uni/Texas", ".facts");
+await shot("8-ajustes", "#/ajustes", ".settings");
 console.log("universidades en el buscador:", await page.$$eval(".urow", (r) => r.length));
 console.log("errores:", errors);
 if (process.env.CAPTURAS_LOG) {

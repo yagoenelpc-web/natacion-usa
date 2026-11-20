@@ -85,7 +85,7 @@ const EN = {
   "universidades": "universities", "Ninguna universidad con estos filtros.": "No universities match these filters.",
   "Marca con ★ las tuyas: aparecerán en la portada y podrás filtrar los resultados.": "Star ★ yours: they'll show on the home screen and you can filter results.",
   "Entrenador": "Head coach", "Entrenador (hombres)": "Men's head coach", "Entrenadora/entrenador (mujeres)": "Women's head coach",
-  "No disponible": "Not available", "Ciudad": "City", "División": "Division", "Apodo": "Nickname",
+  "No disponible": "Not available", "Equipo técnico": "Coaching staff", "Ver en la web oficial": "See official site", "Ciudad": "City", "División": "Division", "Apodo": "Nickname",
   "Ver sus resultados": "See their results", "Wikipedia": "Wikipedia", "Web oficial": "Official site",
   "Datos de Wikipedia (CC BY-SA).": "Data from Wikipedia (CC BY-SA).",
   "Idioma": "Language", "Tema": "Theme", "Automático": "Automatic", "Claro": "Light", "Oscuro": "Dark", "Fondo": "Background",
@@ -224,7 +224,7 @@ async function loadUnis() {
   }
   uniIndex = {};
   for (const u of unis) {
-    const info = { logo: u.logo || "", color: "#0b63ce", display: u.n, uni: u };
+    const info = { logo: u.logo || u.seal || "", color: "#0b63ce", display: u.n, uni: u };
     for (const k of [u.n, u.full, `${u.n} ${u.nick || ""}`, u.nick && u.full ? null : null]) if (k && !(norm(k) in uniIndex)) uniIndex[norm(k)] = info;
   }
   return unis;
@@ -681,6 +681,7 @@ async function teamView(id, team, silent = false) {
 }
 
 const DIVS = [["D1", "Division I"], ["D2", "Division II"], ["D3", "Division III"], ["NAIA", "NAIA"]];
+const place = (u) => (u.city && u.city.includes(",") ? u.city : [u.city, u.st].filter(Boolean).join(", "));
 const divLabel = (d) => (DIVS.find(([k]) => k === d) || [, d])[1];
 
 async function universitiesView() {
@@ -752,18 +753,18 @@ async function uniView(name) {
   $app.innerHTML = `
   <a class="back" href="#/u">‹ ${T("Universidades")}</a>
   <section class="mhero uhero" style="--tint:${tint}">
-    <div class="mtop"><span class="bigcrest">${crest(u.n, 76)}</span><div><h1>${esc(u.n)}</h1><p>${esc(u.full)}</p><p>${esc([u.city, u.st].filter(Boolean).join(", "))}</p></div>${star(u.n)}</div>
+    <div class="mtop"><span class="bigcrest">${crest(u.n, 76)}</span><div><h1>${esc(u.n)}</h1><p>${esc(u.full)}</p><p>${esc(place(u))}</p></div>${star(u.n)}</div>
     <div class="pills"><span class="pill">${esc(divLabel(u.div))}</span>${u.men ? `<span class="pill">♂ ${T("Hombres")}</span>` : ""}${u.women ? `<span class="pill">♀ ${T("Mujeres")}</span>` : ""}${u.diving ? `<span class="pill">🤿 ${T("Saltos")}</span>` : ""}</div>
   </section>
   <div class="facts">
     ${fact(T("Apodo"), u.nick)}
     ${fact(T("División"), divLabel(u.div))}
     ${u.cm && u.cm === u.cw ? fact(T("Conferencia"), u.cm) : fact(`${T("Conferencia")} · ${T("Hombres")}`, u.cm) + fact(`${T("Conferencia")} · ${T("Mujeres")}`, u.cw)}
-    ${fact(T("Ciudad"), [u.city, u.st].filter(Boolean).join(", "))}
-    ${coach !== null ? fact(T("Entrenador"), u.coach || T("No disponible")) : fact(T("Entrenador (hombres)"), u.coachM) + fact(T("Entrenadora/entrenador (mujeres)"), u.coachW)}
+    ${fact(T("Ciudad"), place(u))}
+    ${coach !== null ? fact(T("Entrenador"), u.coach || (web ? T("Ver en la web oficial") : T("No disponible"))) : fact(T("Entrenador (hombres)"), u.coachM) + fact(T("Entrenadora/entrenador (mujeres)"), u.coachW)}
   </div>
   <a class="btn wide" href="#/u/${enc(u.n)}">🏊 ${T("Ver sus resultados")}</a>
-  <div class="links">${u.wiki ? `<a href="${esc(u.wiki)}" target="_blank" rel="noopener">${T("Wikipedia")} ↗</a>` : ""}${web ? `<a href="${esc(web)}" target="_blank" rel="noopener">${T("Web oficial")} ↗</a>` : ""}</div>
+  <div class="links">${u.wiki ? `<a href="${esc(u.wiki)}" target="_blank" rel="noopener">${T("Wikipedia")} ↗</a>` : ""}${web ? `<a href="${esc(web)}" target="_blank" rel="noopener">${T("Web oficial")} ↗</a><a href="${esc(web.replace(/\/+$/, ""))}/sports/swimming-and-diving/coaches" target="_blank" rel="noopener">${T("Equipo técnico")} ↗</a>` : ""}</div>
   <p class="foot">${T("Datos de Wikipedia (CC BY-SA).")}</p>`;
 }
 

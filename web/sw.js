@@ -1,6 +1,6 @@
 // Guarda la app para que abra al instante y funcione sin conexión con lo último visto.
-const CACHE = "natacion-v2";
-const SHELL = ["/", "/index.html", "/style.css", "/app.js", "/parser.js", "/logos.js", "/manifest.webmanifest", "/icons/icon-192.png"];
+const CACHE = "natacion-v3";
+const SHELL = ["/", "/index.html", "/style.css", "/app.js", "/parser.js", "/logos.js", "/data/unis.json", "/manifest.webmanifest", "/icons/icon-192.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
