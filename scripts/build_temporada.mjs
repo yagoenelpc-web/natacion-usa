@@ -127,7 +127,7 @@ for (const m of ncaaMeets) {
 }
 // D-III y NAIA no publican la clasificación completa en HY-TEK: campeón y subcampeón desde Wikipedia (CC BY-SA).
 const WIKI = { D3: { M: "NCAA Division III men's swimming and diving championships", W: "NCAA Division III women's swimming and diving championships" }, NAIA: { M: "NAIA men's swimming and diving championships", W: "NAIA women's swimming and diving championships" } };
-const strip = (c) => c.replace(/\{\{\s*sort\s*\|[^|}]*\|([^}]*)\}\}/gi, "$1").replace(/\{\{[^{}]*\}\}/g, "").replace(/<ref[\s\S]*?(<\/ref>|\/>)/gi, "").replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, "$1").replace(/'{2,}/g, "").replace(/\(\d+\)/g, "").replace(/½/g, ".5").trim();
+const strip = (c) => c.replace(/<[^>]+>/g, " ").replace(/\{\{\s*sort\s*\|[^|}]*\|([^}]*)\}\}/gi, "$1").replace(/\{\{[^{}]*\}\}/g, "").replace(/<ref[\s\S]*?(<\/ref>|\/>)/gi, "").replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, "$1").replace(/'{2,}/g, "").replace(/\(\d+\)/g, "").replace(/½/g, ".5").trim();
 for (const [d, bySex] of Object.entries(WIKI)) {
   for (const [g, title] of Object.entries(bySex)) {
     if (ncaa.divisions[d]?.[g]) continue;
