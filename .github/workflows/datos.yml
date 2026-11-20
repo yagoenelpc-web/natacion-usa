@@ -1,0 +1,16 @@
+name: Datos de universidades
+
+on:
+  workflow_dispatch:
+
+jobs:
+  datos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - env:
+          DATOS_LOG: "1"
+        run: node scripts/build_unis.mjs unis.json
