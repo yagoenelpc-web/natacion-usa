@@ -44,6 +44,15 @@ function jsonLd(html) {
   return out;
 }
 const seasonStart = (() => { const d = new Date(); const y = d.getUTCMonth() >= 7 ? d.getUTCFullYear() : d.getUTCFullYear() - 1; return `${y}-08-01`; })();
+const MON = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+function dateOf(t) {
+  const m = /^([A-Z][a-z]{2})[a-z]*\.? (\d{1,2})/.exec(t || "");
+  if (!m || !MON[m[1].toLowerCase()]) return "";
+  const mo = MON[m[1].toLowerCase()];
+  const y0 = +seasonStart.slice(0, 4);
+  const y = mo >= 8 ? y0 : y0 + 1;
+  return `${y}-${String(mo).padStart(2, "0")}-${m[2].padStart(2, "0")}`;
+}
 const RESULTS_LINK = /\/(evtindex|index|\d*lastevt)\.htm$/i;
 
 function schedule(html, base, uname) {
@@ -68,7 +77,7 @@ function schedule(html, base, uname) {
       if (RESULTS_LINK.test(new URL(href).pathname)) { links.live = href; live.add(href); }
       if (/live (stats|results)/i.test(t) && !links.live) links.live = href;
     }
-    games.push({ d: aria ? new Date(aria + " UTC").toISOString().slice(0, 10) : "", dt: dateTxt.slice(0, 40), o: opp, at, r: result.slice(0, 60), ...links });
+    games.push({ d: aria ? new Date(aria + " UTC").toISOString().slice(0, 10) : dateOf(dateTxt), dt: dateTxt.slice(0, 40), o: opp, at, r: result.slice(0, 60), ...links });
   }
   // b) Datos estructurados (schema.org) si no hay bloques clásicos.
   if (!games.length) {
