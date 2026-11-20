@@ -38,6 +38,7 @@ jobs:
           MAX_MIN: ${{ inputs.minutos || '40' }}
           DEBUG: ${{ inputs.debug || '0' }}
           FRESH: ${{ (inputs.guardar == 'no') && '1' || '' }}
+      - run: node scripts/split_nadadores.mjs
       - name: Guardar
         if: ${{ inputs.guardar != 'no' }}
         run: scripts/datos-rama.sh subir

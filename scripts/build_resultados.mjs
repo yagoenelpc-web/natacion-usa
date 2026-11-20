@@ -61,6 +61,10 @@ function pdfText(buf) {
 const NOISE = /HY-TEK'?s MEET MANAGER|Hy-Tek'?s MEET MANAGER|MEET MANAGER \d|Site License|Licensed to|^\s*Page \d+\s*$|\bPage \d+\s*$/i;
 // Convierte el texto de un PDF de resultados HY-TEK en { name, start, end, events: [ev...] } (mismo formato que parseEvent).
 function parsePdfMeet(text, url) {
+  // Programas, psych sheets y horarios no son resultados (llevan marcas de inscripción).
+  if (/Meet Program|Psych Sheet|Heat Sheet|Session Report|Entry List|Entries -|Timeline|Order of Events/i.test(text.slice(0, 3000))) return { name: "", start: "", end: "", events: [] };
+  // Dos columnas de pruebas en la misma línea: no se puede leer bien.
+  if (/(?:Event|#)\s*\d+\s+(?:Women|Men|Girls|Boys|Mixed)\b.{5,}\s{3,}\(?(?:Event|#)\s*\d+\s+(?:Women|Men|Girls|Boys|Mixed)\b/i.test(text)) return { name: "", start: "", end: "", events: [] };
   const pages = text.split("\f");
   let name = "", start = "", end = "";
   const lines = [];
@@ -149,7 +153,7 @@ const plant = (await readJSON("web/data/plantillas.json", { plant: {} })).plant;
 const idx = await readJSON("web/data/encuentros.json", { v: 1, meets: [], done: {} });
 const done = process.env.FRESH ? {} : idx.done || {};
 // Nueva versión del lector: se vuelve a leer todo (y se quitan de los nadadores las marcas de la versión anterior).
-const VER = 3;
+const VER = 4;
 const RESET = idx.v !== VER;
 if (RESET) { for (const k of Object.keys(done)) delete done[k]; idx.meets = []; }
 const meetsById = new Map((idx.meets || []).map((m) => [m.id, m]));
@@ -289,9 +293,14 @@ for (const { entry, meet } of newMeets) {
   for (const ev of meet.events) {
     if (ev.relay || /diving/i.test(ev.title)) continue;
     const evn = short(ev.title);
-    if (!/\d/.test(evn)) continue;
+    const em = /^(\d+) ([YM]) (Free|Back|Breast|Fly|IM)$/.exec(evn);
+    if (!em) continue;
+    const dist = +em[1];
     for (const r of ev.results) {
-      if (!r.n || !r.t || r.t.length < 2 || !r.m || secs(r.m) === Infinity || !/[a-z]{2}/i.test(r.n) || /^\d|^[A-Z0-9-]+$/.test(r.n.trim())) continue;
+      if (!r.n || !r.t || r.t.length < 2 || /\d[:.]\d\d/.test(r.t) || !r.m || secs(r.m) === Infinity || !/^[\p{L}][\p{L}'’.,\- ]+$/u.test(r.n.trim()) || /^[A-Z0-9-]+$/.test(r.n.trim())) continue;
+      // Ritmo imposible (segundos por yarda/metro): error de lectura.
+      const pc = secs(r.m) / dist;
+      if (pc < 0.36 || pc > 1.4) continue;
       const name = (r.n.includes(",") ? r.n.split(",").map((x) => x.trim()).filter(Boolean).reverse().join(" ") : r.n).replace(/\s+/g, " ").trim().replace(/\s+[A-Z]\.?(?=\s)/g, "");
       const tk = low(name).split(" ");
       if (tk.length < 2) continue;
