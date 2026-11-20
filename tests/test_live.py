@@ -74,3 +74,26 @@ def test_live_catalog():
         print(m)
     assert any("NCAA" in m["name"] for m in meets)
     assert all("no-results" not in m["url"].lower() for m in meets)
+
+
+def test_live_web_pages():
+    """La web completa, de principio a fin, contra el campeonato real."""
+    from fastapi.testclient import TestClient
+
+    from app import main
+
+    fetch._client = None
+    fetch._sem = asyncio.Semaphore(4)
+    fetch.clear()
+    with TestClient(main.app) as c:
+        r = c.get("/campeonato", params={"url": MEET})
+        assert r.status_code == 200 and "Men 100 Fly Finals" in r.text
+        r = c.get("/campeonato/equipos", params={"url": MEET})
+        assert r.status_code == 200 and "Florida" in r.text
+        r = c.get("/campeonato/equipo", params={"url": MEET, "equipo": "Florida"})
+        assert r.status_code == 200 and "Liendo, Josh" in r.text
+        r = c.get("/catalogo", params={"q": "NCAA"})
+        assert r.status_code == 200 and "NCAA Division I Men - 2027" in r.text
+        r = c.get("/directo")
+        assert r.status_code == 200
+        print("páginas web OK")
