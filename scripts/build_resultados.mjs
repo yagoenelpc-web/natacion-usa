@@ -65,8 +65,22 @@ function parsePdfMeet(text, url) {
   const kind = /Meet Program|Psych Sheet|Heat Sheet|Session Report|Entry List|Entries -|Timeline|Order of Events/i.exec(text.slice(0, 3000));
   if (kind) return { name: "", start: "", end: "", events: [], why: kind[0] };
   // Dos columnas de pruebas en la misma línea: no se puede leer bien.
-  if (/(?:Event|#)\s*\d+\s+(?:Women|Men|Girls|Boys|Mixed)\b.{5,}\s{3,}\(?(?:Event|#)\s*\d+\s+(?:Women|Men|Girls|Boys|Mixed)\b/i.test(text)) return { name: "", start: "", end: "", events: [], why: "dos columnas" };
-  const pages = text.split("\f");
+  // PDF a dos columnas: se corta cada página por la columna donde empieza la segunda prueba y se lee primero la izquierda.
+  const TWO = /^(.*?(?:Event|#)\s*\d+\s+(?:Women|Men|Girls|Boys|Mixed)\b.{5,}?\s{3,})\(?(?:Event|#)\s*\d+\s+(?:Women|Men|Girls|Boys|Mixed)\b/i;
+  const pages = text.split("\f").map((page) => {
+    const ls = page.split(/\r?\n/);
+    const cuts = ls.map((l) => TWO.exec(l)?.[1].length).filter(Boolean);
+    if (!cuts.length) return page;
+    const cut = Math.min(...cuts);
+    // Las líneas de cabecera (nombre del encuentro, página) van enteras en la izquierda.
+    const left = [], right = [];
+    for (const l of ls) {
+      if (NOISE.test(l) || /\s-\s\d{1,2}\/\d{1,2}\/\d{4}/.test(l)) { left.push(l); continue; }
+      left.push(l.slice(0, cut));
+      right.push(l.slice(cut));
+    }
+    return [...left, ...right].join("\n");
+  });
   let name = "", start = "", end = "";
   const lines = [];
   for (const page of pages) {
@@ -154,7 +168,7 @@ const plant = (await readJSON("web/data/plantillas.json", { plant: {} })).plant;
 const idx = await readJSON("web/data/encuentros.json", { v: 1, meets: [], done: {} });
 const done = process.env.FRESH ? {} : idx.done || {};
 // Nueva versión del lector: se vuelve a leer todo (y se quitan de los nadadores las marcas de la versión anterior).
-const VER = 5;
+const VER = 6;
 const RESET = idx.v !== VER;
 if (RESET) { for (const k of Object.keys(done)) delete done[k]; idx.meets = []; idx.pastDone = []; }
 const meetsById = new Map((idx.meets || []).map((m) => [m.id, m]));
