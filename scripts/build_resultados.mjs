@@ -214,22 +214,24 @@ const compact = (ev) => ({
 });
 await mkdir("web/data/m", { recursive: true });
 let ok = 0, empty = 0, fail = 0, samples = 0;
+const dbg = { np: 0, pe: 0 };
 const newMeets = [];
 await pool(cand, 6, async (c) => {
   let meet = null;
   if (isPdf(c.url)) {
     const r = await get(c.url, true);
-    if (!r) { fail++; return; }
-    if (!/pdf/i.test(r.type) && r.body.slice(0, 4).toString() !== "%PDF") { done[c.url] = 0; empty++; return; }
+    if (!r) { if (DEBUG && fail < 4) console.log("FALLO", c.url); fail++; return; }
+    if (!/pdf/i.test(r.type) && r.body.slice(0, 4).toString() !== "%PDF") { if (DEBUG && dbg.np++ < 6) console.log("NO-PDF", c.url, "→", r.url, r.type, r.body.slice(0, 200).toString().replace(/\s+/g, " ")); done[c.url] = 0; empty++; return; }
     const text = pdfText(r.body);
-    if (DEBUG && samples < 3 && text) { samples++; console.log("=== MUESTRA", c.url, "\n" + text.split("\n").slice(0, 70).join("\n")); }
+    if (DEBUG > 1 && samples < 3 && text) { samples++; console.log("=== MUESTRA", c.url, "\n" + text.split("\n").slice(0, 70).join("\n")); }
     meet = parsePdfMeet(text, c.url);
+    if (DEBUG) meet.text = text;
   } else {
     meet = await parseHtmlMeet(c.url);
     if (!meet) { fail++; return; }
   }
   const swims = meet.events.reduce((a, e) => a + e.results.length, 0);
-  if (!meet.events.length || swims < 4) { done[c.url] = 0; empty++; return; }
+  if (!meet.events.length || swims < 4) { if (DEBUG && dbg.pe++ < 6) console.log("SIN-PRUEBAS", c.url, meet.events.length, swims, "\n" + (meet.text || "").split("\n").slice(0, 25).join("\n")); done[c.url] = 0; empty++; return; }
   meet.start ||= c.d || "";
   meet.end ||= meet.start;
   meet.name = (meet.name || "").replace(/(\s+-\s+copied)+$/i, "").trim();
