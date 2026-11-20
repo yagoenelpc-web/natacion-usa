@@ -2,17 +2,30 @@ name: Datos de universidades
 
 on:
   workflow_dispatch:
+    inputs:
+      rehacer:
+        description: Volver a generar la lista desde Wikipedia antes de completarla
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
 
 jobs:
   datos:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - env:
-          DATOS_LOG: "1"
-        run: node scripts/build_unis.mjs unis.json
-      - run: python3 scripts/fix_unis.py unis.json
+      - if: ${{ inputs.rehacer }}
+        run: node scripts/build_unis.mjs web/data/unis.json && python3 scripts/fix_unis.py web/data/unis.json
+      - run: node scripts/enriquecer.mjs web/data/unis.json
+      - name: Guardar
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add web/data/unis.json
+          git diff --cached --quiet || (git commit -m "Datos de universidades actualizados" && git pull --rebase -q && git push)
