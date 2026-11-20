@@ -112,3 +112,23 @@ test("canal de SwimSwam: competiciones con resultados HY-TEK", async () => {
   assert.equal(meets[0].article, "https://swimswam.com/tn-day-3/");
   assert.equal(meetNameFromTitle("2026 CMU Invite Day 1: Colorado Mesa Men Swim Faster"), "2026 CMU Invite");
 });
+
+test("resultados con nombre sin coma y etiquetas <span>", () => {
+  const html = `<pre>
+ Texas Swimming Center - Site License
+   Texas Invite - 11/18/2026 to 11/20/2026
+<b> Event 3  Women 500 Yard Freestyle</b>
+==================================================================
+    Name                  Age School               Seed    Prelims
+==================================================================
+<b>                      === Preliminaries ===                       </b>
+  1 <span></span>Lillian Nesty          20 TEX              <span></span>      NT    4:35.11
+    r:+0.75  25.69        53.45 (27.76)
+  2 <span></span>Zoe Nordmann           20 NU               <span></span> 4:46.37    4:41.50
+</pre>`;
+  const ev = parseEvent(html, "x");
+  assert.equal(ev.results.length, 2);
+  assert.equal(ev.results[0].n, "Lillian Nesty");
+  assert.equal(ev.results[1].t, "NU");
+  assert.equal(ev.results[1].m, "4:41.50");
+});

@@ -147,7 +147,16 @@ async function api(url, ttl = 60) {
     mem.set(url, disk);
     return disk.v;
   }
-  const res = await fetch("/api/fuente?url=" + encodeURIComponent(url));
+  let res;
+  for (let i = 0; i < 3; i++) {
+    try {
+      res = await fetch("/api/fuente?url=" + encodeURIComponent(url));
+      if (res.ok || res.status === 404 || res.status === 403 || res.status === 415) break;
+    } catch (e) {
+      if (i === 2) throw e;
+    }
+    await new Promise((r) => setTimeout(r, 700 * (i + 1)));
+  }
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const v = await res.text();
   const entry = { t: Date.now(), v };

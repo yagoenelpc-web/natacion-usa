@@ -7,7 +7,7 @@ const EVENT_LINK_RE = /^\s*#\s*(\d+)\s+(.*)$/;
 const TIME_RE = /^[xX*]?(\d{1,2}:)?\d{1,3}\.\d{2}[A-Za-z!#$&*@^]*$/;
 const STATUS_RE = /^[xX]?(DQ|DFS|NS|SCR|DNF|DNS|NT|NP)$/i;
 const YEAR_CODES = new Set(["FR", "SO", "JR", "SR", "5Y", "GR", "RS"]);
-const INDIVIDUAL_RE = /^\s{0,3}(\d{1,3}|--|\*\d{1,3})\s+(\S.*?,.*?)\s{2,}(?:([A-Z0-9]{2}|\d{1,2})\s+)?(\S.*?)\s{2,}(\S.*)$/;
+const INDIVIDUAL_RE = /^\s{0,3}(\d{1,3}|--|\*\d{1,3})\s+(\S.*?)\s{2,}(?:([A-Z0-9]{2}|\d{1,2})\s+)?(\S.*?)\s{2,}(\S.*)$/;
 const RELAY_RE = /^\s{0,3}(\d{1,3}|--|\*\d{1,3})\s+(\S.*?)(?:\s+'?([A-F])'?)?\s{2,}(\S.*)$/;
 const TEAM_SCORE_RE = /(\d{1,3})\.\s+(\S.*?)\s{2,}(\d+(?:\.\d+)?)/g;
 
