@@ -99,8 +99,9 @@ function roster(html, base) {
   const abs = (u) => { try { return new URL(u.replace(/&amp;/g, "&"), base).href; } catch { return ""; } };
   // Webs nuevas de Sidearm: tarjetas de persona con "Nombre full bio" y su foto.
   for (const b of html.split(/data-test-id="s-person-details__root"/).slice(1)) {
-    const n = /aria-label="([^"]+?) full bio"/.exec(b)?.[1];
-    if (!n) continue;
+    const m = /href="([^"]*)"[^>]*aria-label="([^"]+?) full bio"/.exec(b);
+    if (!m || /\/(coaches|staff)\//i.test(m[1])) continue; // entrenadores fuera
+    const n = m[2];
     const img = /<img[^>]+src="(https:\/\/images\.sidearmdev\.com\/[^"]+)"/.exec(b.slice(0, 6000))?.[1] || "";
     if (!out.has(dec(n))) out.set(dec(n), img ? abs(img) : "");
   }
@@ -158,6 +159,8 @@ await pool(todo, 10, async (u) => {
     }
   }
   if (games.length) cal[u.n] = games.sort((a, b) => (a.d || "").localeCompare(b.d || "")).slice(0, 40);
+  const staffSet = new Set((u.staff || []).map((x) => x.n.toLowerCase()));
+  for (const k of Object.keys(names)) names[k] = names[k].filter(([n]) => !staffSet.has(n.toLowerCase()));
   const all = [...names[""], ...names.M, ...names.W];
   if (all.length) plant[u.n] = { ...(names.M.length ? { M: names.M } : {}), ...(names.W.length ? { W: names.W } : {}), ...(names[""].length ? { X: names[""] } : {}) };
   if (siteLogo && (!u.logo || u._badLogo)) { u.logo = siteLogo; logosAdded++; }
