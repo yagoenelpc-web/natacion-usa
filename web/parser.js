@@ -287,3 +287,36 @@ export function todayUS() {
   const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   return parts;
 }
+
+const RESULTS_LINK_RE = /\/(index|evtindex|\d{6}[A-Z]\d{3}|\d*lastevt)\.htm$/i;
+
+// Canal RSS de SwimSwam: competiciones con enlace a resultados HY-TEK.
+export function parseFeed(xml) {
+  const meets = new Map();
+  for (const it of xml.split(/<item\b/i).slice(1)) {
+    const title = decode((/<title>([\s\S]*?)<\/title>/i.exec(it)?.[1] || "").replace(/<!\[CDATA\[|\]\]>/g, "")).trim();
+    const link = (/<link>([\s\S]*?)<\/link>/i.exec(it)?.[1] || "").trim();
+    const pub = Date.parse(/<pubDate>([\s\S]*?)<\/pubDate>/i.exec(it)?.[1] || "");
+    const body = decode(it);
+    for (const m of body.matchAll(/href=["']([^"']+)["']/gi)) {
+      let u;
+      try {
+        u = new URL(m[1]);
+      } catch {
+        continue;
+      }
+      if (/swimswam\.com$/i.test(u.hostname) || !RESULTS_LINK_RE.test(u.pathname)) continue;
+      u.protocol = "https:";
+      const url = normalizeMeetUrl(u.origin + u.pathname);
+      const prev = meets.get(url);
+      if (!prev || pub > prev.date) meets.set(url, { url, name: meetNameFromTitle(title), title, article: link, date: pub || 0 });
+    }
+  }
+  return [...meets.values()].sort((a, b) => b.date - a.date);
+}
+
+export function meetNameFromTitle(title) {
+  let t = title.replace(/\s+/g, " ").trim();
+  if (t.includes(":")) t = t.slice(0, t.indexOf(":"));
+  return t.replace(/\s*[,–-]?\s*(Day \d+|Session \d+|Night \d+).*$/i, "").trim();
+}

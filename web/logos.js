@@ -36,11 +36,14 @@ export function buildIndex(espnPayloads) {
   for (const data of espnPayloads) {
     const teams = data?.sports?.[0]?.leagues?.[0]?.teams || [];
     for (const { team: t } of teams) {
-      const logo = t?.logos?.[0]?.href;
-      if (!logo) continue;
-      const info = { logo, color: "#" + (t.color || "0b63ce"), display: t.shortDisplayName || t.location };
-      for (const key of [t.abbreviation, t.shortDisplayName, t.location, t.displayName, t.name]) {
-        if (key && !(norm(key) in index)) index[norm(key)] = info;
+      if (!t || !(t.location || t.shortDisplayName)) continue;
+      const logo = t.logos?.[0]?.href || "";
+      const info = { logo, color: "#" + (t.color || "0b63ce"), display: t.location || t.shortDisplayName };
+      for (const key of [t.location, t.shortDisplayName, t.displayName, t.abbreviation]) {
+        if (!key) continue;
+        const k = norm(key);
+        // Un equipo con escudo gana a otro sin escudo con el mismo nombre.
+        if (!(k in index) || (!index[k].logo && logo)) index[k] = info;
       }
     }
   }

@@ -50,3 +50,22 @@ test("logos de NCAA y USA Swimming en Wikipedia", { skip: !live }, async () => {
     assert.ok((d.thumbnail || d.originalimage || {}).source);
   }
 });
+
+test("competiciones en directo desde el canal de SwimSwam", { skip: !live }, async () => {
+  const { parseFeed } = await import("../../web/parser.js");
+  const meets = [];
+  for (const f of ["https://swimswam.com/feed/", "https://swimswam.com/tag/live-results/feed/"]) meets.push(...parseFeed(await get(f)));
+  console.log("competiciones con resultados en SwimSwam:", meets.map((m) => `${m.name} → ${m.url}`));
+  let ok = 0;
+  for (const m of meets.slice(0, 6)) {
+    try {
+      const r = await handler(new Request("https://x/api/fuente?url=" + encodeURIComponent(m.url)));
+      const meet = parseIndex(await r.text(), m.url);
+      console.log(r.status, meet.name, meet.start, meet.end, uniqueEvents(meet).length, "pruebas");
+      if (uniqueEvents(meet).length) ok++;
+    } catch (e) {
+      console.log("fallo", m.url, e.message);
+    }
+  }
+  console.log("competiciones legibles:", ok);
+});

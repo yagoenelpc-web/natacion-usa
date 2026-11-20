@@ -13,7 +13,7 @@ const PORT = +(process.env.PORT || 8888);
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".webmanifest": "application/manifest+json", ".svg": "image/svg+xml" };
 
 const svg = (txt, bg) => "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><path d="M8 6h48v26c0 14-11 22-24 26C19 54 8 46 8 32z" fill="${bg}"/><text x="32" y="38" font-family="Arial" font-weight="700" font-size="16" fill="#fff" text-anchor="middle">${txt}</text></svg>`);
-const MOCK_TEAMS = [["FLA", "Florida", "Gators", "#0021a5"], ["TEX", "Texas", "Longhorns", "#bf5700"], ["ASU", "Arizona St", "Sun Devils", "#8c1d40"], ["IND", "Indiana", "Hoosiers", "#990000"], ["NCST", "NC State", "Wolfpack", "#cc0000"], ["YALE", "Yale", "Bulldogs", "#00356b"], ["SMU", "SMU", "Mustangs", "#0033a0"], ["STAN", "Stanford", "Cardinal", "#8c1515"]];
+const MOCK_TEAMS = [["FLA", "Florida", "Gators", "#0021a5"], ["TEX", "Texas", "Longhorns", "#bf5700"], ["ASU", "Arizona St", "Sun Devils", "#8c1d40"], ["IND", "Indiana", "Hoosiers", "#990000"], ["NCST", "NC State", "Wolfpack", "#cc0000"], ["YALE", "Yale", "Bulldogs", "#00356b"], ["SMU", "SMU", "Mustangs", "#0033a0"], ["STAN", "Stanford", "Cardinal", "#8c1515"], ["TENN", "Tennessee", "Volunteers", "#ff8200"], ["UK", "Kentucky", "Wildcats", "#0033a0"]];
 
 async function mock(url) {
   const u = new URL(url);
@@ -26,13 +26,21 @@ async function mock(url) {
     const lbl = { National_Collegiate_Athletic_Association: ["NCAA", "#005eb8"], USA_Swimming: ["USA", "#bf0d3e"], United_States_Masters_Swimming: ["USMS", "#00205b"] }[k] || ["?", "#777"];
     return JSON.stringify({ thumbnail: { source: "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="${lbl[1]}"/><text x="32" y="38" font-family="Arial" font-weight="700" font-size="${lbl[0].length > 3 ? 13 : 17}" fill="#fff" text-anchor="middle">${lbl[0]}</text></svg>`) } });
   }
+  if (u.hostname === "swimswam.com") {
+    const now = new Date().toUTCString();
+    return `<rss><channel><item><title>2026 Tennessee Invitational: Day 3 Finals Live Recap</title><link>https://swimswam.com/ejemplo/</link><pubDate>${now}</pubDate><description>&lt;a href="https://sidearmstats.com/utennessee/swim/index.htm"&gt;Live Results&lt;/a&gt;</description></item></channel></rss>`;
+  }
   const last = u.pathname.split("/").pop().toLowerCase();
+  if (u.hostname === "sidearmstats.com" && last === "evtindex.htm") {
+    const t = new Date().toISOString().slice(0, 10).split("-");
+    return (await fx("evtindex.htm")).replace(/2026 NCAA Division I Men's Swimming &amp; Diving/, "2026 Tennessee Invitational").replace(/3\/25\/2026 - 3\/28\/2026/, `${+t[1]}/${+t[2]}/${t[0]} - ${+t[1]}/${+t[2]}/${t[0]}`);
+  }
   if (u.pathname === "/" || u.pathname === "") return fx("catalog.htm");
   if (last === "evtindex.htm") {
     let html = await fx("evtindex.htm");
     if (/Big-Ten/i.test(u.pathname)) html = html.replace(/2026 NCAA Division I Men's Swimming &amp; Diving/, "2026 Big Ten Championships").replace(/3\/25\/2026 - 3\/28\/2026/, "2/25/2026 - 2/28/2026");
     if (/Junior/i.test(u.pathname)) html = html.replace(/2026 NCAA Division I Men's Swimming &amp; Diving/, "2025 USA Swimming Junior Nationals").replace(/2026/g, "2025");
-    if (process.env.MOCK_LIVE && /NCAA/i.test(u.pathname)) {
+    if (process.env.MOCK_LIVE && /NCAA/i.test(u.pathname) && u.hostname !== "sidearmstats.com") {
       const t = new Date().toISOString().slice(0, 10).split("-");
       html = html.replace(/3\/25\/2026 - 3\/28\/2026/, `${+t[1]}/${+t[2]}/${t[0]} - ${+t[1]}/${+t[2]}/${t[0]}`);
     }

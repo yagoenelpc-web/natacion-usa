@@ -1,18 +1,21 @@
 // Proxy de solo lectura para las fuentes públicas que usa la app.
 // El navegador no puede leer estas webs directamente (CORS), así que la app
-// las pide aquí. Solo se permiten estos dominios y solo peticiones GET.
-const ALLOWED = [
-  "swimmeetresults.tech",
-  "site.api.espn.com",
-  "en.wikipedia.org",
-];
+// las pide aquí. Solo se permiten estas fuentes y solo peticiones GET.
+const HOSTS = ["swimmeetresults.tech", "site.api.espn.com", "en.wikipedia.org"];
 const LONG_CACHE = ["site.api.espn.com", "en.wikipedia.org"];
+// Páginas de resultados HY-TEK de cualquier web (universidades, sidearmstats…).
+const HYTEK_PATH = /(\/evtindex\.htm|\/index\.htm|lastevt\.htm|\/\d{6}[A-Z]\d{3}\.htm)$/i;
 
 export function allowed(target) {
   try {
     const u = new URL(target);
     if (u.protocol !== "https:" && u.protocol !== "http:") return false;
-    return ALLOWED.some((h) => u.hostname === h || u.hostname.endsWith("." + h));
+    if (u.username || u.password || (u.port && u.port !== "80" && u.port !== "443")) return false;
+    if (HOSTS.some((h) => u.hostname === h || u.hostname.endsWith("." + h))) return true;
+    // Solo el canal RSS de SwimSwam (titulares y enlaces), no sus artículos.
+    if (u.hostname === "swimswam.com") return /^\/(feed|tag\/live-results\/feed)\/?$/.test(u.pathname);
+    if (/^(localhost|[\d.]+|\[.*\])$/.test(u.hostname) || !u.hostname.includes(".")) return false;
+    return HYTEK_PATH.test(u.pathname);
   } catch {
     return false;
   }
@@ -23,20 +26,34 @@ export default async (request) => {
   if (!target || !allowed(target)) {
     return new Response("Fuente no permitida", { status: 400 });
   }
-  const upstream = await fetch(target, {
-    headers: { "User-Agent": "natacion-usa/0.3 (app personal de resultados)" },
-    redirect: "follow",
-  });
+  let upstream;
+  try {
+    upstream = await fetch(target, {
+      headers: { "User-Agent": "natacion-usa/0.4 (app personal de resultados)" },
+      redirect: "follow",
+      signal: AbortSignal.timeout(9000),
+    });
+  } catch {
+    return new Response("No responde", { status: 504 });
+  }
   if (upstream.url && !allowed(upstream.url)) {
     return new Response("Fuente no permitida", { status: 400 });
   }
   const host = new URL(target).hostname;
-  const maxAge = LONG_CACHE.includes(host) ? 86400 : 60;
+  const maxAge = LONG_CACHE.includes(host) ? 86400 : host === "swimswam.com" ? 600 : 60;
   const buf = await upstream.arrayBuffer();
-  // HY-TEK publica en Windows-1252.
   const type = upstream.headers.get("content-type") || "";
-  const charset = /charset=([^;]+)/i.exec(type)?.[1]?.toLowerCase();
-  const text = new TextDecoder(charset && charset !== "iso-8859-1" ? charset : host.includes("swimmeetresults") ? "windows-1252" : "utf-8").decode(buf);
+  if (!/json|xml|html|text|rss/i.test(type) && type) {
+    return new Response("Tipo no permitido", { status: 415 });
+  }
+  // HY-TEK publica en Windows-1252.
+  const charset = /charset=([^;]+)/i.exec(type)?.[1]?.toLowerCase().trim();
+  let text;
+  try {
+    text = new TextDecoder(charset && charset !== "iso-8859-1" ? charset : /json|xml|rss/i.test(type) ? "utf-8" : "windows-1252").decode(buf);
+  } catch {
+    text = new TextDecoder("windows-1252").decode(buf);
+  }
   return new Response(text, {
     status: upstream.status,
     headers: {

@@ -94,3 +94,21 @@ test("organization", () => {
   assert.equal(organization("USMS Spring Nationals - 2026"), "usms");
   assert.equal(organization("Big Ten Championships - 2026"), "conf");
 });
+
+test("canal de SwimSwam: competiciones con resultados HY-TEK", async () => {
+  const { parseFeed, meetNameFromTitle } = await import("../../web/parser.js");
+  const xml = `<rss><channel>
+  <item><title>2026 Tennessee Invitational: Day 3 Finals Live Recap</title><link>https://swimswam.com/tn-day-3/</link>
+  <pubDate>Fri, 20 Nov 2026 02:00:14 +0000</pubDate><content:encoded><![CDATA[<a href="https://sidearmstats.com/utennessee/swim/index.htm">Live Results</a> <a href="https://swimswam.com/x/">x</a>]]></content:encoded></item>
+  <item><title>Three UNC Men Break 19-Second Mark</title><link>https://swimswam.com/unc/</link>
+  <pubDate>Fri, 20 Nov 2026 01:22:40 +0000</pubDate><description>&lt;a href="http://sidearmstats.com/utennessee/swim/261118F012.htm"&gt;r&lt;/a&gt;</description></item>
+  <item><title>SMU Invite</title><link>https://swimswam.com/smu/</link><pubDate>Fri, 20 Nov 2026 04:30:59 +0000</pubDate>
+  <description>&lt;a href="https://smumustangs.com/documents/results.pdf"&gt;pdf&lt;/a&gt;</description></item>
+  </channel></rss>`;
+  const meets = parseFeed(xml);
+  assert.equal(meets.length, 1);
+  assert.equal(meets[0].url, "https://sidearmstats.com/utennessee/swim/evtindex.htm");
+  assert.equal(meets[0].name, "2026 Tennessee Invitational");
+  assert.equal(meets[0].article, "https://swimswam.com/tn-day-3/");
+  assert.equal(meetNameFromTitle("2026 CMU Invite Day 1: Colorado Mesa Men Swim Faster"), "2026 CMU Invite");
+});
