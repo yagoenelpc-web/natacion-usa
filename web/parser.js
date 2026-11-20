@@ -164,6 +164,7 @@ export function parseEvent(html, url) {
   let header = false;
   let section = "";
   let inScores = false;
+  let scoreG = "";
   let last = null;
 
   for (const raw of text.split(/\r?\n/)) {
@@ -189,10 +190,11 @@ export function parseEvent(html, url) {
     if (/^[=\-]+$/.test(stripped)) continue;
     if (/Team Rankings|Team Scores/.test(stripped)) {
       inScores = true;
+      scoreG = /combined/i.test(stripped) ? "C" : /women|girls|female/i.test(stripped) ? "W" : /\b(men|boys|male)\b/i.test(stripped) ? "M" : "";
       continue;
     }
     if (inScores) {
-      for (const m of (line + "  ").matchAll(TEAM_SCORE_RE)) ev.scores.push({ p: +m[1], t: m[2].trim(), pts: m[3] });
+      for (const m of (line + "  ").matchAll(TEAM_SCORE_RE)) ev.scores.push({ p: +m[1], t: m[2].trim(), pts: m[3], ...(scoreG ? { g: scoreG } : {}) });
       continue;
     }
     if (!header) {

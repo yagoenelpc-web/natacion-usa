@@ -11,6 +11,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: datos-app
+  cancel-in-progress: false
+
 jobs:
   datos:
     runs-on: ubuntu-latest

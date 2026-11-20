@@ -53,8 +53,8 @@ test("parseEvent individual", () => {
   assert.equal(ev.results[4].t, "IU Indianapolis");
   assert.equal(ev.results[5].n, "Arkhangelskiy, Michel");
   assert.deepEqual([ev.results.at(-1).p, ev.results.at(-1).m], ["--", "DFS"]);
-  assert.deepEqual(ev.scores[0], { p: 1, t: "Florida", pts: "119" });
-  assert.deepEqual(ev.scores.at(-1), { p: 27, t: "Northwestern", pts: "2" });
+  assert.deepEqual(ev.scores[0], { p: 1, t: "Florida", pts: "119", g: "M" });
+  assert.deepEqual(ev.scores.at(-1), { p: 27, t: "Northwestern", pts: "2", g: "M" });
   assert.equal(ev.results.length, 7);
 });
 
