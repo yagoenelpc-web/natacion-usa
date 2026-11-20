@@ -7,10 +7,10 @@ const ESPN = [
   "https://site.api.espn.com/apis/site/v2/sports/basketball/womens-college-basketball/teams?limit=1000",
 ];
 const ORG = {
-  ncaa: { label: "NCAA", full: "NCAA" },
-  usas: { label: "USA Swimming", full: "USA Swimming" },
-  usms: { label: "US Masters", full: "US Masters Swimming" },
-  conf: { label: "Conferencias", full: "Conferencias y otros" },
+  ncaa: { label: "NCAA", short: "NCAA", full: "NCAA" },
+  usas: { label: "USA Swimming", short: "USA", full: "USA Swimming" },
+  usms: { label: "US Masters", short: "USMS", full: "US Masters Swimming" },
+  conf: { label: "Conferencias", short: "🏊", full: "Conferencias y otros" },
 };
 const SECTION_ES = {
   "Championship Final": "Final A",
@@ -240,7 +240,7 @@ function crest(team, size = 32) {
 function orgLogo(org, size = 36) {
   const src = brands[org];
   if (src) return `<span class="org" style="width:${size}px;height:${size}px"><img src="${esc(src)}" alt="${esc(ORG[org].label)}"></span>`;
-  return `<span class="org org-txt" style="width:${size}px;height:${size}px">${esc((ORG[org] || ORG.conf).label.slice(0, 4))}</span>`;
+  return `<span class="org org-txt" style="width:${size}px;height:${size}px">${esc((ORG[org] || ORG.conf).short)}</span>`;
 }
 const star = (team) => `<button class="star ${favs().has(team) ? "on" : ""}" data-fav="${esc(team)}" aria-label="Favorita">${favs().has(team) ? "★" : "☆"}</button>`;
 const liveDot = `<span class="livetag"><i></i>EN DIRECTO</span>`;
@@ -311,7 +311,9 @@ async function homeView() {
     ${live.length ? live.map(meetCard).join("") : `<div class="card muted">Ahora mismo no hay ningún campeonato en directo.${next ? ` El próximo es <a href="#/m/${enc(next.id)}">${esc(next.name)}</a>, ${daysUntil(next.start) === 1 ? "mañana" : `dentro de ${daysUntil(next.start)} días`}.` : ""}</div>`}
   </section>
   ${f.length ? `<section><h2>Mis universidades</h2><div class="chips">${f.map((t) => `<a class="chip" href="#/u/${enc(t)}">${crest(t, 22)}${esc(t)}</a>`).join("")}</div></section>` : ""}
-  ${upcoming.length ? `<section><h2>Próximamente</h2>${upcoming.map(meetCard).join("")}</section>` : ""}
+  ${upcoming.length ? `<section><h2>Próximamente</h2>${upcoming.filter((s) => !s.pending).map(meetCard).join("")}${
+    upcoming.some((s) => s.pending) ? `<details class="announced"><summary>Anunciados, aún sin resultados (${upcoming.filter((s) => s.pending).length})</summary>${upcoming.filter((s) => s.pending).map(meetCard).join("")}</details>` : ""
+  }</section>` : ""}
   ${Object.keys(ORG).filter((o) => byOrg[o]).map((o) => `<section><h2 class="orgh">${orgLogo(o, 26)} ${esc(ORG[o].full)}</h2>${byOrg[o].map(meetCard).join("")}</section>`).join("")}
   <p class="foot">Datos de las páginas públicas de resultados HY-TEK. Los tiempos son oficiosos hasta su publicación oficial.</p>`;
 }

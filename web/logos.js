@@ -4,7 +4,8 @@ const ALIASES = {
   asu: "arizona state", "arizona st": "arizona state", fsu: "florida state", "florida st": "florida state",
   osu: "ohio state", "ohio st": "ohio state", vt: "virginia tech", gt: "georgia tech", unc: "north carolina",
   "southern california": "usc", "u.s. navy": "navy", "us navy": "navy", "miami (fl)": "miami", "miami fl": "miami",
-  "miami (oh)": "miami (oh)", "miami oh": "miami (oh)", "miami ohio": "miami (oh)", "iu indianapolis": "iu indy",
+  "miami (oh)": "miami (oh)", "miami oh": "miami (oh)", "miami ohio": "miami (oh)", "miami (ohio)": "miami (oh)", "brigham young": "byu",
+  "cal baptist": "california baptist", "cbu": "california baptist", "csun": "cal state northridge", "lmu": "loyola marymount", "iu indianapolis": "iu indy",
   iupui: "iu indy", csub: "cal state bakersfield", cal: "california", "penn st": "penn state", tamu: "texas a&m",
   pitt: "pittsburgh", uk: "kentucky", ut: "texas", wvu: "west virginia", ucsd: "uc san diego",
   ucsb: "uc santa barbara", fgcu: "florida gulf coast", fau: "florida atlantic", liu: "long island university",
@@ -54,7 +55,7 @@ export function matchTeam(index, name) {
     (alias && index[norm(alias)]) ||
     index[n] ||
     (n.endsWith(" state") ? index[n.replace(/ state$/, " st")] : null) ||
-    index[n.replace(/\s*\(.*\)$/, "")] ||
+    (!/^miami \(/.test(n) ? index[n.replace(/\s*\(.*\)$/, "")] : null) ||
     null
   );
 }

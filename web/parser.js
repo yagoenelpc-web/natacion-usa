@@ -278,7 +278,7 @@ export function organization(name) {
   const low = name.toLowerCase();
   if (low.includes("ncaa")) return "ncaa";
   if (low.includes("usms") || low.includes("masters")) return "usms";
-  if (/usa swimming|junior national|us open|u\.s\. open|olympic trials|national championships/.test(low)) return "usas";
+  if (/usa swimming|junior national|winter junior|us open|u\.s\. open|olympic trials|championship trials|national championships|pro swim series|toyota|speedo/.test(low)) return "usas";
   return "conf";
 }
 
