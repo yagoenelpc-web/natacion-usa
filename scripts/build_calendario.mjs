@@ -182,7 +182,8 @@ await pool(todo, 10, async (u) => {
       const ro = await get(base + p + "/roster");
       if (ro && /roster/i.test(ro.url)) {
         const list = roster(ro.html, ro.url);
-        if (list.length) {
+        // Más de 130 nombres no es una plantilla de natación (p. ej. lista histórica de deportistas).
+        if (list.length && list.length <= 130) {
           names[who] = list; got = true;
           const bl = (bioLinks[u.n] ||= { p: {}, c: {} });
           for (const [n, h] of list.hrefs) bl.p[n] = h;
