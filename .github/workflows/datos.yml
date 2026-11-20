@@ -24,12 +24,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - run: scripts/datos-rama.sh bajar
       - if: ${{ inputs.rehacer }}
         run: node scripts/build_unis.mjs web/data/unis.json && python3 scripts/fix_unis.py web/data/unis.json
       - run: node scripts/enriquecer.mjs web/data/unis.json
       - name: Guardar
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add web/data/unis.json
-          git diff --cached --quiet || (git commit -m "Datos de universidades actualizados" && git pull --rebase -q && git push)
+        run: scripts/datos-rama.sh subir

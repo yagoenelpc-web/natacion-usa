@@ -240,8 +240,7 @@ let uniIndex = null;
 async function loadUnis() {
   if (unis) return unis;
   try {
-    const r = await fetch("/data/unis.json");
-    unis = (await r.json()).unis || [];
+    unis = (await loadData("unis"))?.unis || [];
   } catch {
     unis = [];
   }
@@ -261,16 +260,19 @@ const findUni = (name) => {
 };
 
 // Datos que GitHub actualiza solos: archivo de competiciones, ranking NCAA y nadadores.
+// Los datos viven en la rama "datos" de GitHub (se actualizan sin volver a publicar la web); si falla, copia local.
+const DATA_REMOTE = "https://raw.githubusercontent.com/yagoenelpc-web/natacion-usa/datos/web/data/";
 const jsonCache = {};
-async function loadData(name) {
-  if (name in jsonCache) return jsonCache[name];
-  try {
-    const r = await fetch(`/data/${name}.json`, { cache: "no-cache" });
-    jsonCache[name] = r.ok ? await r.json() : null;
-  } catch {
-    jsonCache[name] = null;
-  }
-  return jsonCache[name];
+function loadData(name) {
+  return (jsonCache[name] ||= (async () => {
+    for (const base of [DATA_REMOTE, "/data/"]) {
+      try {
+        const r = await fetch(`${base}${name}.json`, { cache: "no-cache" });
+        if (r.ok) return await r.json();
+      } catch {}
+    }
+    return null;
+  })());
 }
 let rankMap = null;
 async function loadRanks() {
