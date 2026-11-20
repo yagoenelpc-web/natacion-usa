@@ -105,15 +105,23 @@ function roster(html, base) {
     const img = /<img[^>]+src="(https:\/\/images\.sidearmdev\.com\/[^"]+)"/.exec(b.slice(0, 6000))?.[1] || "";
     if (!out.has(dec(n))) out.set(dec(n), img ? abs(img) : "");
   }
-  // Webs de WMT (Learfield): tarjetas "roster-card-item".
+  // Webs de WMT (Learfield): enlaces /roster/player/ (tarjetas, listas o tabla). La foto real está en los datos de la página.
   if (!out.size) {
-    const cut = html.search(/<[^>]+class="[^"]*roster-staff-members/);
-    const body = cut > 0 ? html.slice(0, cut) : html;
-    for (const b of body.split(/class="roster-card-item"/).slice(1)) {
-      const n = /roster-card-item__name[^>]*>([^<]+)</.exec(b)?.[1];
-      if (!n) continue;
-      const img = /<img[^>]+(?:data-src|src)="((?!data:)[^"]+)"/.exec(b.slice(0, 3000))?.[1] || "";
-      if (!out.has(dec(n))) out.set(dec(n), img ? abs(img) : "");
+    const alts = [...html.matchAll(/<img[^>]*\balt="([^"]+)"[^>]*\btitle="([^"]+)"/g)].map((m) => [dec(m[1]).toLowerCase(), m[2]]);
+    const photo = (name) => {
+      const t = alts.find(([a]) => a.startsWith(name.toLowerCase()))?.[1];
+      if (!t) return "";
+      const i = html.indexOf(JSON.stringify(dec(t)) + ",");
+      if (i < 0) return "";
+      const after = html.slice(i, i + 1500);
+      const urls = [...after.matchAll(/"(https:[^"]+)"/g)].map((m) => m[1].replace(/\\u002F/g, "/"));
+      const small = urls.join(" ").match(/https:\S+rs:fit:(?:480|300|360|600):\S+/)?.[0];
+      return small || urls[0] || "";
+    };
+    for (const m of html.matchAll(/<a href="([^"]*\/roster\/player\/[^"]+)"[^>]*>([\s\S]{0,300}?)<\/a>/g)) {
+      const n = dec(m[2].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+      if (!n || out.has(n) || !/^[\p{L}'’.\- ]{3,60}$/u.test(n)) continue;
+      out.set(n, photo(n));
     }
   }
   // Webs clásicas: datos estructurados (schema.org Person) con foto.
@@ -155,6 +163,21 @@ await pool(todo, 10, async (u) => {
       if (got) {
         if (!who && names[""].length) foundCombined = true;
         break;
+      }
+    }
+  }
+  // Si no encontramos nada con las rutas típicas, buscamos en la portada de su web los enlaces de natación.
+  if (!names[""].length && !names.M.length && !names.W.length) {
+    const home = await get(base + "/");
+    const slugs = [...new Set([...(home?.html || "").matchAll(/href="(?:https?:\/\/[^"\/]+)?(\/sports\/[a-z0-9-]*(?:swim|dive|sd)[a-z0-9-]*)\/?(?:roster|schedule)?\/?"/gi)].map((m) => m[1].toLowerCase()))].slice(0, 4);
+    for (const p of slugs) {
+      const who = /women|wswim|w-swim|\/w-/.test(p) ? "W" : /\/m|men/.test(p) ? "M" : "";
+      if (names[who].length) continue;
+      const ro = await get(base + p + "/roster");
+      if (ro) { const list = roster(ro.html, ro.url); if (list.length) names[who] = list; }
+      if (!games.length) {
+        const s2 = await get(base + p + "/schedule");
+        if (s2) for (const g of schedule(s2.html, s2.url, u.n).games) games.push(who ? { ...g, g: who } : g);
       }
     }
   }
