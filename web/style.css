@@ -428,3 +428,11 @@ a.rname strong { text-decoration: underline; text-decoration-color: rgba(10, 100
 .convrow small { color: var(--muted); }
 .convrow b { font-size: 20px; min-width: 80px; text-align: right; }
 .convrow.on { outline: 2px solid var(--brand); }
+
+.mrow .uinfo a { color: inherit; text-decoration: none; }
+.minisc { flex: none; font-size: 12px; font-weight: 800; color: #fff; background: linear-gradient(135deg, #0a7cff, #00b4d8); padding: 6px 10px; border-radius: 999px; }
+.srow .time[data-conv] { cursor: pointer; }
+.srow .time[data-conv] strong { border-bottom: 1px dashed currentColor; }
+.mhero .star { align-self: flex-start; }
+.bigphoto.nophoto > img { visibility: hidden; }
+.bigphoto.nophoto i { right: 50%; bottom: 50%; transform: translate(50%, 50%) scale(2.2); box-shadow: none; }

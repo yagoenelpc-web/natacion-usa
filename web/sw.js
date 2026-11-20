@@ -1,5 +1,5 @@
 // Guarda la app para que abra al instante y funcione sin conexión con lo último visto.
-const CACHE = "natacion-v11";
+const CACHE = "natacion-v12";
 const SHELL = ["/", "/index.html", "/style.css", "/app.js", "/parser.js", "/logos.js", "/data/unis.json", "/manifest.webmanifest", "/icons/icon-192.png"];
 
 self.addEventListener("install", (e) => {
@@ -10,7 +10,7 @@ self.addEventListener("activate", (e) => {
 });
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
-  if (e.request.method !== "GET" || url.origin !== location.origin) return;
+  if (e.request.method !== "GET" || url.origin !== location.origin || url.pathname === "/api/sc") return;
   // Datos y la propia app: primero la red, si falla lo guardado.
   e.respondWith(
     fetch(e.request)

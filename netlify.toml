@@ -9,6 +9,11 @@
   to = "/.netlify/functions/fuente"
   status = 200
 
+[[redirects]]
+  from = "/api/sc"
+  to = "/.netlify/functions/sc"
+  status = 200
+
 [[headers]]
   for = "/sw.js"
   [headers.values]

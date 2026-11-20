@@ -1,5 +1,5 @@
 import { normalizeMeetUrl, parseIndex, parseEvent, parseCatalog, parseFeed, uniqueEvents, isLive, organization, todayUS } from "./parser.js";
-import { buildIndex, matchTeam, initials, colorFor, norm, BRAND_PAGES } from "./logos.js";
+import { buildIndex, matchTeam, initials, colorFor, norm, BRAND_PAGES, CONF_WORDS } from "./logos.js";
 
 const SOURCE = "https://swimmeetresults.tech/";
 // Catálogos públicos de equipos de ESPN: juntos cubren la NCAA (D-I, D-II, D-III) y la NAIA.
@@ -96,7 +96,7 @@ const EN = {
   "puntos": "points",
   "No hay campeonatos con resultados ahora mismo.": "No meets with results right now.",
   "Buscar universidad": "Search university",
-  "Convertir tiempo": "Convert time", "Cerrar": "Close", "Libre": "Free", "Espalda": "Back", "Braza": "Breast", "Mariposa": "Fly", "Estilos": "IM", "Yardas (25 yd)": "Yards (25 yd)", "Piscina corta (25 m)": "Short course (25 m)", "Piscina larga (50 m)": "Long course (50 m)", "Conversión aproximada con los factores habituales (yardas ×1,11 y virajes de 25 m). Úsala como orientación.": "Approximate conversion using the usual factors (yards ×1.11 and 25 m turns). Use it as a guide.",
+  "Convertir tiempo": "Convert time", "Mis favoritas": "My favorites", "Mis nadadores": "My swimmers", "Marca con ☆ a tus nadadores y saldrán aquí.": "Tap ☆ on your swimmers and they'll show up here.", "Aún no tienes universidades favoritas. Toca ☆ en cualquiera para guardarla.": "No favorite schools yet. Tap ☆ on any school to save it.", "Últimas competiciones": "Latest meets", "Cerrar": "Close", "Libre": "Free", "Espalda": "Back", "Braza": "Breast", "Mariposa": "Fly", "Estilos": "IM", "Yardas (25 yd)": "Yards (25 yd)", "Piscina corta (25 m)": "Short course (25 m)", "Piscina larga (50 m)": "Long course (50 m)", "Conversión aproximada con los factores habituales (yardas ×1,11 y virajes de 25 m). Úsala como orientación.": "Approximate conversion using the usual factors (yards ×1.11 and 25 m turns). Use it as a guide.",
   "Compitiendo ahora": "Competing now", "Última competición": "Last meet", "Próxima competición": "Next meet", "¿Dónde compite?": "Where are they competing?", "Ahora mismo no está compitiendo.": "Not competing right now.", "Ver resultados aquí": "See results here", "Ver en la web de la universidad": "See on the school's site", "en casa": "at home",
   "Todas": "All", "Hombres": "Men", "Mujeres": "Women", "Saltos": "Diving", "Todos": "All",
   "Conferencia": "Conference", "Estado": "State", "Equipos": "Teams", "Filtros": "Filters",
@@ -149,6 +149,9 @@ function sameTeam(a, b) {
   const y = matchTeam(logoIndex, b);
   return !!(x && y && x.logo === y.logo);
 }
+const swKey = (x) => `${x.n}|${x.u ? x.u.n : x.t}`;
+const favSw = () => new Set(store.get("favSw", []));
+const swStar = (x) => { const on = favSw().has(swKey(x)); return `<button class="star ${on ? "on" : ""}" data-favsw="${esc(swKey(x))}" aria-label="Favorito">${on ? "★" : "☆"}</button>`; };
 const isFav = (team, f = favs()) => [...f].some((t) => sameTeam(t, team));
 function toggleFav(team) {
   const f = favs();
@@ -221,7 +224,7 @@ async function loadLogos() {
 }
 
 async function loadBrands() {
-  const cached = store.get("brands");
+  const cached = store.get("brands2");
   if (cached && Date.now() - cached.t < 30 * 864e5 && Object.keys(cached.v).length) return (brands = cached.v);
   const entries = await Promise.all(
     Object.entries(BRAND_PAGES).map(async ([k, page]) => {
@@ -234,7 +237,7 @@ async function loadBrands() {
     })
   );
   brands = Object.fromEntries(entries.filter(([, v]) => v));
-  store.set("brands", { t: Date.now(), v: brands });
+  store.set("brands2", { t: Date.now(), v: brands });
   return brands;
 }
 
@@ -659,9 +662,13 @@ function hostOf(name) {
 }
 function meetBadge(s, size = 36) {
   if (s.org === "conf" || s.org === "dual") {
+    const ck0 = CONF_WORDS.find(([re]) => re.test(s.name))?.[1];
+    if (ck0 && brands?.[ck0] && /champ|conference|league/i.test(s.name)) return `<span class="org host" style="width:${size}px;height:${size}px"><img src="${esc(brands[ck0])}" alt=""></span>`;
     const hi = s.host && logoFor(s.host);
     const h = hi ? { team: s.host, info: hi } : hostOf(s.name);
     if (h) return `<span class="org host" style="width:${size}px;height:${size}px;--hc:${h.info.color}"><img src="${esc(h.info.logo)}" alt=""></span>`;
+    const ck = CONF_WORDS.find(([re]) => re.test(s.name))?.[1];
+    if (ck && brands?.[ck]) return `<span class="org host" style="width:${size}px;height:${size}px"><img src="${esc(brands[ck])}" alt=""></span>`;
   }
   return orgLogo(s.org, size);
 }
@@ -889,7 +896,7 @@ async function universitiesView() {
   await loadLogos().catch(() => {});
   const ranks = await loadRanks().catch(() => new Map());
   const f = favs();
-  const flt = { div: "", conf: "", st: "", sex: "", q: "", sort: "rank", ...store.get("uniFilters", {}) };
+  const flt = { div: "", conf: "", st: "", sex: "", q: "", sort: "rank", fav: "", ...store.get("uniFilters", {}) };
   const save = () => store.set("uniFilters", { ...flt, q: "" });
   const confs = (div) => [...new Set(unis.filter((u) => !div || u.div === div).flatMap((u) => [u.cm, u.cw]).filter(Boolean))].sort();
   const states = [...new Set(unis.map((u) => u.st).filter(Boolean))].sort();
@@ -903,11 +910,13 @@ async function universitiesView() {
         (!flt.conf || u.cm === flt.conf || u.cw === flt.conf) &&
         (!flt.st || u.st === flt.st) &&
         (!flt.sex || (flt.sex === "m" ? u.men : u.women)) &&
+        (!flt.fav || [...f].some((t) => sameTeam(t, u.n))) &&
         (!ql || [u.n, u.full, u.nick, u.city].some((x) => x && x.toLowerCase().includes(ql)))
     );
     document.getElementById("fbar").innerHTML = `
       <div class="frow">${chip("div", "", T("Todas"))}${DIVS.map(([k]) => chip("div", k, k === "NAIA" ? "NAIA" : k.replace("D", "D-"))).join("")}</div>
       <div class="frow">${chip("sex", "", T("Todos"))}${chip("sex", "m", T("Hombres"))}${chip("sex", "w", T("Mujeres"))}</div>
+      <div class="frow">${chip("fav", "", T("Todas"))}${chip("fav", "1", "★ " + T("Mis favoritas"))}</div>
       <div class="frow">${chip("sort", "rank", "🏆 " + T("Ranking NCAA"))}${chip("sort", "az", "A-Z")}</div>
       <div class="frow selects">
         <label><span>${T("Conferencia")}</span><select id="fconf"><option value="">${T("Todas")}</option>${confs(flt.div).map((c) => `<option ${c === flt.conf ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label>
@@ -928,10 +937,10 @@ async function universitiesView() {
     };
     const row = (u) => `<a class="urow" href="#/uni/${enc(u.n)}">${crest(u.n, 34)}<span class="uinfo"><b>${esc(u.n)}</b><small>${esc([u.nick, u.city || u.st].filter(Boolean).join(" · "))}</small></span>${rk(u) || `<span class="dtag ${u.div}">${esc(u.cw || u.cm || "")}</span>`}${star(u.n)}</a>`;
     document.getElementById("ulist").innerHTML =
-      (f.size && !ql && !flt.div && !flt.conf && !flt.st && !flt.sex ? `<h2>${T("Mis universidades")}</h2><div class="grid">${[...f].map((t) => `<a class="tcard" href="#/uni/${enc(t)}">${crest(t, 48)}<span>${esc(t)}</span>${star(t)}</a>`).join("")}</div>` : "") +
+      (f.size && !ql && !flt.div && !flt.conf && !flt.st && !flt.sex && !flt.fav ? `<h2>${T("Mis universidades")}</h2><div class="grid">${[...f].map((t) => `<a class="tcard" href="#/uni/${enc(t)}">${crest(t, 48)}<span>${esc(t)}</span>${star(t)}</a>`).join("")}</div>` : "") +
       (groups.length
         ? groups.map(([label, l]) => `<h2>${esc(label)} <span class="count">${l.length}</span></h2><div class="list">${l.slice(0, 700).map(row).join("")}</div>`).join("")
-        : `<div class="card muted">${T("Ninguna universidad con estos filtros.")}</div>`);
+        : `<div class="card muted">${flt.fav ? T("Aún no tienes universidades favoritas. Toca ☆ en cualquiera para guardarla.") : T("Ninguna universidad con estos filtros.")}</div>`);
     document.getElementById("fconf").onchange = (e) => ((flt.conf = e.target.value), save(), render());
     document.getElementById("fst").onchange = (e) => ((flt.st = e.target.value), save(), render());
   };
@@ -1023,10 +1032,10 @@ async function uniView(name) {
 // Botones que abren SwimCloud y USA Swimming ya buscando lo que estás viendo (sin copiar enlaces).
 const SC = (q) => "https://www.swimcloud.com/search/?q=" + enc(q);
 // Salto directo a la ficha exacta de SwimCloud: el buscador abre su primer resultado (no leemos nada de SwimCloud).
-const JUMP = (site, q) => "https://duckduckgo.com/?q=" + enc("\\" + q + " site:" + site);
-const SC_SWIMMER = (name, uni) => JUMP("swimcloud.com/swimmer", `${name} ${uni || ""}`.trim());
-const SC_TEAM = (uni) => JUMP("swimcloud.com/team", uni);
-const SC_MEET = (name, year) => JUMP("swimcloud.com/results", `${name} ${year || ""}`.trim());
+const JUMP = (k, q) => `/api/sc?k=${k}&q=${enc(q)}`;
+const SC_SWIMMER = (name, uni) => JUMP("swimmer", `${name} ${uni || ""}`.trim());
+const SC_TEAM = (uni) => JUMP("team", uni);
+const SC_MEET = (name, year) => JUMP("meet", `${name} ${year || ""}`.trim());
 const USAS_MEET = (q) => "https://data.usaswimming.org/datahub/usas/meetsearch?query=" + enc(q);
 const USAS_SWIMMER = (q) => "https://data.usaswimming.org/datahub/usas/individualsearch?query=" + enc(q);
 // Meet Mobile no tiene web por competición: abre la app (o su tienda) y deja copiado el nombre para buscarlo.
@@ -1151,14 +1160,18 @@ async function swimmersView() {
     store.set("swq", q);
     const words = q.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(/\s+/).filter(Boolean);
     const box = document.getElementById("slist");
+    const row = (x) => `<a class="urow" href="#/n/${x.i}">${x.img ? face(x, 34) : crest(x.u ? x.u.n : x.t, 34)}<span class="uinfo"><b>${esc(x.n)}</b><small>${esc([x.u ? x.u.n : x.t, x.g === "W" ? "♀" : x.g === "M" ? "♂" : "", x.y].filter(Boolean).join(" · "))}</small></span>${swStar(x)}</a>`;
+    const fs = favSw();
+    const mine = fs.size ? sw.filter((x) => fs.has(swKey(x))) : [];
+    const favHtml = mine.length ? `<h2>★ ${T("Mis nadadores")} <span class="count">${mine.length}</span></h2><div class="list">${mine.map(row).join("")}</div>` : "";
     if (!words.length) {
-      box.innerHTML = `<div class="card muted">${T("Escribe un nombre (por ejemplo «Gemmell») o una universidad.")}</div>`;
+      box.innerHTML = favHtml + `<div class="card muted">${T("Escribe un nombre (por ejemplo «Gemmell») o una universidad.")}${mine.length ? "" : " " + T("Marca con ☆ a tus nadadores y saldrán aquí.")}</div>`;
       return;
     }
     const hay = (x) => (x._h ||= `${x.n} ${x.t} ${x.u ? x.u.n + " " + x.u.full : ""}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
     const hits = sw.filter((x) => words.every((w) => hay(x).includes(w))).slice(0, 120);
     box.innerHTML = hits.length
-      ? `<div class="list">${hits.map((x) => `<a class="urow" href="#/n/${x.i}">${x.img ? face(x, 34) : crest(x.u ? x.u.n : x.t, 34)}<span class="uinfo"><b>${esc(x.n)}</b><small>${esc([x.u ? x.u.n : x.t, x.g === "W" ? "♀" : x.g === "M" ? "♂" : "", x.y].filter(Boolean).join(" · "))}</small></span><span class="chev">›</span></a>`).join("")}</div>`
+      ? `<div class="list">${hits.map(row).join("")}</div>`
       : `<div class="card muted">${T("No hay nadadores con ese nombre en los resultados guardados.")}</div>`;
   };
   const input = document.getElementById("sq");
@@ -1169,7 +1182,8 @@ async function swimmersView() {
 async function swimmerView(i) {
   setTab("nad");
   loading();
-  const sw = await loadSwimmers().catch(() => []);
+  const [sw, arch] = await Promise.all([loadSwimmers().catch(() => []), loadArchive().catch(() => [])]);
+  await loadUnis().catch(() => {});
   const x = sw[+i];
   if (!x) return errorView("Nadador no encontrado.");
   setTitle(x.n);
@@ -1179,11 +1193,11 @@ async function swimmerView(i) {
   const yr = { FR: T("1º año"), SO: T("2º año"), JR: T("3º año"), SR: T("4º año"), GR: T("Posgrado"), "5Y": T("5º año") }[x.y] || "";
   $app.innerHTML = `<a class="back" href="#/n">‹ ${T("Nadadores")}</a>
   <section class="mhero uhero" style="--tint:${tint}">
-    <div class="mtop">${x.img ? `<span class="bigphoto"><img src="${esc(x.img)}" alt="" referrerpolicy="no-referrer"><i>${crest(uname, 30)}</i></span>` : `<span class="bigcrest">${crest(uname, 76)}</span>`}<div><h1>${esc(x.n)}</h1><p>${x.u ? `<a href="#/uni/${enc(x.u.n)}">${esc(x.u.full || x.u.n)}</a>` : esc(x.t)}</p><p>${esc([x.g === "W" ? T("Mujeres") : x.g === "M" ? T("Hombres") : "", yr].filter(Boolean).join(" · "))}</p></div></div>
+    <div class="mtop">${x.img ? `<span class="bigphoto"><img src="${esc(x.img)}" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('nophoto')"><i>${crest(uname, 30)}</i></span>` : `<span class="bigcrest">${crest(uname, 76)}</span>`}<div><h1>${esc(x.n)}</h1><p>${x.u ? `<a href="#/uni/${enc(x.u.n)}">${esc(x.u.full || x.u.n)}</a>` : esc(x.t)}</p><p>${esc([x.g === "W" ? T("Mujeres") : x.g === "M" ? T("Hombres") : "", yr].filter(Boolean).join(" · "))}</p></div>${swStar(x)}</div>
   </section>
   <h2>⏱️ ${T("Mejores marcas")}</h2>
-  ${Object.keys(x.b).length ? `<div class="list">${Object.entries(x.b).map(([ev, [t, m]]) => `<div class="srow"><span class="uinfo"><b>${esc(ev)}</b><small>${esc(m)}</small></span><span class="time">${esc(t)}</span></div>`).join("")}</div>` : `<div class="card muted">${T("Aún no tiene marcas en los resultados guardados de esta temporada.")}</div>`}
-  ${x.m.length ? `<h2>📅 ${T("Competiciones")}</h2><div class="card">${x.m.map((m) => `<div class="mline">${esc(m)}</div>`).join("")}</div>` : ""}
+  ${Object.keys(x.b).length ? `<div class="list">${Object.entries(x.b).map(([ev, [t, m]]) => `<div class="srow"><span class="uinfo"><b>${esc(ev)}</b><small>${esc(m)}</small></span><span class="time" data-conv="${esc(t)}" data-ev="${esc(ev)}" role="button"><strong>${esc(t)}</strong></span></div>`).join("")}</div>` : `<div class="card muted">${T("Aún no tiene marcas en los resultados guardados de esta temporada.")}</div>`}
+  ${x.m.length ? `<h2>📅 ${T("Últimas competiciones")}</h2><div class="list">${x.m.slice().reverse().map((m) => { const a = arch.find((s) => s.name.toLowerCase() === m.toLowerCase()); const y = m.match(/\b(19|20)\d{2}\b/)?.[0] || (a?.start || "").slice(0, 4); return `<div class="urow mrow">${a ? meetBadge(a, 34) : orgLogo(organization(m), 34)}<span class="uinfo">${a ? `<a href="#/m/${enc(a.id)}"><b>${esc(m)}</b></a>` : `<b>${esc(m)}</b>`}<small>${a?.start ? esc(fmtRange(a.start, a.end)) : ""}</small></span><a class="minisc" href="${esc(SC_MEET(m.replace(/\b(19|20)\d{2}\b/g, "").trim(), y))}" target="_blank" rel="noopener">SwimCloud ↗</a></div>`; }).join("")}</div>` : ""}
   ${x.ro ? `<p class="sub center">✅ ${T("En la plantilla oficial de su universidad")}</p>` : ""}
   ${extButtons([[SC_SWIMMER(x.n, x.u ? x.u.n : x.t), "SwimCloud", "sc"], [USAS_SWIMMER(x.n), "USA Swimming", "usas"]])}
   ${x.u ? `<a class="btn wide" href="#/uni/${enc(x.u.n)}">🎓 ${T("Ver universidad")}</a>` : ""}
@@ -1274,6 +1288,17 @@ function route() {
 }
 
 document.addEventListener("click", (e) => {
+  const bs = e.target.closest("[data-favsw]");
+  if (bs) {
+    e.preventDefault();
+    e.stopPropagation();
+    const k = bs.dataset.favsw, f = favSw();
+    f.has(k) ? f.delete(k) : f.add(k);
+    store.set("favSw", [...f]);
+    const on = f.has(k);
+    document.querySelectorAll(`[data-favsw="${CSS.escape(k)}"]`).forEach((x) => { x.classList.toggle("on", on); x.textContent = on ? "★" : "☆"; });
+    return;
+  }
   const b = e.target.closest("[data-fav]");
   if (!b) return;
   e.preventDefault();

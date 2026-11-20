@@ -22,7 +22,30 @@ export const BRAND_PAGES = {
   ncaa: "National_Collegiate_Athletic_Association",
   usas: "USA_Swimming",
   usms: "United_States_Masters_Swimming",
+  // Conferencias: su logo para los campeonatos de conferencia.
+  bigten: "Big_Ten_Conference", sec: "Southeastern_Conference", acc: "Atlantic_Coast_Conference", big12: "Big_12_Conference",
+  bigeast: "Big_East_Conference", ivy: "Ivy_League", pac12: "Pac-12_Conference", mw: "Mountain_West_Conference",
+  aac: "American_Athletic_Conference", a10: "Atlantic_10_Conference", caa: "Coastal_Athletic_Association", horizon: "Horizon_League",
+  mac: "Mid-American_Conference", mvc: "Missouri_Valley_Conference", patriot: "Patriot_League", sunbelt: "Sun_Belt_Conference",
+  summit: "Summit_League", bigwest: "Big_West_Conference", wac: "Western_Athletic_Conference", ccsa: "Coastal_Collegiate_Sports_Association",
+  asun: "ASUN_Conference", nec: "Northeast_Conference", maac: "Metro_Atlantic_Athletic_Conference", socon: "Southern_Conference",
+  cusa: "Conference_USA", bigsky: "Big_Sky_Conference", nescac: "New_England_Small_College_Athletic_Conference", uaa: "University_Athletic_Association",
+  gliac: "Great_Lakes_Intercollegiate_Athletic_Conference", glvc: "Great_Lakes_Valley_Conference", ssc: "Sunshine_State_Conference", psac: "Pennsylvania_State_Athletic_Conference",
+  ncac: "North_Coast_Athletic_Conference", ccac: "College_Conference_of_Illinois_and_Wisconsin", liberty: "Liberty_League", cc: "Centennial_Conference",
+  bluegrass: "Bluegrass_Mountain_Conference", mpsf: "Mountain_Pacific_Sports_Federation", naia: "National_Association_of_Intercollegiate_Athletics",
 };
+// Nombre en la competición → logo de su conferencia.
+export const CONF_WORDS = [
+  [/big ten|big 10\b/i, "bigten"], [/\bsec\b|southeastern conf/i, "sec"], [/\bacc\b|atlantic coast/i, "acc"], [/big 12/i, "big12"],
+  [/big east/i, "bigeast"], [/\bivy\b/i, "ivy"], [/pac-?12/i, "pac12"], [/mountain west|\bmw\b/i, "mw"], [/\baac\b|american athletic/i, "aac"],
+  [/atlantic 10|\ba-?10\b/i, "a10"], [/\bcaa\b|coastal athletic|colonial athletic/i, "caa"], [/horizon league/i, "horizon"], [/\bmac\b|mid-american/i, "mac"],
+  [/\bmvc\b|missouri valley/i, "mvc"], [/patriot league/i, "patriot"], [/sun belt/i, "sunbelt"], [/summit league/i, "summit"], [/big west/i, "bigwest"],
+  [/\bwac\b|western athletic/i, "wac"], [/\bccsa\b|coastal collegiate/i, "ccsa"], [/\basun\b/i, "asun"], [/\bnec\b|northeast conf/i, "nec"],
+  [/\bmaac\b|metro atlantic/i, "maac"], [/southern conf|\bsocon\b/i, "socon"], [/conference usa|\bc-?usa\b/i, "cusa"], [/big sky/i, "bigsky"],
+  [/nescac/i, "nescac"], [/\buaa\b|university athletic assoc/i, "uaa"], [/gliac/i, "gliac"], [/glvc/i, "glvc"], [/sunshine state|\bssc\b/i, "ssc"],
+  [/psac/i, "psac"], [/\bncac\b|north coast athletic/i, "ncac"], [/\bcciw\b/i, "ccac"], [/liberty league/i, "liberty"], [/centennial conf/i, "cc"],
+  [/bluegrass mountain/i, "bluegrass"], [/\bmpsf\b/i, "mpsf"], [/\bnaia\b/i, "naia"],
+];
 
 export function norm(name) {
   let n = name.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();

@@ -141,7 +141,7 @@ const EXTRA = {
 const cal = {}, plant = {}, liveLinks = new Set();
 let logosAdded = 0, athFound = 0;
 // Webs deportivas mal detectadas en algunas universidades.
-const FIX = { Tennessee: "https://utsports.com", Omaha: "https://omavs.com", "Indiana State": "https://gosycamores.com", "Mount St. Mary's": "https://mountathletics.com", "Central Connecticut": "https://ccsubluedevils.com", Missouri: "https://mutigers.com" };
+const FIX = { Tennessee: "https://utsports.com", Omaha: "https://omavs.com", "Indiana State": "https://gosycamores.com", "Mount St. Mary's": "https://mountathletics.com", "Central Connecticut": "https://ccsubluedevils.com", Missouri: "https://mutigers.com", Arkansas: "https://arkansasrazorbacks.com", "Arizona State": "https://thesundevils.com", "Saint John's": "https://gojohnnies.com", "Saint Benedict": "https://gobennies.com", Manchester: "https://muspartans.com", "Minnesota State Moorhead": "https://msumdragons.com", Denison: "https://denisonbigred.com", "Knox Prairie": "https://prairiefire.knox.edu" };
 for (const u of unis) if (FIX[u.n]) u.web = FIX[u.n];
 const todo = unis.filter((u) => u.web);
 await pool(todo, 10, async (u) => {
