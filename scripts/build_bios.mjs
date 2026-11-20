@@ -42,7 +42,7 @@ function htmlToText(h) {
 }
 
 // Webs nuevas de Sidearm (Nuxt): los datos van en __NUXT_DATA__ (formato "devalue": una lista donde los objetos apuntan a posiciones).
-function nuxtPeople(html) {
+function nuxtPeople(html, want) {
   const m = /<script[^>]+id="__NUXT_DATA__"[^>]*>([\s\S]*?)<\/script>/.exec(html);
   if (!m) return [];
   let arr;
@@ -68,23 +68,30 @@ function nuxtPeople(html) {
   };
   const out = [];
   arr.forEach((v, i) => {
-    if (v && typeof v === "object" && !Array.isArray(v) && ("bio" in v || "biography" in v) && ("firstName" in v || "lastName" in v || "title" in v)) {
+    if (v && typeof v === "object" && !Array.isArray(v) && "firstName" in v && "lastName" in v) {
       const o = res(i);
-      const bio = o.bio || o.biography;
-      if (typeof bio === "string") out.push(o);
+      const full = `${o.firstName || ""} ${o.lastName || ""}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z]+/g, "");
+      if (want && full !== want) return;
+      out.push(o);
     }
   });
   return out;
 }
 const FIELDS = [["hometown", "Ciudad"], ["highSchool", "Instituto"], ["previousSchool", "Universidad anterior"], ["major", "Carrera"], ["positionLong", "Especialidad"], ["academicYearLong", "Curso"], ["title", "Cargo"], ["almaMater", "Universidad donde estudió"], ["experience", "Experiencia"]];
-function fromNuxt(html) {
-  const people = nuxtPeople(html);
+function fromNuxt(html, url) {
+  // La persona de la ficha: su nombre va en el enlace (/roster/kale-barnes/15175).
+  const want = (/\/(?:coaches\/)?([a-z0-9-]+)\/\d+\/?(?:\?.*)?$/i.exec(url)?.[1] || "").replace(/[^a-z]/gi, "").toLowerCase();
+  const people = nuxtPeople(html, want);
   if (!people.length) return null;
-  const p = people.sort((a, b) => String(b.bio || b.biography || "").length - String(a.bio || a.biography || "").length)[0];
+  const score = (o) => String(o.bio || o.biography || "").length + Object.values(o).filter((x) => typeof x === "string" && x).length;
+  const p = people.sort((a, b) => score(b) - score(a))[0];
+  if (process.env.PROBE) console.log("claves:", Object.keys(p).filter((k) => p[k] != null && p[k] !== "").join(","), "| image:", JSON.stringify(p.image)?.slice(0, 300));
   const f = [];
   for (const [k, l] of FIELDS) if (typeof p[k] === "string" && p[k].trim() && p[k].length < 120) f.push([l, decode(p[k].trim())]);
   if (p.heightFeet) f.push(["Altura", `${p.heightFeet}' ${p.heightInches || 0}"`]);
-  const img = typeof p.image === "object" && p.image ? p.image.url || p.image.absoluteUrl || "" : "";
+  const im = p.image && typeof p.image === "object" ? p.image : null;
+  let img = im ? im.absoluteUrl || im.url || "" : typeof p.image === "string" ? p.image : "";
+  if (img && !/^https?:/.test(img)) img = new URL(img, url).href;
   return { b: htmlToText(String(p.bio || p.biography || "")), f, img };
 }
 // Webs clásicas y otras: bloque de biografía y datos con etiqueta.
@@ -128,7 +135,7 @@ let ok = 0, none = 0, fail = 0, shown = 0;
 await pool(todo, 10, async (t) => {
   const html = await get(t.u);
   if (!html) { fail++; return; }
-  const r = fromNuxt(html) || fromHtml(html);
+  const r = fromNuxt(html, t.u) || fromHtml(html);
   if (!r) { none++; files.get(t.uni)[t.k][t.n] = { u: t.u, d: Date.now() }; return; }
   if (r.b.length > 6000) r.b = r.b.slice(0, 6000).replace(/\s+\S*$/, "") + "…";
   files.get(t.uni)[t.k][t.n] = { ...(r.b ? { b: r.b } : {}), ...(r.f.length ? { f: r.f } : {}), ...(r.img ? { img: r.img } : {}), u: t.u, d: Date.now() };
