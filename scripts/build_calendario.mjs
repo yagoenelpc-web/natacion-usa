@@ -131,9 +131,14 @@ function roster(html, base) {
     }
   }
   // Webs clásicas: datos estructurados (schema.org Person) con foto.
-  if (!out.size) for (const p of jsonLd(html).filter((x) => x["@type"] === "Person" && x.name)) out.set(dec(p.name), p.image?.url ? abs(p.image.url) : "");
+  if (!out.size) for (const p of jsonLd(html).filter((x) => x["@type"] === "Person" && x.name)) { out.set(dec(p.name), p.image?.url ? abs(p.image.url) : ""); if (p.url) hrefs.set(dec(p.name), abs(p.url)); }
   if (!out.size) for (const m of html.matchAll(/aria-label="([^"]+?) - View Profile"/g)) out.set(dec(m[1]), "");
-  if (!out.size) for (const m of html.matchAll(/class="sidearm-roster-player-name"[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>/gi)) out.set(dec(m[1]), "");
+  if (!out.size) for (const m of html.matchAll(/class="sidearm-roster-player-name"[\s\S]*?<a[^>]*?href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi)) { out.set(dec(m[2]), ""); hrefs.set(dec(m[2]), abs(m[1])); }
+  // Fichas en webs clásicas aunque ya tengamos los nombres: enlaces /roster/<nombre>/<id>.
+  for (const m of html.matchAll(/<a [^>]*?href="([^"]*\/roster\/(?!coaches)[a-z0-9-]+\/\d+[^"]*)"[^>]*>([\s\S]{0,400}?)<\/a>/gi)) {
+    const n = dec(m[2]);
+    if (out.has(n) && !hrefs.has(n)) hrefs.set(n, abs(m[1]));
+  }
   const list = [...out].filter(([n]) => /^[\p{L}'’.\- ]{3,60}$/u.test(n) && n.includes(" ")).map(([n, img]) => (img ? [n, img] : [n]));
   list.hrefs = hrefs;
   return list;
