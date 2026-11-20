@@ -47,7 +47,7 @@ const list = [...titles];
 const ent = {};
 for (let i = 0; i < list.length; i += 50) {
   const chunk = list.slice(i, i + 50);
-  const d = await getJSON("https://www.wikidata.org/w/api.php?" + new URLSearchParams({ action: "wbgetentities", sites: "enwiki", titles: chunk.join("|"), props: "claims|sitelinks", sitefilter: "enwiki", normalize: "1", format: "json" }));
+  const d = await getJSON("https://www.wikidata.org/w/api.php?" + new URLSearchParams({ action: "wbgetentities", sites: "enwiki", titles: chunk.join("|"), props: "claims|sitelinks", sitefilter: "enwiki", format: "json" }));
   for (const e of Object.values(d?.entities || {})) {
     const t = e.sitelinks?.enwiki?.title;
     if (!t) continue;

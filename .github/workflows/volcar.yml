@@ -9,6 +9,9 @@ on:
       max:
         description: Caracteres por página
         default: "2500"
+      grep:
+        description: Mostrar solo alrededor de este texto
+        default: ""
 
 jobs:
   volcar:
@@ -22,3 +25,4 @@ jobs:
         env:
           URLS: ${{ inputs.urls }}
           MAX: ${{ inputs.max }}
+          GREP: ${{ inputs.grep }}
