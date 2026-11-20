@@ -43,7 +43,7 @@ async function pool(items, n, fn) {
 }
 const dec = (s) => s.replace(/&amp;/g, "&").replace(/&#39;|&rsquo;|&#8217;/g, "'").replace(/&quot;/g, '"').replace(/&nbsp;/g, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 const low = (t) => (t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim();
-const iso = (mdY) => { const m = /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(mdY || ""); return m ? `${m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}` : ""; };
+const iso = (mdY) => { const m = /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(mdY || ""); if (!m) return ""; let [mo, d] = [+m[1], +m[2]]; if (mo > 12) [mo, d] = [d, mo]; return `${m[3]}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`; };
 
 // ---------- PDF de HY-TEK → texto con columnas ----------
 const TMP = join(tmpdir(), "res-pdf");
