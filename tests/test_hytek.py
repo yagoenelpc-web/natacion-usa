@@ -74,3 +74,14 @@ def test_parse_catalog():
     ]
     assert meets[0]["year"] == "2026"
     assert meets[0]["url"] == "https://swimmeetresults.tech/NCAA-Division-I-Men-2026"
+
+
+def test_parse_real_relay_page():
+    """Formato real de la web (copiado del Campeonato NCAA D-I 2026): cabecera 'School' y <span> vacíos."""
+    ev = parse_event(read("event_relay_real.htm"), BASE + "260325F002.htm")
+    assert ev.is_relay and len(ev.results) == 2
+    asu = ev.results[0]
+    assert (asu.place, asu.team, asu.times, asu.points) == ("1", "ASU", ["1:20.56", "1:20.07M"], "40")
+    assert asu.swimmers == ["Chaney, Adam", "Dobrzanski, Andy", "Kharun, Ilya", "Kulow, Jonny"]
+    assert asu.splits[-1] == "1:20.07"
+    assert ev.results[1].swimmers[1] == "de Groot, Koen"

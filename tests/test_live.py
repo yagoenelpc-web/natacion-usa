@@ -61,7 +61,7 @@ def test_live_all_events_parse():
         print(f"{e.number:>3} {e.name:<40} resultados={len(ev.results):>3} relevo={ev.is_relay} equipos={len(ev.teams)}")
         if len(ev.results) < 3:
             empty.append(e.name)
-            if len(empty) <= 3:
+            if "Relay" not in e.name:
                 print("--- HTML crudo de", e.name, "---\n" + "\n".join(html.splitlines()[:45]))
     assert not empty, f"pruebas sin resultados leídos: {empty}"
 

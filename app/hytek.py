@@ -282,7 +282,7 @@ def parse_event(html: str, url: str) -> EventResults:
                 ev.team_scores.append((int(place), team.strip(), pts))
             continue
         if not header_seen:
-            if re.match(r"^\s*(Name|Team)\b", line) and ("Finals" in line or "Prelims" in line or "Time" in line or "Score" in line):
+            if re.match(r"^\s*(Name|Team|School)\b", line) and ("Finals" in line or "Prelims" in line or "Time" in line or "Score" in line or "Seed" in line):
                 header_seen = True
                 ev.columns = line.split()
                 continue
