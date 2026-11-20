@@ -171,6 +171,19 @@ const done = process.env.FRESH ? {} : idx.done || {};
 const VER = 6;
 const RESET = idx.v !== VER;
 if (RESET) { for (const k of Object.keys(done)) delete done[k]; idx.meets = []; idx.pastDone = []; }
+// "Loyola (MD) vs NCAA Division I Championships" → el nombre es el del campeonato, no un dual.
+const EVENTY = /\b(championships?|invitational|invite|classic|open|ncaa|nationals?|conference|cup|relays|shootout|showdown|frosh)\b/i;
+const RENAME = /^(.+?) vs (.*\b(championships?|invitational|invite|classic|open|ncaa|nationals?|conference|cup|relays|shootout|showdown)\b.*)$/i;
+let renamed = 0;
+for (const m of idx.meets || []) {
+  const r = RENAME.exec(m.n);
+  if (!r || !m.u.some((u) => r[1] === u)) continue;
+  m.n = r[2];
+  const f = `web/data/m/${m.id.slice(2)}.json`;
+  const d = await readJSON(f, null);
+  if (d) { d.n = m.n; await writeFile(f, JSON.stringify(d)); }
+  renamed++;
+}
 const meetsById = new Map((idx.meets || []).map((m) => [m.id, m]));
 if (RESET) await rm("web/data/m", { recursive: true, force: true });
 const inArchive = new Set(archivo.meets.map((m) => m.url.split("#")[0]));
@@ -271,7 +284,7 @@ await pool(cand, 6, async (c) => {
   meet.start ||= c.d || "";
   meet.end ||= meet.start;
   meet.name = (meet.name || "").replace(/(\s+-\s+copied)+$/i, "").trim();
-  if (!meet.name || meet.name.length < 4 || /^(results?|dual meet)$/i.test(meet.name)) meet.name = c.o ? `${c.uni} ${/^(at|vs)\b/i.test(c.o) ? "" : "vs "}${c.o}`.replace(/\s+/g, " ") : c.uni;
+  if (!meet.name || meet.name.length < 4 || /^(results?|dual meet)$/i.test(meet.name)) meet.name = !c.o ? c.uni : EVENTY.test(c.o) ? c.o : `${c.uni} ${/^(at|vs)\b/i.test(c.o) ? "" : "vs "}${c.o}`.replace(/\s+/g, " ");
   const id = "r:" + createHash("sha1").update(sigOf(meet)).digest("hex").slice(0, 12);
   done[c.url] = id;
   const prev = meetsById.get(id);
@@ -303,6 +316,8 @@ for (const p of Object.values(plant)) for (const list of Object.values(p)) for (
   if (tk.length >= 2) current.add(tk[tk.length - 1] + "|" + tk[0].slice(0, 3));
 }
 const mi = sw.mi || {};
+for (const m of meetsById.values()) if (mi[m.id]) mi[m.id][0] = m.n;
+console.log("renombrados:", renamed);
 let marks = 0;
 for (const { entry, meet } of newMeets) {
   const past = entry.s !== label(seasonY);
