@@ -66,8 +66,8 @@ test("competiciones en directo desde el canal de SwimSwam", { skip: !live }, asy
       if (meet.lastEventUrl) {
         const html = await (await handler(new Request("https://x/api/fuente?url=" + encodeURIComponent(meet.lastEventUrl)))).text();
         const ev = parseEvent(html, meet.lastEventUrl);
-        const i = html.search(/Rankings|Scores/i);
-        console.log("última prueba:", ev.title, "filas", ev.results.length, "clasificación", ev.scores.length, i >= 0 ? JSON.stringify(html.slice(i - 80, i + 400)) : "(sin clasificación)");
+        const i = ev.title ? html.search(/Rankings|Scores/i) : 0;
+        console.log("última prueba:", ev.title, "filas", ev.results.length, "clasificación", ev.scores.length, i >= 0 ? JSON.stringify(html.slice(Math.max(0, i - 80), i + 400)) : "(sin clasificación)");
       }
     } catch (e) {
       console.log("fallo", m.url, e.message);

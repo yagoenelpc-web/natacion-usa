@@ -218,8 +218,14 @@ function rememberTeams(ev) {
   if (seen.size !== before) store.set("seenTeams", [...seen].slice(-1500));
 }
 
-async function loadEvent(url, live) {
-  const ev = parseEvent(await api(url, live ? 45 : 6 * 3600), url);
+async function loadEvent(url, live, hops = 0) {
+  const html = await api(url, live ? 45 : 6 * 3600);
+  let ev = parseEvent(html, url);
+  if (!ev.title && hops < 2) {
+    // "Última prueba" a veces es una página que redirige (meta refresh, marco o script).
+    const m = /http-equiv=["']?refresh["']?[^>]*url=([^"'>\s]+)/i.exec(html) || /<i?frame[^>]+src=["']?([^"'>\s]+)/i.exec(html) || /location(?:\.href)?\s*=\s*["']([^"']+)/i.exec(html);
+    if (m) return loadEvent(new URL(m[1], url).href, live, hops + 1);
+  }
   rememberTeams(ev);
   return ev;
 }
