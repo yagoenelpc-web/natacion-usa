@@ -36,6 +36,12 @@ if (ev.length) {
 await shot("6-universidades", "#/u");
 await shot("7-ficha", "#/uni/Texas", ".facts");
 await shot("8-ajustes", "#/ajustes", ".settings");
+await page.goto(base + "#/n");
+await page.fill("#sq", process.env.NADADOR || "Gemmell");
+await page.waitForTimeout(400);
+await page.screenshot({ path: `${out}/9-nadadores.png`, fullPage: true });
+const first = await page.$eval("#slist a.urow", (a) => a.getAttribute("href")).catch(() => null);
+if (first) await shot("9b-nadador", first, ".list");
 console.log("universidades en el buscador:", await page.$$eval(".urow", (r) => r.length));
 console.log("errores:", errors);
 if (process.env.CAPTURAS_LOG) {

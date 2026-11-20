@@ -45,7 +45,7 @@ const seasonStart = Date.UTC(new Date().getUTCMonth() >= 7 ? y : y - 1, 7, 1);
 const unis = (await readJSON("web/data/unis.json", { unis: [] })).unis;
 const archivo = await readJSON("web/data/archivo.json", { meets: [] });
 const byUrl = new Map(archivo.meets.map((m) => [m.url, m]));
-const feeds = ["https://swimswam.com/feed/", "https://swimswam.com/feed/?paged=2", "https://swimswam.com/feed/?paged=3", "https://swimswam.com/feed/?paged=4", "https://swimswam.com/tag/live-results/feed/", "https://swimswam.com/category/college/feed/", "https://swimswam.com/category/college/feed/?paged=2"];
+const feeds = ["https://swimswam.com/feed/", "https://swimswam.com/feed/?paged=2", "https://swimswam.com/feed/?paged=3", "https://swimswam.com/feed/?paged=4", "https://swimswam.com/feed/?paged=5", "https://swimswam.com/feed/?paged=6", "https://swimswam.com/feed/?paged=7", "https://swimswam.com/feed/?paged=8", "https://swimswam.com/tag/live-results/feed/?paged=2", "https://swimswam.com/tag/live-results/feed/?paged=3", "https://swimswam.com/tag/live-results/feed/", "https://swimswam.com/category/college/feed/", "https://swimswam.com/category/college/feed/?paged=2"];
 const found = [];
 for (const f of feeds) {
   const x = await get(f);
@@ -125,6 +125,35 @@ for (const m of ncaaMeets) {
     done.add(d + g);
   }
 }
+// D-III y NAIA no publican la clasificación completa en HY-TEK: campeón y subcampeón desde Wikipedia (CC BY-SA).
+const WIKI = { D3: { M: "NCAA Division III men's swimming and diving championships", W: "NCAA Division III women's swimming and diving championships" }, NAIA: { M: "NAIA men's swimming and diving championships", W: "NAIA women's swimming and diving championships" } };
+const strip = (c) => c.replace(/\{\{\s*sort\s*\|[^|}]*\|([^}]*)\}\}/gi, "$1").replace(/\{\{[^{}]*\}\}/g, "").replace(/<ref[\s\S]*?(<\/ref>|\/>)/gi, "").replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g, "$1").replace(/'{2,}/g, "").replace(/\(\d+\)/g, "").replace(/½/g, ".5").trim();
+for (const [d, bySex] of Object.entries(WIKI)) {
+  for (const [g, title] of Object.entries(bySex)) {
+    if (ncaa.divisions[d]?.[g]) continue;
+    try {
+      const j = await (await fetch("https://en.wikipedia.org/w/api.php?" + new URLSearchParams({ action: "parse", page: title, prop: "wikitext", redirects: "1", format: "json", formatversion: "2" }), { headers: UA })).json();
+      const wt = j.parse?.wikitext || "";
+      const rows = wt.split(/\n\|-/).filter((r) => /\b20\d{2}\b/.test(r));
+      let best = null;
+      for (const r of rows) {
+        const yr = +(/\b(20\d{2})\b/.exec(r)?.[1] || 0);
+        if (!best || yr > best.yr) best = { yr, r };
+      }
+      if (!best) continue;
+      const cells = best.r.split(/\n[|!]|\|\||!!/).map((c) => strip(c.replace(/^[^|\n[]*?(style|align|rowspan|colspan|bgcolor|scope)=[^|]*\|/i, ""))).filter(Boolean);
+      const num = (c) => /^\d+(\.\d+)?$/.test(c);
+      const pts = cells.map((c, i) => (num(c) && i > 0 && !num(cells[i - 1]) && !/^(19|20)\d{2}$/.test(c) ? i : -1)).filter((i) => i > 0);
+      console.log("wiki", d, g, best.yr, JSON.stringify(cells).slice(0, 300));
+      if (pts.length < 2) continue;
+      const teams = pts.slice(0, 2).map((i, k) => ({ p: k + 1, t: cells[i - 1].replace(/\s*\(.*$/, ""), pts: cells[i] }));
+      ncaa.divisions[d] ||= {};
+      ncaa.divisions[d][g] = { year: String(best.yr), meet: title, teams, partial: true };
+    } catch (e) {
+      console.log("wiki", d, g, e.message);
+    }
+  }
+}
 await writeFile("web/data/ncaa.json", JSON.stringify(ncaa));
 for (const [d, v] of Object.entries(ncaa.divisions)) for (const [g, x] of Object.entries(v)) console.log("NCAA", d, g, x.year, x.teams.length, x.teams.slice(0, 5).map((t) => t.p + "." + t.t).join(" "));
 
@@ -160,7 +189,8 @@ await pool(todo, 3, async (s) => {
     const g = sexOf(ev.title);
     for (const r of ev.results) {
       if (!r.n || !r.t || !r.m || /^(DQ|NS|SCR|DFS|NT)$/i.test(r.m) || !/[a-z]/i.test(r.n)) continue;
-      const name = r.n.includes(",") ? r.n.split(",").map((x) => x.trim()).reverse().join(" ") : r.n;
+      const name = (r.n.includes(",") ? r.n.split(",").map((x) => x.trim()).filter(Boolean).reverse().join(" ") : r.n).replace(/\s+/g, " ").trim();
+      if (name.split(" ").length < 2) continue;
       const k = keyOf(name, r.t);
       const sw = swimmers.get(k) || { n: name, t: r.t, g, y: "", b: {}, m: [] };
       if (r.y && /^(FR|SO|JR|SR|5Y|GR)$/i.test(r.y)) sw.y = r.y.toUpperCase();

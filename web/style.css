@@ -227,7 +227,7 @@ main { max-width: 720px; margin: 0 auto; padding: 14px 16px 24px; }
 .sname { flex: 1; font-weight: 700; min-width: 0; }
 .pts { font-weight: 800; font-size: 18px; font-variant-numeric: tabular-nums; }
 .pts small { color: var(--muted); font-weight: 600; }
-.urow > span:not(.crest) { flex: 1; font-weight: 600; }
+.urow > span:not(.crest):not(.rk):not(.avatar):not(.chev), .srow > span.uinfo { flex: 1; font-weight: 600; min-width: 0; }
 .more { display: block; text-align: center; color: var(--brand); font-weight: 700; padding: 14px; }
 
 .podium { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 10px; align-items: end; margin: 4px 0 16px; }
@@ -351,7 +351,25 @@ body.has-badge { padding-bottom: calc(150px + env(safe-area-inset-bottom)); }
 .links { display: flex; justify-content: center; gap: 20px; }
 .links a { color: var(--brand); font-weight: 700; font-size: 14px; }
 .thead h1 a { color: inherit; }
-.tabbar { width: min(400px, calc(100% - 32px)); }
+.tabbar { width: min(440px, calc(100% - 24px)); }
 .tabbar a em { font-style: normal; }
 .urow > span.dtag { flex: none; }
 .links { flex-wrap: wrap; } .links a { white-space: nowrap; }
+
+/* Ranking, equipo técnico y nadadores */
+.rk { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.rk i { font-style: normal; font-size: 11px; font-weight: 800; color: var(--brand); background: rgba(10, 100, 224, 0.1); padding: 2px 7px; border-radius: 8px; white-space: nowrap; }
+.card.ncaa { display: grid; gap: 10px; }
+.nrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-weight: 700; }
+.nrow b { font-size: 18px; }
+.nrow b small { font-size: 12px; color: var(--muted); font-weight: 600; }
+.nrow b.muted { font-size: 14px; color: var(--muted); }
+.avatar { flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 14px; color: #fff; background: linear-gradient(135deg, #0a64e0, #36b5ff); }
+.avatar.w { background: linear-gradient(135deg, #d6336c, #ff8fb1); }
+.staff .uinfo a { display: block; margin-top: 3px; font-size: 13px; font-weight: 600; color: var(--brand); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.uinfo small { display: block; color: var(--muted); font-weight: 600; font-size: 12.5px; }
+.time { font-weight: 800; font-size: 17px; font-variant-numeric: tabular-nums; }
+.mline { padding: 6px 0; font-weight: 600; border-bottom: 1px solid var(--line, rgba(127, 127, 127, 0.15)); }
+.mline:last-child { border-bottom: 0; }
+.btn.alt { background: rgba(10, 100, 224, 0.12); color: var(--brand); box-shadow: none; margin-top: -4px; }
+.fact b a { color: var(--brand); word-break: break-all; }

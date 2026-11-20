@@ -17,6 +17,7 @@ const ORG = {
   usas: { label: "USA Swimming", short: "USA", full: "USA Swimming" },
   usms: { label: "US Masters", short: "USMS", full: "US Masters Swimming" },
   conf: { label: "Conferencias", short: "🏊", get full() { return T("Conferencias e invitationals"); } },
+  dual: { label: "Duales", short: "VS", get full() { return T("Encuentros entre universidades"); } },
 };
 const SECTION_ES = {
   "Championship Final": "Final A",
@@ -31,6 +32,19 @@ const $app = document.getElementById("app");
 
 // ---------- idioma ----------
 const EN = {
+  "Encuentros entre universidades": "Dual meets", "Ranking NCAA": "NCAA ranking", "Ranking: puesto en los últimos campeonatos NCAA/NAIA (♂ chicos, ♀ chicas).": "Ranking: place at the last NCAA/NAIA championships (♂ men, ♀ women).",
+  "Datos de Wikipedia (CC BY-SA), Wikidata y webs oficiales.": "Data from Wikipedia (CC BY-SA), Wikidata and official sites.", "No puntuó": "Did not score", "Solo se publican campeón y subcampeón": "Only champion and runner-up are published", "de {n}": "of {n}",
+  "Entrenador principal": "Head coach", "Entrenador (mujeres)": "Women's head coach", "Esta universidad no publica su equipo técnico en un formato que se pueda leer.": "This school doesn't publish its staff in a readable format.",
+  "Ver en su web": "See their site", "1º año": "Freshman", "2º año": "Sophomore", "3º año": "Junior", "4º año": "Senior", "Posgrado": "Graduate", "5º año": "5th year",
+  "Aún no hay nadadores de esta universidad en los resultados guardados de esta temporada.": "No swimmers from this school in this season's saved results yet.",
+  "Últimos campeonatos nacionales": "Last national championships", "Correo de la universidad": "University email", "Su última competición en casa": "Their latest home meet",
+  "Equipo técnico y contacto": "Staff and contact", "Nadadores": "Swimmers", "Web de la universidad": "University site", "Equipo técnico (mujeres)": "Women's staff",
+  "Plantilla oficial": "Official roster", "Plantilla oficial (mujeres)": "Women's official roster",
+  "Nadadores sacados de los resultados públicos de esta temporada y de los últimos NCAA. Datos de Wikipedia (CC BY-SA), Wikidata y la web oficial de la universidad.": "Swimmers taken from this season's public results and the last NCAA championships. Data from Wikipedia (CC BY-SA), Wikidata and the school's official site.",
+  "Cargando nadadores…": "Loading swimmers…", "Nadadores de universidades de EE. UU. que aparecen en los resultados de esta temporada y de los últimos NCAA.": "US college swimmers found in this season's results and the last NCAA championships.",
+  "Buscar nadador o universidad": "Search swimmer or school", "nadadores": "swimmers", "actualizado": "updated", "Escribe un nombre (por ejemplo «Gemmell») o una universidad.": "Type a name (e.g. “Gemmell”) or a school.",
+  "No hay nadadores con ese nombre en los resultados guardados.": "No swimmers with that name in the saved results.", "Nadador no encontrado.": "Swimmer not found.",
+  "Mejores marcas": "Best times", "Competiciones": "Meets", "Ver universidad": "See school", "Marcas oficiosas de los resultados públicos (Y = yardas, M = metros).": "Unofficial times from public results (Y = yards, M = meters).",
   "Conferencias e invitationals": "Conferences & invitationals",
   "Buscando campeonatos…": "Finding meets…",
   "Cargando…": "Loading…",
@@ -238,7 +252,93 @@ async function loadUnis() {
   }
   return unis;
 }
-const findUni = (name) => (uniIndex ? matchTeam(uniIndex, name)?.uni || null : null);
+const findUni = (name) => {
+  if (!uniIndex || !name) return null;
+  const direct = matchTeam(uniIndex, name)?.uni;
+  if (direct) return direct;
+  const e = logoIndex ? matchTeam(logoIndex, name) : null;
+  return e ? matchTeam(uniIndex, e.display)?.uni || null : null;
+};
+
+// Datos que GitHub actualiza solos: archivo de competiciones, ranking NCAA y nadadores.
+const jsonCache = {};
+async function loadData(name) {
+  if (name in jsonCache) return jsonCache[name];
+  try {
+    const r = await fetch(`/data/${name}.json`, { cache: "no-cache" });
+    jsonCache[name] = r.ok ? await r.json() : null;
+  } catch {
+    jsonCache[name] = null;
+  }
+  return jsonCache[name];
+}
+let rankMap = null;
+async function loadRanks() {
+  if (rankMap) return rankMap;
+  await loadLogos().catch(() => {});
+  const d = (await loadData("ncaa")) || { divisions: {} };
+  rankMap = new Map();
+  rankMap.partial = new Set(Object.entries(d.divisions || {}).flatMap(([div, v]) => Object.entries(v).filter(([, x]) => x.partial).map(([g]) => div + g)));
+  for (const [div, bySex] of Object.entries(d.divisions || {}))
+    for (const [g, x] of Object.entries(bySex))
+      for (const t of x.teams) {
+        const u = findUni(t.t);
+        if (!u) continue;
+        const r = rankMap.get(u) || {};
+        if (!r[g] || (div === u.div && r[g].div !== u.div)) r[g] = { p: t.p, pts: t.pts, year: x.year, div, of: x.partial ? 0 : x.teams.length };
+        rankMap.set(u, r);
+      }
+  return rankMap;
+}
+const bestRank = (r) => Math.min(r?.M?.p ?? Infinity, r?.W?.p ?? Infinity);
+let swimmers = null;
+async function loadSwimmers() {
+  if (swimmers) return swimmers;
+  await loadLogos().catch(() => {});
+  const d = await loadData("nadadores");
+  const secs = (t) => { const m = /^(?:(\d+):)?(\d+\.\d+)/.exec(t || ""); return m ? (+m[1] || 0) * 60 + +m[2] : Infinity; };
+  const merged = new Map();
+  for (const x of d?.swimmers || []) {
+    const n = x.n.trim();
+    if (n.split(/\s+/).length < 2) continue;
+    const u = findUni(x.t);
+    const k = n.toLowerCase() + "|" + (u ? u.n : x.t.toLowerCase());
+    const prev = merged.get(k);
+    if (!prev) {
+      merged.set(k, { ...x, n, u, b: { ...x.b }, m: [...x.m] });
+      continue;
+    }
+    prev.y ||= x.y;
+    prev.g ||= x.g;
+    for (const [ev, v] of Object.entries(x.b)) if (!prev.b[ev] || secs(v[0]) < secs(prev.b[ev][0])) prev.b[ev] = v;
+    for (const m of x.m) if (!prev.m.includes(m)) prev.m.push(m);
+  }
+  swimmers = [...merged.values()].sort((a, b) => a.n.localeCompare(b.n)).map((x, i) => ({ ...x, i }));
+  swimmers.updated = d?.updated || "";
+  return swimmers;
+}
+const isDual = (name) => /\bvs\.?\s|\bv\.\s|\bdual\b|tri[- ]?meet|quad[- ]?meet/i.test(name);
+async function loadArchive() {
+  const d = await loadData("archivo");
+  const today = todayUS();
+  const latest = new Map();
+  for (const m of d?.meets || []) {
+    const base = m.url.split("#")[0];
+    const prev = latest.get(base);
+    if (!prev || (m.start || "") > (prev.start || "")) latest.set(base, m);
+  }
+  return [...latest.values()].map((m) => ({
+    id: m.url.split("#")[0],
+    name: m.name,
+    org: isDual(m.name) ? "dual" : m.org || organization(m.name),
+    start: m.start || null,
+    end: m.end || m.start || null,
+    status: m.start && m.start > today ? "upcoming" : m.start && (m.end || m.start) >= today ? "live" : "done",
+    events: m.events,
+    article: m.article,
+    via: m.src,
+  }));
+}
 
 async function loadMeetIndex(id) {
   const url = meetUrlFromId(id);
@@ -307,9 +407,19 @@ async function loadSwimSwam() {
 }
 
 async function loadAllMeets() {
-  const [cat, ss] = await Promise.all([loadSummaries(), loadSwimSwam().catch(() => [])]);
-  const names = new Set(cat.map((s) => s.name.toLowerCase()));
-  return [...cat, ...ss.filter((s) => !names.has(s.name.toLowerCase()))];
+  const [cat, ss, arch] = await Promise.all([loadSummaries(), loadSwimSwam().catch(() => []), loadArchive().catch(() => [])]);
+  const out = [...cat];
+  const names = new Set(cat.map((s) => s.name.toLowerCase().trim()));
+  const ids = new Set(cat.map((s) => s.id));
+  for (const s of [...ss, ...arch]) {
+    const k = s.name.toLowerCase().trim();
+    if (names.has(k) || ids.has(s.id)) continue;
+    if (isDual(s.name)) s.org = "dual";
+    names.add(k);
+    ids.add(s.id);
+    out.push(s);
+  }
+  return out;
 }
 
 function rememberTeams(ev) {
@@ -698,8 +808,9 @@ async function universitiesView() {
   setTitle(T("Universidades"));
   loading();
   await loadLogos().catch(() => {});
+  const ranks = await loadRanks().catch(() => new Map());
   const f = favs();
-  const flt = { div: "", conf: "", st: "", sex: "", q: "", ...store.get("uniFilters", {}) };
+  const flt = { div: "", conf: "", st: "", sex: "", q: "", sort: "rank", ...store.get("uniFilters", {}) };
   const save = () => store.set("uniFilters", { ...flt, q: "" });
   const confs = (div) => [...new Set(unis.filter((u) => !div || u.div === div).flatMap((u) => [u.cm, u.cw]).filter(Boolean))].sort();
   const states = [...new Set(unis.map((u) => u.st).filter(Boolean))].sort();
@@ -718,12 +829,25 @@ async function universitiesView() {
     document.getElementById("fbar").innerHTML = `
       <div class="frow">${chip("div", "", T("Todas"))}${DIVS.map(([k]) => chip("div", k, k === "NAIA" ? "NAIA" : k.replace("D", "D-"))).join("")}</div>
       <div class="frow">${chip("sex", "", T("Todos"))}${chip("sex", "m", T("Hombres"))}${chip("sex", "w", T("Mujeres"))}</div>
+      <div class="frow">${chip("sort", "rank", "🏆 " + T("Ranking NCAA"))}${chip("sort", "az", "A-Z")}</div>
       <div class="frow selects">
         <label><span>${T("Conferencia")}</span><select id="fconf"><option value="">${T("Todas")}</option>${confs(flt.div).map((c) => `<option ${c === flt.conf ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label>
         <label><span>${T("Estado")}</span><select id="fst"><option value="">${T("Todos")}</option>${states.map((c) => `<option ${c === flt.st ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label>
       </div>`;
-    const groups = DIVS.map(([k, label]) => [label, list.filter((u) => u.div === k)]).filter(([, l]) => l.length);
-    const row = (u) => `<a class="urow" href="#/uni/${enc(u.n)}">${crest(u.n, 34)}<span class="uinfo"><b>${esc(u.n)}</b><small>${esc([u.nick, u.city || u.st].filter(Boolean).join(" · "))}</small></span><span class="dtag ${u.div}">${esc(u.cw || u.cm || "")}</span>${star(u.n)}</a>`;
+    const key = (u) => {
+      const r = ranks.get(u);
+      if (!r) return [Infinity, Infinity];
+      const m = flt.sex === "m" ? r.M?.p ?? Infinity : flt.sex === "w" ? r.W?.p ?? Infinity : bestRank(r);
+      return [m, (r.M?.p ?? 99) + (r.W?.p ?? 99)];
+    };
+    const sorted = flt.sort === "az" ? list : list.slice().sort((a, b) => { const x = key(a), y = key(b); return x[0] - y[0] || x[1] - y[1] || a.n.localeCompare(b.n); });
+    const groups = DIVS.map(([k, label]) => [label, sorted.filter((u) => u.div === k)]).filter(([, l]) => l.length);
+    const rk = (u) => {
+      const r = ranks.get(u);
+      if (!r) return "";
+      return `<span class="rk">${r.M ? `<i>♂ ${r.M.p}º</i>` : ""}${r.W ? `<i>♀ ${r.W.p}º</i>` : ""}</span>`;
+    };
+    const row = (u) => `<a class="urow" href="#/uni/${enc(u.n)}">${crest(u.n, 34)}<span class="uinfo"><b>${esc(u.n)}</b><small>${esc([u.nick, u.city || u.st].filter(Boolean).join(" · "))}</small></span>${rk(u) || `<span class="dtag ${u.div}">${esc(u.cw || u.cm || "")}</span>`}${star(u.n)}</a>`;
     document.getElementById("ulist").innerHTML =
       (f.size && !ql && !flt.div && !flt.conf && !flt.st && !flt.sex ? `<h2>${T("Mis universidades")}</h2><div class="grid">${[...f].map((t) => `<a class="tcard" href="#/uni/${enc(t)}">${crest(t, 48)}<span>${esc(t)}</span>${star(t)}</a>`).join("")}</div>` : "") +
       (groups.length
@@ -734,7 +858,7 @@ async function universitiesView() {
   };
   $app.innerHTML = `<section class="pad"><h1>${T("Universidades")}</h1><p class="sub">${T("Marca con ★ las tuyas: aparecerán en la portada y podrás filtrar los resultados.")}</p>
     <input type="search" id="uq" placeholder="${T("Buscar universidad")}"></section><div id="fbar" class="fbar"></div><div id="ulist"></div>
-    <p class="foot">${unis.length} ${T("universidades")} · ${T("Datos de Wikipedia (CC BY-SA).")}</p>`;
+    <p class="foot">${unis.length} ${T("universidades")} · ${T("Ranking: puesto en los últimos campeonatos NCAA/NAIA (♂ chicos, ♀ chicas).")} ${T("Datos de Wikipedia (CC BY-SA), Wikidata y webs oficiales.")}</p>`;
   document.getElementById("fbar").onclick = (e) => {
     const b = e.target.closest("[data-f]");
     if (!b) return;
@@ -747,6 +871,8 @@ async function universitiesView() {
   render();
 }
 
+const ord = (n) => (lang() === "en" ? n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th") : `${n}º`);
+const hrefOk = (u) => (u ? (u.startsWith("http") ? u : "https://" + u) : "");
 async function uniView(name) {
   setTab("unis");
   loading();
@@ -754,27 +880,112 @@ async function uniView(name) {
   const u = unis.find((x) => x.n === name) || findUni(name);
   if (!u) return errorView("Universidad no encontrada.");
   setTitle(u.n);
+  const [ranks, sw] = await Promise.all([loadRanks().catch(() => new Map()), loadSwimmers().catch(() => [])]);
+  const r = ranks.get(u);
+  const team = sw.filter((x) => x.u === u);
   const info = logoIndex ? matchTeam(logoIndex, u.n) || matchTeam(logoIndex, u.full) : null;
   const tint = info && info.color && info.color !== "#0b63ce" ? info.color : "#0b3d91";
   const fact = (label, value) => (value ? `<div class="fact"><small>${esc(label)}</small><b>${esc(value)}</b></div>` : "");
-  const coach = u.coach || (!u.coachM && !u.coachW ? "" : null);
-  const web = u.web ? (u.web.startsWith("http") ? u.web : "https://" + u.web) : "";
+  const web = hrefOk(u.web);
+  const ncaaRow = (g, label) => {
+    const x = r?.[g];
+    if (!x) return `<div class="nrow"><span>${label}</span><b class="muted">${ranks.partial?.has(u.div + g) ? T("Solo se publican campeón y subcampeón") : T("No puntuó")}</b></div>`;
+    const medal = x.p <= 3 ? ["🥇", "🥈", "🥉"][x.p - 1] : "🏅";
+    return `<div class="nrow"><span>${label}</span><b>${medal} ${ord(x.p)} <small>${x.of ? T("de {n}", { n: x.of }) + " · " : ""}${esc(x.pts)} pts</small></b></div>`;
+  };
+  const year = r?.M?.year || r?.W?.year || "";
+  const staff = u.staff || [];
+  const coachLine = u.coach ? fact(T("Entrenador principal"), u.coach) : fact(T("Entrenador (hombres)"), u.coachM) + fact(T("Entrenador (mujeres)"), u.coachW);
+  const staffHtml = staff.length
+    ? `<div class="list staff">${staff
+        .map((p) => `<div class="srow"><span class="avatar">${esc(initials(p.n))}</span><span class="uinfo"><b>${esc(p.n)}</b><small>${esc(p.t)}${p.g ? ` · ${p.g === "M" ? T("Hombres") : T("Mujeres")}` : ""}</small>${p.e ? `<a href="mailto:${esc(p.e)}">✉️ ${esc(p.e)}</a>` : ""}</span></div>`)
+        .join("")}</div>`
+    : `<div class="card muted">${T("Esta universidad no publica su equipo técnico en un formato que se pueda leer.")}${u.staffUrl || web ? ` <a href="${esc(u.staffUrl || web)}" target="_blank" rel="noopener">${T("Ver en su web")} ↗</a>` : ""}</div>`;
+  const yr = (y) => ({ FR: T("1º año"), SO: T("2º año"), JR: T("3º año"), SR: T("4º año"), GR: T("Posgrado"), "5Y": T("5º año") }[y] || "");
+  const top = (x) => Object.entries(x.b)[0];
+  const teamHtml = team.length
+    ? `<div class="list">${team
+        .sort((a, b) => (a.g || "").localeCompare(b.g || "") || a.n.localeCompare(b.n))
+        .slice(0, 150)
+        .map((x) => `<a class="urow" href="#/n/${x.i}"><span class="avatar ${x.g === "W" ? "w" : "m"}">${x.g === "W" ? "♀" : "♂"}</span><span class="uinfo"><b>${esc(x.n)}</b><small>${esc([yr(x.y), top(x) ? `${top(x)[0]} ${top(x)[1][0]}` : ""].filter(Boolean).join(" · "))}</small></span><span class="chev">›</span></a>`)
+        .join("")}</div>`
+    : `<div class="card muted">${T("Aún no hay nadadores de esta universidad en los resultados guardados de esta temporada.")}</div>`;
+  const link = (h, label) => (h ? `<a href="${esc(h)}" target="_blank" rel="noopener">${label} ↗</a>` : "");
   $app.innerHTML = `
   <a class="back" href="#/u">‹ ${T("Universidades")}</a>
   <section class="mhero uhero" style="--tint:${tint}">
     <div class="mtop"><span class="bigcrest">${crest(u.n, 76)}</span><div><h1>${esc(u.n)}</h1><p>${esc(u.full)}</p><p>${esc(place(u))}</p></div>${star(u.n)}</div>
     <div class="pills"><span class="pill">${esc(divLabel(u.div))}</span>${u.men ? `<span class="pill">♂ ${T("Hombres")}</span>` : ""}${u.women ? `<span class="pill">♀ ${T("Mujeres")}</span>` : ""}${u.diving ? `<span class="pill">🤿 ${T("Saltos")}</span>` : ""}</div>
   </section>
+  <h2>🏆 ${T("Últimos campeonatos nacionales")} ${year ? `<span class="count">${esc(year)}</span>` : ""}</h2>
+  <div class="card ncaa">${u.men ? ncaaRow("M", "♂ " + T("Hombres")) : ""}${u.women ? ncaaRow("W", "♀ " + T("Mujeres")) : ""}</div>
   <div class="facts">
     ${fact(T("Apodo"), u.nick)}
     ${fact(T("División"), divLabel(u.div))}
     ${u.cm && u.cm === u.cw ? fact(T("Conferencia"), u.cm) : fact(`${T("Conferencia")} · ${T("Hombres")}`, u.cm) + fact(`${T("Conferencia")} · ${T("Mujeres")}`, u.cw)}
     ${fact(T("Ciudad"), place(u))}
-    ${coach !== null ? fact(T("Entrenador"), u.coach || (web ? T("Ver en la web oficial") : T("No disponible"))) : fact(T("Entrenador (hombres)"), u.coachM) + fact(T("Entrenadora/entrenador (mujeres)"), u.coachW)}
+    ${coachLine}
+    ${u.email ? `<div class="fact"><small>${T("Correo de la universidad")}</small><b><a href="mailto:${esc(u.email)}">${esc(u.email)}</a></b></div>` : ""}
   </div>
   <a class="btn wide" href="#/u/${enc(u.n)}">🏊 ${T("Ver sus resultados")}</a>
-  <div class="links">${u.wiki ? `<a href="${esc(u.wiki)}" target="_blank" rel="noopener">${T("Wikipedia")} ↗</a>` : ""}${web ? `<a href="${esc(web)}" target="_blank" rel="noopener">${T("Web oficial")} ↗</a><a href="${esc(web.replace(/\/+$/, ""))}/sports/swimming-and-diving/coaches" target="_blank" rel="noopener">${T("Equipo técnico")} ↗</a>` : ""}</div>
-  <p class="foot">${T("Datos de Wikipedia (CC BY-SA).")}</p>`;
+  ${u.hytek ? `<a class="btn wide alt" href="#/m/${enc(`https://www.sidearmstats.com/${u.hytek}/swim/evtindex.htm`)}">⏱️ ${T("Su última competición en casa")}</a>` : ""}
+  <h2>👥 ${T("Equipo técnico y contacto")} ${staff.length ? `<span class="count">${staff.length}</span>` : ""}</h2>
+  ${staffHtml}
+  <h2>🏊 ${T("Nadadores")} ${team.length ? `<span class="count">${team.length}</span>` : ""}</h2>
+  ${teamHtml}
+  <div class="links">${link(web, T("Web oficial"))}${link(u.uweb, T("Web de la universidad"))}${link(u.staffUrl || u.staffMUrl, T("Equipo técnico"))}${link(u.staffWUrl, T("Equipo técnico (mujeres)"))}${link(u.rosterUrl || u.rosterMUrl, T("Plantilla oficial"))}${link(u.rosterWUrl, T("Plantilla oficial (mujeres)"))}${link(u.wiki, "Wikipedia")}</div>
+  <p class="foot">${T("Nadadores sacados de los resultados públicos de esta temporada y de los últimos NCAA. Datos de Wikipedia (CC BY-SA), Wikidata y la web oficial de la universidad.")}</p>`;
+}
+
+async function swimmersView() {
+  setTab("nad");
+  setTitle(T("Nadadores"));
+  loading("Cargando nadadores…");
+  const sw = await loadSwimmers().catch(() => []);
+  const q0 = store.get("swq", "");
+  $app.innerHTML = `<section class="pad"><h1>${T("Nadadores")}</h1><p class="sub">${T("Nadadores de universidades de EE. UU. que aparecen en los resultados de esta temporada y de los últimos NCAA.")}</p>
+    <input type="search" id="sq" placeholder="${T("Buscar nadador o universidad")}" value="${esc(q0)}"></section><div id="slist"></div>
+    <p class="foot">${sw.length} ${T("nadadores")}${sw.updated ? ` · ${T("actualizado")} ${esc(fmtDate(sw.updated))}` : ""}</p>`;
+  const render = (q) => {
+    store.set("swq", q);
+    const words = q.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(/\s+/).filter(Boolean);
+    const box = document.getElementById("slist");
+    if (!words.length) {
+      box.innerHTML = `<div class="card muted">${T("Escribe un nombre (por ejemplo «Gemmell») o una universidad.")}</div>`;
+      return;
+    }
+    const hay = (x) => (x._h ||= `${x.n} ${x.t} ${x.u ? x.u.n + " " + x.u.full : ""}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+    const hits = sw.filter((x) => words.every((w) => hay(x).includes(w))).slice(0, 120);
+    box.innerHTML = hits.length
+      ? `<div class="list">${hits.map((x) => `<a class="urow" href="#/n/${x.i}">${crest(x.u ? x.u.n : x.t, 34)}<span class="uinfo"><b>${esc(x.n)}</b><small>${esc([x.u ? x.u.n : x.t, x.g === "W" ? "♀" : x.g === "M" ? "♂" : "", x.y].filter(Boolean).join(" · "))}</small></span><span class="chev">›</span></a>`).join("")}</div>`
+      : `<div class="card muted">${T("No hay nadadores con ese nombre en los resultados guardados.")}</div>`;
+  };
+  const input = document.getElementById("sq");
+  input.oninput = (e) => render(e.target.value);
+  render(q0);
+}
+
+async function swimmerView(i) {
+  setTab("nad");
+  loading();
+  const sw = await loadSwimmers().catch(() => []);
+  const x = sw[+i];
+  if (!x) return errorView("Nadador no encontrado.");
+  setTitle(x.n);
+  const uname = x.u ? x.u.n : x.t;
+  const info = logoIndex ? matchTeam(logoIndex, uname) : null;
+  const tint = info && info.color && info.color !== "#0b63ce" ? info.color : "#0b3d91";
+  const yr = { FR: T("1º año"), SO: T("2º año"), JR: T("3º año"), SR: T("4º año"), GR: T("Posgrado"), "5Y": T("5º año") }[x.y] || "";
+  $app.innerHTML = `<a class="back" href="#/n">‹ ${T("Nadadores")}</a>
+  <section class="mhero uhero" style="--tint:${tint}">
+    <div class="mtop"><span class="bigcrest">${crest(uname, 76)}</span><div><h1>${esc(x.n)}</h1><p>${x.u ? `<a href="#/uni/${enc(x.u.n)}">${esc(x.u.full || x.u.n)}</a>` : esc(x.t)}</p><p>${esc([x.g === "W" ? T("Mujeres") : x.g === "M" ? T("Hombres") : "", yr].filter(Boolean).join(" · "))}</p></div></div>
+  </section>
+  <h2>⏱️ ${T("Mejores marcas")}</h2>
+  <div class="list">${Object.entries(x.b).map(([ev, [t, m]]) => `<div class="srow"><span class="uinfo"><b>${esc(ev)}</b><small>${esc(m)}</small></span><span class="time">${esc(t)}</span></div>`).join("")}</div>
+  <h2>📅 ${T("Competiciones")}</h2>
+  <div class="card">${x.m.map((m) => `<div class="mline">${esc(m)}</div>`).join("")}</div>
+  ${x.u ? `<a class="btn wide" href="#/uni/${enc(x.u.n)}">🎓 ${T("Ver universidad")}</a>` : ""}
+  <p class="foot">${T("Marcas oficiosas de los resultados públicos (Y = yardas, M = metros).")}</p>`;
 }
 
 const THEMES = [["auto", "Automático"], ["light", "Claro"], ["dark", "Oscuro"]];
@@ -786,7 +997,7 @@ function applySettings() {
   else root.dataset.theme = th;
   root.dataset.bg = store.get("bg", "ocean");
   root.lang = lang();
-  const labels = { home: T("Campeonatos"), unis: T("Universidades"), ajustes: T("Ajustes") };
+  const labels = { home: T("Campeonatos"), unis: T("Universidades"), nad: T("Nadadores"), ajustes: T("Ajustes") };
   document.querySelectorAll(".tabbar a").forEach((a) => {
     const l = a.querySelector("em");
     if (l) l.textContent = labels[a.dataset.tab];
@@ -854,6 +1065,8 @@ function route() {
   if (parts[0] === "u" && parts[1]) return favTeamView(parts[1]);
   if (parts[0] === "uni" && parts[1]) return uniView(parts[1]);
   if (parts[0] === "ajustes") return settingsView();
+  if (parts[0] === "n" && parts[1]) return swimmerView(parts[1]);
+  if (parts[0] === "n") return swimmersView();
   if (parts[0] === "u") return universitiesView();
   return homeView();
 }
