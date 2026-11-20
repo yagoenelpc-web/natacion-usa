@@ -146,6 +146,8 @@ const archivo = await readJSON("web/data/archivo.json", { meets: [] });
 const plant = (await readJSON("web/data/plantillas.json", { plant: {} })).plant;
 const idx = await readJSON("web/data/encuentros.json", { v: 1, meets: [], done: {} });
 const done = process.env.FRESH ? {} : idx.done || {};
+// Versión 2 del lector: vuelve a probar los enlaces que antes no dieron resultados.
+if (idx.v !== 2) for (const k of Object.keys(done)) if (!done[k]) delete done[k];
 const meetsById = new Map((idx.meets || []).map((m) => [m.id, m]));
 const inArchive = new Set(archivo.meets.map((m) => m.url.split("#")[0]));
 const skipHost = /swimcloud\.com|active\.com|meetmobile|usaswimming\.org|swimmingworld|swimswam\.com|youtube|facebook|twitter|instagram|flickr|smugmug/i;
@@ -306,7 +308,7 @@ const list = [...map.values()].map((s) => ({ ...s, m: s.m.slice().sort((a, b) =>
 list.sort((a, b) => a.n.localeCompare(b.n));
 await writeFile("web/data/nadadores.json", JSON.stringify({ ...sw, swimmers: list, mi }));
 const meets = [...meetsById.values()].sort((a, b) => (b.d || "").localeCompare(a.d || ""));
-await writeFile("web/data/encuentros.json", JSON.stringify({ v: 1, updated: new Date().toISOString().slice(0, 10), meets, done, pastDone: [...pastDone] }));
+await writeFile("web/data/encuentros.json", JSON.stringify({ v: 2, updated: new Date().toISOString().slice(0, 10), meets, done, pastDone: [...pastDone] }));
 console.log("nadadores:", list.length, "marcas nuevas o mejoradas:", marks, "· con marcas:", list.filter((s) => Object.keys(s.b).length).length);
 console.log("ejemplos:", meets.slice(0, 15).map((m) => `${m.d} ${m.n} [${m.u.join(", ")}] ${m.ev} pruebas`).join("\n"));
 await rm(TMP, { recursive: true, force: true });
