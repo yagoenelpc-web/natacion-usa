@@ -1,0 +1,38 @@
+name: Biografías
+
+on:
+  schedule:
+    - cron: "23 9 * * *"
+  workflow_dispatch:
+    inputs:
+      minutos:
+        description: Minutos máximos
+        default: "40"
+      urls:
+        description: Solo probar estas fichas (no guarda)
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: datos-app
+  cancel-in-progress: false
+
+jobs:
+  bios:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: scripts/datos-rama.sh bajar
+      - run: node scripts/build_bios.mjs
+        env:
+          MAX_MIN: ${{ inputs.minutos || '40' }}
+          URLS: ${{ inputs.urls }}
+      - name: Guardar
+        if: ${{ !inputs.urls }}
+        run: scripts/datos-rama.sh subir

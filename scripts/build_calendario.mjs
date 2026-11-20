@@ -96,6 +96,7 @@ function schedule(html, base, uname) {
 }
 function roster(html, base) {
   const out = new Map();
+  const hrefs = new Map();
   const abs = (u) => { try { return new URL(u.replace(/&amp;/g, "&"), base).href; } catch { return ""; } };
   // Webs nuevas de Sidearm: tarjetas de persona con "Nombre full bio" y su foto.
   for (const b of html.split(/data-test-id="s-person-details__root"/).slice(1)) {
@@ -103,7 +104,7 @@ function roster(html, base) {
     if (!m || /\/(coaches|staff)\//i.test(m[1])) continue; // entrenadores fuera
     const n = m[2];
     const img = /<img[^>]+src="(https:\/\/images\.sidearmdev\.com\/[^"]+)"/.exec(b.slice(0, 6000))?.[1] || "";
-    if (!out.has(dec(n))) out.set(dec(n), img ? abs(img) : "");
+    if (!out.has(dec(n))) { out.set(dec(n), img ? abs(img) : ""); hrefs.set(dec(n), abs(m[1])); }
   }
   // Webs de WMT (Learfield): enlaces /roster/player/ (tarjetas, listas o tabla). La foto real está en los datos de la página.
   if (!out.size) {
@@ -126,19 +127,32 @@ function roster(html, base) {
       const n = dec(m[2].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
       if (!n || out.has(n) || !/^[\p{L}'’.\- ]{3,60}$/u.test(n)) continue;
       out.set(n, photo(n));
+      hrefs.set(n, abs(m[1]));
     }
   }
   // Webs clásicas: datos estructurados (schema.org Person) con foto.
   if (!out.size) for (const p of jsonLd(html).filter((x) => x["@type"] === "Person" && x.name)) out.set(dec(p.name), p.image?.url ? abs(p.image.url) : "");
   if (!out.size) for (const m of html.matchAll(/aria-label="([^"]+?) - View Profile"/g)) out.set(dec(m[1]), "");
   if (!out.size) for (const m of html.matchAll(/class="sidearm-roster-player-name"[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>/gi)) out.set(dec(m[1]), "");
-  return [...out].filter(([n]) => /^[\p{L}'’.\- ]{3,60}$/u.test(n) && n.includes(" ")).map(([n, img]) => (img ? [n, img] : [n]));
+  const list = [...out].filter(([n]) => /^[\p{L}'’.\- ]{3,60}$/u.test(n) && n.includes(" ")).map(([n, img]) => (img ? [n, img] : [n]));
+  list.hrefs = hrefs;
+  return list;
+}
+// Entrenadores: enlaces a su ficha (/roster/coaches/… o /coaches/…) en la página de cuerpo técnico.
+function coachLinks(html, base) {
+  const out = new Map();
+  for (const m of html.matchAll(/<a [^>]*?href="([^"]*\/(?:roster\/coaches|coaches)\/[a-z0-9-]+\/\d+[^"]*)"[^>]*>([\s\S]{0,600}?)<\/a>/gi)) {
+    const n = dec(m[2]);
+    if (!n || !/^[\p{L}'’.\- ]{3,60}$/u.test(n) || !n.includes(" ")) continue;
+    try { out.has(n) || out.set(n, new URL(m[1].replace(/&amp;/g, "&"), base).href); } catch {}
+  }
+  return [...out];
 }
 
 const EXTRA = {
   "Grand Canyon": { M: [["Mario Perez Torrado", "https://images.sidearmdev.com/crop?url=https%3A%2F%2Fdxbhsrqyrr690.cloudfront.net%2Fsidearm.nextgen.sites%2Fgculopes.com%2Fimages%2F2025%2F10%2F1%2Fmario.png&width=200&height=200&type=webp"]] },
 };
-const cal = {}, plant = {}, liveLinks = new Set(), srcs = {};
+const cal = {}, plant = {}, liveLinks = new Set(), srcs = {}, bioLinks = {};
 let logosAdded = 0, athFound = 0;
 // Webs deportivas mal detectadas en algunas universidades.
 const FIX = { Tennessee: "https://utsports.com", Omaha: "https://omavs.com", "Indiana State": "https://gosycamores.com", "Mount St. Mary's": "https://mountathletics.com", "Central Connecticut": "https://ccsubluedevils.com", Missouri: "https://mutigers.com", Arkansas: "https://arkansasrazorbacks.com", "Arizona State": "https://thesundevils.com", "Saint John's": "https://gojohnnies.com", "Saint Benedict": "https://gobennies.com", Manchester: "https://muspartans.com", "Minnesota State Moorhead": "https://msumdragons.com", Denison: "https://denisonbigred.com", "Knox Prairie": "https://prairiefire.knox.edu" };
@@ -168,7 +182,13 @@ await pool(todo, 10, async (u) => {
       const ro = await get(base + p + "/roster");
       if (ro && /roster/i.test(ro.url)) {
         const list = roster(ro.html, ro.url);
-        if (list.length) { names[who] = list; got = true; }
+        if (list.length) {
+          names[who] = list; got = true;
+          const bl = (bioLinks[u.n] ||= { p: {}, c: {} });
+          for (const [n, h] of list.hrefs) bl.p[n] = h;
+          const co = await get(ro.url.replace(/\/roster.*$/, "/coaches"));
+          if (co) for (const [n, h] of coachLinks(co.html, co.url)) bl.c[n] = h;
+        }
       }
       if (got) {
         if (!who && names[""].length) foundCombined = true;
@@ -213,5 +233,6 @@ console.log("calendarios:", Object.keys(cal).length, "plantillas:", Object.keys(
 console.log("ejemplo Drury:", JSON.stringify(cal.Drury || []).slice(0, 800));
 console.log("enlaces:", [...liveLinks].slice(0, 30).join(" "));
 await writeFile("web/data/calendario.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), live: [...liveLinks], cal, src: srcs }));
+await writeFile("web/data/enlaces-bio.json", JSON.stringify(bioLinks));
 await writeFile("web/data/plantillas.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), plant }));
 await writeFile("web/data/unis.json", JSON.stringify(data));
