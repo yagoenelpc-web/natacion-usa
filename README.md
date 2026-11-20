@@ -9,7 +9,19 @@ App web personal para seguir resultados de natación de EE. UU.: NCAA, nacionale
 - **Universidades:** lista de equipos de cada campeonato con todos sus resultados, y filtro por equipo en cada prueba.
 - **Ficheros importados:** sube los .zip, .cl2, .sd3 o .hy3 de HY-TEK para guardarlos en una base de datos local, buscar nadadores y ver sus mejores marcas. Las fechas de nacimiento no se guardan.
 
-## Cómo arrancarla
+## Probarla sin instalar nada
+
+Abre este enlace con tu cuenta de GitHub, pulsa **Create codespace** y espera un par de minutos: la app se abre sola en una pestaña nueva.
+
+[Abrir en GitHub Codespaces](https://codespaces.new/yagoenelpc-web/natacion-usa?quickstart=1)
+
+## En un PC con Windows
+
+1. Instala Python desde https://www.python.org/downloads/ (marca «Add python.exe to PATH»).
+2. Descarga el código (botón verde **Code** → **Download ZIP**) y descomprímelo.
+3. Haz doble clic en `iniciar.bat`. La app se abre en el navegador.
+
+## Cómo arrancarla (Mac o Linux)
 
 Necesitas Python 3.12 o superior.
 
