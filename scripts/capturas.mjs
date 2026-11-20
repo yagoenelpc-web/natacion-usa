@@ -23,7 +23,9 @@ await shot("1-portada", "#/");
 const meet = await page.$$eval("a.mcard", (as) => as.map((a) => a.getAttribute("href")));
 console.log("campeonatos en portada:", meet.length);
 const ncaa = (await page.$$eval("a.mcard", (as) => as.map((a) => [a.getAttribute("href"), a.textContent]))).find(([, t]) => /NCAA Division I/i.test(t));
-const target = ncaa ? ncaa[0] : "#/m/NCAA-Division-I-Men-2026";
+const liveHref = await page.$$eval("a.mcard.live", (as) => as.map((a) => a.getAttribute("href")));
+console.log("en directo:", liveHref);
+const target = liveHref[0] || (ncaa ? ncaa[0] : "#/m/NCAA-Division-I-Men-2026");
 await shot("2-campeonato", target);
 await shot("3-clasificacion", target + "/clasificacion");
 const ev = await page.goto(base + target).then(() => page.waitForSelector("a.erow", { timeout: 60000 })).then(() => page.$$eval("a.erow", (as) => as.map((a) => a.getAttribute("href"))));
@@ -32,6 +34,7 @@ if (ev.length) {
   await shot("5-relevo", ev[1]);
 }
 await shot("6-universidades", "#/u");
+console.log("universidades en el buscador:", await page.$$eval(".urow", (r) => r.length));
 console.log("errores:", errors);
 if (process.env.CAPTURAS_LOG) {
   // Las capturas también van al registro, para poder verlas sin descargar artefactos.
