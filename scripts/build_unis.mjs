@@ -157,7 +157,8 @@ async function batch(titles, params) {
       k = red.get(k) || k;
       if (pages.get(k) && !pages.get(k).missing) res[t] = pages.get(k);
     }
-    await sleep(300);
+    await sleep(200);
+    process.stdout.write(".");
   }
   return res;
 }
@@ -175,14 +176,11 @@ function infobox(text, keys) {
 
 // Escudos: imagen principal del artículo del programa deportivo.
 const ath = await batch(unis.map((u) => u._ath), { prop: "pageimages", piprop: "thumbnail", pithumbsize: "160" });
-// Ciudad y web: infobox del artículo de la universidad (una petición por artículo).
+// Ciudad y web: infobox del artículo de la universidad (lotes de 50 artículos completos).
 const instTitles = [...new Set(unis.map((u) => u._inst))];
-const instText = {};
-let done = 0;
-await pool(instTitles, 8, async (t) => {
-  instText[t] = await section0(t);
-  if (++done % 100 === 0) console.log("universidades leídas:", done);
-});
+const instPages = await batch(instTitles, { prop: "revisions", rvprop: "content", rvslots: "main" });
+const instText = Object.fromEntries(Object.entries(instPages).map(([t, p]) => [t, content(p).slice(0, 12000)]));
+console.log("universidades leídas:", Object.keys(instText).length);
 // Entrenadores: artículos del equipo de natación, si existen.
 const swimTitles = [];
 for (const u of unis) {
@@ -190,11 +188,9 @@ for (const u of unis) {
   u._swim = [`${base} swimming and diving`, `${base} men's swimming and diving`, `${base} women's swimming and diving`];
   swimTitles.push(...u._swim);
 }
-console.log("comprobando artículos de natación…");
-const swimExist = await batch(swimTitles, { prop: "info" });
-console.log("artículos de natación encontrados:", Object.keys(swimExist).length);
-const swimText = {};
-await pool(Object.keys(swimExist), 6, async (t) => (swimText[t] = await section0(swimExist[t].title)));
+const swimPages = await batch(swimTitles, { prop: "revisions", rvprop: "content", rvslots: "main" });
+const swimExist = swimPages;
+const swimText = Object.fromEntries(Object.entries(swimPages).map(([t, p]) => [t, content(p).slice(0, 12000)]));
 console.log("artículos: universidades", Object.values(instText).filter(Boolean).length, "natación", Object.keys(swimText).length);
 
 for (const u of unis) {
