@@ -3,6 +3,7 @@ const urls = (process.env.URLS || "").split(/\s+/).filter(Boolean);
 for (const u of urls) {
   try {
     const r = await fetch(u, { headers: { "User-Agent": "Mozilla/5.0 (results app)" }, signal: AbortSignal.timeout(20000) });
+    if (process.env.GREP === "B64") { console.log("@@B64", u.slice(-60), Buffer.from(await r.arrayBuffer()).toString("base64")); continue; }
     const t = await r.text();
     console.log("@@URL", u, r.status, t.length, "→", r.url);
     if (process.env.GREP === "MARCAS") {
