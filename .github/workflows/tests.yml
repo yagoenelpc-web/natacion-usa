@@ -29,6 +29,8 @@ jobs:
           NATACION_LIVE: "1"
         run: node --test --test-reporter=spec tests/js/live.test.js
       - name: Capturas de la app en tamaño móvil
+        env:
+          CAPTURAS_LOG: "1"
         run: |
           npm install --no-save playwright@1.48.2
           npx playwright install --with-deps chromium

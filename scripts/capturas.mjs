@@ -6,10 +6,10 @@ const out = process.argv[2] || "capturas";
 const base = process.env.BASE || "http://localhost:8888/";
 await mkdir(out, { recursive: true });
 const browser = await chromium.launch();
-const page = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+const page = await (await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 })).newPage();
 const errors = [];
 page.on("pageerror", (e) => errors.push(String(e)));
-page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+page.on("response", (r) => r.status() >= 400 && errors.push(`${r.status()} ${decodeURIComponent(r.url()).slice(0, 160)}`));
 
 async function shot(name, hash, wait = "main :is(.mcard,.erow,.rrow,.srow,.trow,.urow,.card,.empty)") {
   await page.goto(base + hash);
@@ -33,4 +33,9 @@ if (ev.length) {
 }
 await shot("6-universidades", "#/u");
 console.log("errores:", errors);
+if (process.env.CAPTURAS_LOG) {
+  // Las capturas también van al registro, para poder verlas sin descargar artefactos.
+  const { readdir, readFile } = await import("node:fs/promises");
+  for (const f of (await readdir(out)).sort()) console.log(`@@CAPTURA ${f} ${(await readFile(`${out}/${f}`)).toString("base64")}`);
+}
 await browser.close();
