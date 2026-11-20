@@ -8,13 +8,34 @@ const UA = { headers: { "User-Agent": "natacion-usa/0.5 (app personal; datos de 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function api(params) {
-  const url = API + "?" + new URLSearchParams({ format: "json", formatversion: "2", ...params });
-  for (let i = 0; i < 4; i++) {
-    const r = await fetch(url, UA);
-    if (r.ok) return r.json();
-    await sleep(1500 * (i + 1));
+  const body = new URLSearchParams({ format: "json", formatversion: "2", maxlag: "5", ...params });
+  let last = "";
+  for (let i = 0; i < 5; i++) {
+    const r = await fetch(API, { method: "POST", body, headers: { ...UA.headers, "Content-Type": "application/x-www-form-urlencoded" } });
+    if (r.ok) {
+      const d = await r.json();
+      if (!d.error) return d;
+      last = JSON.stringify(d.error).slice(0, 200);
+      if (d.error.code !== "maxlag") break;
+    } else last = `HTTP ${r.status}`;
+    await sleep(2000 * (i + 1));
   }
-  throw new Error("Wikipedia no responde: " + url);
+  throw new Error("Wikipedia: " + last + " " + JSON.stringify(params).slice(0, 120));
+}
+async function pool(items, n, fn) {
+  const out = new Array(items.length);
+  let i = 0;
+  await Promise.all(Array.from({ length: n }, async () => {
+    while (i < items.length) {
+      const k = i++;
+      try { out[k] = await fn(items[k]); } catch (e) { out[k] = null; }
+    }
+  }));
+  return out;
+}
+async function section0(title) {
+  const d = await api({ action: "parse", page: title, prop: "wikitext", section: "0", redirects: "1" });
+  return d.parse?.wikitext || "";
 }
 
 // Quita plantillas {{...}} anidadas, conservando {{sort|x|Y}} → Y, {{Y}} → Y, {{N}} → N.
@@ -101,7 +122,7 @@ for (let i = 0; i < pos.length - 1; i++) {
       diving: has(g(/^diving/).text),
       st: state.text.replace(/[^A-Z]/g, "").slice(0, 2),
       _inst: inst.link || inst.text,
-      _ath: athletic.link || nick.link || "",
+      _ath: athletic.link || athletic.text || nick.link || "",
     });
   }
 }
@@ -113,7 +134,13 @@ async function batch(titles, params) {
   const list = [...new Set(titles.filter(Boolean))];
   for (let i = 0; i < list.length; i += 50) {
     const chunk = list.slice(i, i + 50);
-    const d = await api({ action: "query", titles: chunk.join("|"), redirects: "1", ...params });
+    let d;
+    try {
+      d = await api({ action: "query", titles: chunk.join("|"), redirects: "1", ...params });
+    } catch (e) {
+      console.log("lote omitido:", e.message);
+      continue;
+    }
     const map = new Map(chunk.map((t) => [t, t]));
     for (const n of d.query.normalized || []) map.set(n.from, n.to);
     const red = new Map((d.query.redirects || []).map((x) => [x.from, x.to]));
@@ -141,11 +168,10 @@ function infobox(text, keys) {
 
 // Escudos: imagen principal del artículo del programa deportivo.
 const ath = await batch(unis.map((u) => u._ath), { prop: "pageimages", piprop: "thumbnail", pithumbsize: "160" });
-// Ciudad y web: infobox del artículo de la universidad.
-const inst = await batch(unis.map((u) => u._inst), { prop: "revisions|pageimages", rvprop: "content", rvslots: "main", rvsection: "0", piprop: "thumbnail", pithumbsize: "160" }).catch(async (e) => {
-  console.log("rvsection por lotes no disponible:", e.message);
-  return {};
-});
+// Ciudad y web: infobox del artículo de la universidad (una petición por artículo).
+const instTitles = [...new Set(unis.map((u) => u._inst))];
+const instText = {};
+await pool(instTitles, 6, async (t) => (instText[t] = await section0(t)));
 // Entrenadores: artículos del equipo de natación, si existen.
 const swimTitles = [];
 for (const u of unis) {
@@ -153,22 +179,24 @@ for (const u of unis) {
   u._swim = [`${base} swimming and diving`, `${base} men's swimming and diving`, `${base} women's swimming and diving`];
   swimTitles.push(...u._swim);
 }
-const swim = await batch(swimTitles, { prop: "revisions", rvprop: "content", rvslots: "main", rvsection: "0" }).catch((e) => (console.log("natación:", e.message), {}));
+const swimExist = await batch(swimTitles, { prop: "info" });
+const swimText = {};
+await pool(Object.keys(swimExist), 6, async (t) => (swimText[t] = await section0(swimExist[t].title)));
+console.log("artículos: universidades", Object.values(instText).filter(Boolean).length, "natación", Object.keys(swimText).length);
 
 for (const u of unis) {
   const a = ath[u._ath];
-  const i = inst[u._inst];
+  const it = instText[u._inst] || "";
   u.logo = a?.thumbnail?.source || "";
-  u.seal = i?.thumbnail?.source || "";
-  const it = content(i);
   u.city = infobox(it, ["city", "location"]).replace(/,\s*(U\.S\.|United States|USA)$/, "").split(",").slice(0, 2).join(",").trim();
   u.web = (/\|\s*website\s*=\s*[^\n]*?(https?:\/\/[^\s|}\]]+|[\w.-]+\.edu)/i.exec(it) || [])[1] || "";
   u.wiki = "https://en.wikipedia.org/wiki/" + encodeURIComponent((u._ath || u._inst).replace(/ /g, "_"));
-  const [both, menT, womenT] = u._swim.map((t) => content(swim[t]));
+  const [both, menT, womenT] = u._swim.map((t) => swimText[t] || "");
   u.coach = infobox(both, ["head_coach", "headcoach", "coach"]);
   u.coachM = infobox(menT, ["head_coach", "headcoach", "coach"]);
   u.coachW = infobox(womenT, ["head_coach", "headcoach", "coach"]);
-  if (swim[u._swim[0]]) u.wiki = "https://en.wikipedia.org/wiki/" + encodeURIComponent(swim[u._swim[0]].title.replace(/ /g, "_"));
+  const sw = u._swim.find((t) => swimExist[t]);
+  if (sw) u.wiki = "https://en.wikipedia.org/wiki/" + encodeURIComponent(swimExist[sw].title.replace(/ /g, "_"));
   delete u._inst;
   delete u._ath;
   delete u._swim;
