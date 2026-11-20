@@ -131,6 +131,9 @@ function roster(html, base) {
   return [...out].filter(([n]) => /^[\p{L}'’.\- ]{3,60}$/u.test(n) && n.includes(" ")).map(([n, img]) => (img ? [n, img] : [n]));
 }
 
+const EXTRA = {
+  "Grand Canyon": { M: [["Mario Perez Torrado", "https://images.sidearmdev.com/crop?url=https%3A%2F%2Fdxbhsrqyrr690.cloudfront.net%2Fsidearm.nextgen.sites%2Fgculopes.com%2Fimages%2F2025%2F10%2F1%2Fmario.png&width=200&height=200&type=webp"]] },
+};
 const cal = {}, plant = {}, liveLinks = new Set();
 let logosAdded = 0;
 // Webs deportivas mal detectadas en algunas universidades.
@@ -184,6 +187,8 @@ await pool(todo, 10, async (u) => {
   if (games.length) cal[u.n] = games.sort((a, b) => (a.d || "").localeCompare(b.d || "")).slice(0, 40);
   const staffSet = new Set((u.staff || []).map((x) => x.n.toLowerCase()));
   for (const k of Object.keys(names)) names[k] = names[k].filter(([n]) => !staffSet.has(n.toLowerCase()));
+  // Nadadores que el usuario pidió añadir aunque ya no salgan en la plantilla de este año (temporada 2025-26).
+  for (const [g, list] of Object.entries(EXTRA[u.n] || {})) for (const e of list) if (!names[g].some(([n]) => n.toLowerCase() === e[0].toLowerCase())) names[g].push(e);
   const all = [...names[""], ...names.M, ...names.W];
   if (all.length) plant[u.n] = { ...(names.M.length ? { M: names.M } : {}), ...(names.W.length ? { W: names.W } : {}), ...(names[""].length ? { X: names[""] } : {}) };
   if (siteLogo && (!u.logo || u._badLogo)) { u.logo = siteLogo; logosAdded++; }
