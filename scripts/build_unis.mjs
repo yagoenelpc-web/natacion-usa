@@ -10,7 +10,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function api(params) {
   const body = new URLSearchParams({ format: "json", formatversion: "2", ...params });
   let last = "";
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 7; i++) {
     let r;
     try {
       r = await fetch(API, { method: "POST", body, headers: { ...UA.headers, "Content-Type": "application/x-www-form-urlencoded" }, signal: AbortSignal.timeout(20000) });
@@ -24,7 +24,10 @@ async function api(params) {
       if (!d.error) return d;
       last = JSON.stringify(d.error).slice(0, 200);
       if (d.error.code !== "maxlag") break;
-    } else last = `HTTP ${r.status}`;
+    } else {
+      last = `HTTP ${r.status}`;
+      if (r.status === 429) await sleep((+r.headers.get("retry-after") || 15) * 1000 * (i + 1));
+    }
     await sleep(2000 * (i + 1));
   }
   throw new Error("Wikipedia: " + last + " " + JSON.stringify(params).slice(0, 120));
@@ -59,7 +62,7 @@ function stripTemplates(s) {
   return s;
 }
 function cell(raw) {
-  const s = stripTemplates(raw).replace(/<ref[\s\S]*?(<\/ref>|\/>)/gi, "").replace(/<[^>]+>/g, " ");
+  const s = stripTemplates(raw.replace(/\{\{\s*(plainlist|ubl|unbulleted list|flatlist)\s*\|/gi, "{{x|").replace(/<br\s*\/?>/gi, ", ")).replace(/<ref[\s\S]*?(<\/ref>|\/>)/gi, "").replace(/<[^>]+>/g, " ");
   const link = /\[\[([^|\]]+)(?:\|([^\]]+))?\]\]/.exec(s);
   const text = s.replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g, "$2").replace(/\[\[([^\]]+)\]\]/g, "$1").replace(/'''?/g, "").replace(/\s+/g, " ").trim();
   return { text, link: link ? link[1].trim() : "" };
@@ -157,7 +160,7 @@ async function batch(titles, params) {
       k = red.get(k) || k;
       if (pages.get(k) && !pages.get(k).missing) res[t] = pages.get(k);
     }
-    await sleep(200);
+    await sleep(1500);
     process.stdout.write(".");
   }
   return res;
@@ -175,10 +178,10 @@ function infobox(text, keys) {
 }
 
 // Escudos: imagen principal del artículo del programa deportivo.
-const ath = await batch(unis.map((u) => u._ath), { prop: "pageimages", piprop: "thumbnail", pithumbsize: "160" });
+const ath = await batch(unis.map((u) => u._ath), { prop: "pageimages|revisions", rvprop: "content", rvslots: "main", piprop: "thumbnail", pithumbsize: "160" });
 // Ciudad y web: infobox del artículo de la universidad (lotes de 50 artículos completos).
 const instTitles = [...new Set(unis.map((u) => u._inst))];
-const instPages = await batch(instTitles, { prop: "revisions", rvprop: "content", rvslots: "main" });
+const instPages = await batch(instTitles, { prop: "revisions|pageimages", rvprop: "content", rvslots: "main", piprop: "thumbnail", pithumbsize: "160" });
 const instText = Object.fromEntries(Object.entries(instPages).map(([t, p]) => [t, content(p).slice(0, 12000)]));
 console.log("universidades leídas:", Object.keys(instText).length);
 // Entrenadores: artículos del equipo de natación, si existen.
@@ -197,21 +200,70 @@ for (const u of unis) {
   const a = ath[u._ath];
   const it = instText[u._inst] || "";
   u.logo = a?.thumbnail?.source || "";
+  u.seal = instPages[u._inst]?.thumbnail?.source || "";
+  const athText = content(a).slice(0, 15000);
+  const site = (/\|\s*website\s*=\s*[^\n]*?(https?:\/\/[^\s|}\]]+|(?:www\.)?[\w-]+\.(?:com|edu|org|net)[^\s|}\]]*)/i.exec(athText) || [])[1] || "";
+  u._site = site && !/archive\.org|datausa|wikipedia/.test(site) ? (site.startsWith("http") ? site : "https://" + site).replace(/\/+$/, "") : "";
   u.city = infobox(it, ["city", "location"]).replace(/,\s*(U\.S\.|United States|USA)$/, "").split(",").slice(0, 2).join(",").trim();
-  u.web = (/\|\s*website\s*=\s*[^\n]*?(https?:\/\/[^\s|}\]]+|[\w.-]+\.edu)/i.exec(it) || [])[1] || "";
+  const instWeb = (/\|\s*website\s*=\s*[^\n]*?(https?:\/\/[^\s|}\]]+|[\w.-]+\.edu)/i.exec(it) || [])[1] || "";
+  u.web = u._site || (/archive\.org|datausa|conference|league|\.org\/$/.test(instWeb) ? "" : instWeb);
   u.wiki = "https://en.wikipedia.org/wiki/" + encodeURIComponent((u._ath || u._inst).replace(/ /g, "_"));
   const [both, menT, womenT] = u._swim.map((t) => swimText[t] || "");
-  u.coach = infobox(both, ["head_coach", "headcoach", "coach"]);
-  u.coachM = infobox(menT, ["head_coach", "headcoach", "coach"]);
-  u.coachW = infobox(womenT, ["head_coach", "headcoach", "coach"]);
+  const first = (x) => x.split(/,\s*|\s{2,}/)[0].trim();
+  u.coach = first(infobox(both, ["head_coach", "headcoach", "coach"]));
+  u.coachM = first(infobox(menT, ["head_coach", "headcoach", "coach"]));
+  u.coachW = first(infobox(womenT, ["head_coach", "headcoach", "coach"]));
   const sw = u._swim.find((t) => swimExist[t]);
   if (sw) u.wiki = "https://en.wikipedia.org/wiki/" + encodeURIComponent(swimExist[sw].title.replace(/ /g, "_"));
   delete u._inst;
   delete u._ath;
   delete u._swim;
+}
+// Entrenador principal desde la página pública de entrenadores de la web deportiva (Sidearm y similares).
+const COACH_PATHS = [["", "/sports/swimming-and-diving/coaches"], ["M", "/sports/mens-swimming-and-diving/coaches"], ["W", "/sports/womens-swimming-and-diving/coaches"], ["", "/sports/swimming/coaches"], ["", "/sports/swim/coaches"]];
+const NAME = /^[A-Z][A-Za-z'’.\-]+(?:\s+(?:[A-Z][A-Za-z'’.\-]+|de|van|von|da|del|la|Jr\.?|III|II|IV)){1,3}$/;
+function headCoach(html) {
+  const toks = html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, " ").split(/<[^>]+>/).map((t) => t.replace(/&nbsp;|&#160;/g, " ").replace(/&amp;/g, "&").replace(/&#39;|&rsquo;/g, "'").replace(/\s+/g, " ").trim()).filter(Boolean);
+  for (let i = 0; i < toks.length; i++) {
+    const t = toks[i];
+    if (t.length > 70 || !/head (swimming |swim |diving )?coach|director of (swimming|aquatics)/i.test(t) || /assoc|assist|diving coach$|volunteer|former|strength/i.test(t)) continue;
+    if (/head diving coach/i.test(t) && !/swim/i.test(t)) continue;
+    for (let d = 1; d <= 6; d++) {
+      for (const j of [i - d, i + d]) {
+        const c = toks[j];
+        if (c && NAME.test(c) && !/coach|swim|diving|staff|director|roster|head|university|college|athletics|sports|email|phone/i.test(c)) return c;
+      }
+    }
+  }
+  return "";
+}
+const withSite = unis.filter((u) => u._site);
+let found = 0;
+await pool(withSite, 8, async (u) => {
+  for (const [who, path] of COACH_PATHS) {
+    if (who && u["coach" + who]) continue;
+    if (!who && (u.coach || u.coachM || u.coachW) && found) break;
+    try {
+      const r = await fetch(u._site + path, { headers: { "User-Agent": "Mozilla/5.0 (compatible; natacion-usa/0.5)" }, redirect: "follow", signal: AbortSignal.timeout(12000) });
+      if (!r.ok || !/\/coaches/.test(r.url)) continue;
+      const c = headCoach(await r.text());
+      if (!c) continue;
+      if (who) u["coach" + who] = c;
+      else { u.coach = c; break; }
+    } catch {}
+  }
+  if (u.coach || u.coachM || u.coachW) found++;
+});
+console.log("webs deportivas:", withSite.length, "con entrenador:", found);
+for (const u of unis) {
+  if (u.coachM && u.coachW && u.coachM === u.coachW) { u.coach = u.coachM; delete u.coachM; delete u.coachW; }
+  if (u.coach && (u.coachM || u.coachW) && !(u.coachM && u.coachW)) { delete u.coachM; delete u.coachW; }
+  delete u._site;
   for (const k of Object.keys(u)) if (u[k] === "" || u[k] === false) delete u[k];
 }
-const stats = { total: unis.length, logo: unis.filter((u) => u.logo).length, city: unis.filter((u) => u.city).length, coach: unis.filter((u) => u.coach || u.coachM || u.coachW).length };
+console.log("muestra entrenadores:", unis.filter((u) => u.coach || u.coachM).slice(0, 40).map((u) => `${u.n}: ${u.coach || u.coachM + " / " + u.coachW}`).join(" | "));
+
+const stats = { total: unis.length, logo: unis.filter((u) => u.logo).length, seal: unis.filter((u) => !u.logo && u.seal).length, web: unis.filter((u) => u.web).length, city: unis.filter((u) => u.city).length, coach: unis.filter((u) => u.coach || u.coachM || u.coachW).length };
 console.log("datos:", stats);
 console.log("ejemplos:", JSON.stringify(unis.filter((u) => ["Texas", "Kenyon", "Drury", "Florida"].includes(u.n)).slice(0, 4)));
 const json = JSON.stringify({ updated: new Date().toISOString().slice(0, 10), source: "Wikipedia (CC BY-SA 4.0)", unis });
