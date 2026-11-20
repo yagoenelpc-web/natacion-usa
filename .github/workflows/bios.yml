@@ -16,7 +16,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: datos-app
+  group: ${{ inputs.urls && 'bios-prueba' || 'datos-app' }}
   cancel-in-progress: false
 
 jobs:

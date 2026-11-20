@@ -22,6 +22,9 @@ export const BRAND_PAGES = {
   ncaa: "National_Collegiate_Athletic_Association",
   usas: "USA_Swimming",
   usms: "United_States_Masters_Swimming",
+  // Patrocinadores que dan nombre a la competición (TYR Pro Swim Series, Toyota US Open, Speedo Junior Nationals…).
+  tyr: "TYR_Sport", arena: "Arena_(swimwear)", p66: "Phillips_66",
+  toyota: "https://commons.wikimedia.org/wiki/Special:FilePath/Toyota_carlogo.svg?width=200",
   // Conferencias: su logo para los campeonatos de conferencia.
   bigten: "Big_Ten_Conference", sec: "Southeastern_Conference", acc: "Atlantic_Coast_Conference", big12: "Big_12_Conference",
   bigeast: "Big_East_Conference", ivy: "Ivy_League", pac12: "Pac-12_Conference", mw: "Mountain_West_Conference",
@@ -35,6 +38,7 @@ export const BRAND_PAGES = {
   bluegrass: "Bluegrass_Mountain_Conference", mpsf: "Mountain_Pacific_Sports_Federation", naia: "National_Association_of_Intercollegiate_Athletics",
 };
 // Nombre en la competición → logo de su conferencia.
+export const SPONSOR_WORDS = [[/\btyr\b/i, "tyr"], [/toyota/i, "toyota"], [/\barena\b(?! (invite|invitational))/i, "arena"], [/phillips 66/i, "p66"]];
 export const CONF_WORDS = [
   [/big ten|big 10\b/i, "bigten"], [/\bsec\b|southeastern conf/i, "sec"], [/\bacc\b|atlantic coast/i, "acc"], [/big 12/i, "big12"],
   [/big east/i, "bigeast"], [/\bivy\b/i, "ivy"], [/pac-?12/i, "pac12"], [/mountain west|\bmw\b/i, "mw"], [/\baac\b|american athletic/i, "aac"],
@@ -49,6 +53,8 @@ export const CONF_WORDS = [
 
 export function norm(name) {
   let n = name.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  // Nombres de HY-TEK: "Iona University-MR", "Lafayette Swimming and Diving", "Rider Swim & Dive".
+  n = n.replace(/-[a-z]{2}$/, "").replace(/\b(men'?s|women'?s)\b/g, " ").replace(/\b(swimming|swim)\s*(and|&|\/)?\s*(diving|dive)\b|\bswim(ming)? team\b|\baquatics\b|\bswimming\b|\bathletics\b/g, " ").trim();
   n = n.replace(/\buniversity of\b|\buniversity\b|\bcollege\b|\bthe\b/g, " ").replace(/\s+/g, " ").replace(/^[\s.,-]+|[\s.,-]+$/g, "");
   n = n.replace(/\bst\.?$/, "state");
   return n;
