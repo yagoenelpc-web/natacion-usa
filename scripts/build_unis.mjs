@@ -8,10 +8,17 @@ const UA = { headers: { "User-Agent": "natacion-usa/0.5 (app personal; datos de 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function api(params) {
-  const body = new URLSearchParams({ format: "json", formatversion: "2", maxlag: "5", ...params });
+  const body = new URLSearchParams({ format: "json", formatversion: "2", ...params });
   let last = "";
   for (let i = 0; i < 5; i++) {
-    const r = await fetch(API, { method: "POST", body, headers: { ...UA.headers, "Content-Type": "application/x-www-form-urlencoded" } });
+    let r;
+    try {
+      r = await fetch(API, { method: "POST", body, headers: { ...UA.headers, "Content-Type": "application/x-www-form-urlencoded" }, signal: AbortSignal.timeout(20000) });
+    } catch (e) {
+      last = e.message;
+      await sleep(2000 * (i + 1));
+      continue;
+    }
     if (r.ok) {
       const d = await r.json();
       if (!d.error) return d;
@@ -171,7 +178,11 @@ const ath = await batch(unis.map((u) => u._ath), { prop: "pageimages", piprop: "
 // Ciudad y web: infobox del artículo de la universidad (una petición por artículo).
 const instTitles = [...new Set(unis.map((u) => u._inst))];
 const instText = {};
-await pool(instTitles, 6, async (t) => (instText[t] = await section0(t)));
+let done = 0;
+await pool(instTitles, 8, async (t) => {
+  instText[t] = await section0(t);
+  if (++done % 100 === 0) console.log("universidades leídas:", done);
+});
 // Entrenadores: artículos del equipo de natación, si existen.
 const swimTitles = [];
 for (const u of unis) {
@@ -179,7 +190,9 @@ for (const u of unis) {
   u._swim = [`${base} swimming and diving`, `${base} men's swimming and diving`, `${base} women's swimming and diving`];
   swimTitles.push(...u._swim);
 }
+console.log("comprobando artículos de natación…");
 const swimExist = await batch(swimTitles, { prop: "info" });
+console.log("artículos de natación encontrados:", Object.keys(swimExist).length);
 const swimText = {};
 await pool(Object.keys(swimExist), 6, async (t) => (swimText[t] = await section0(swimExist[t].title)));
 console.log("artículos: universidades", Object.values(instText).filter(Boolean).length, "natación", Object.keys(swimText).length);

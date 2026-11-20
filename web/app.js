@@ -1,5 +1,5 @@
 import { normalizeMeetUrl, parseIndex, parseEvent, parseCatalog, parseFeed, uniqueEvents, isLive, organization, todayUS } from "./parser.js";
-import { buildIndex, matchTeam, initials, colorFor, BRAND_PAGES } from "./logos.js";
+import { buildIndex, matchTeam, initials, colorFor, norm, BRAND_PAGES } from "./logos.js";
 
 const SOURCE = "https://swimmeetresults.tech/";
 // Catálogos públicos de equipos de ESPN: juntos cubren la NCAA (D-I, D-II, D-III) y la NAIA.
@@ -11,12 +11,12 @@ const ESPN = [
   "volleyball/womens-college-volleyball",
   "baseball/college-baseball",
 ].map((p) => `https://site.api.espn.com/apis/site/v2/sports/${p}/teams?limit=2000`);
-const SWIMSWAM = ["https://swimswam.com/feed/", "https://swimswam.com/tag/live-results/feed/"];
+const SWIMSWAM = ["https://swimswam.com/feed/", "https://swimswam.com/feed/?paged=2", "https://swimswam.com/feed/?paged=3", "https://swimswam.com/tag/live-results/feed/"];
 const ORG = {
   ncaa: { label: "NCAA", short: "NCAA", full: "NCAA" },
   usas: { label: "USA Swimming", short: "USA", full: "USA Swimming" },
   usms: { label: "US Masters", short: "USMS", full: "US Masters Swimming" },
-  conf: { label: "Conferencias", short: "🏊", full: "Conferencias e invitationals" },
+  conf: { label: "Conferencias", short: "🏊", get full() { return T("Conferencias e invitationals"); } },
 };
 const SECTION_ES = {
   "Championship Final": "Final A",
@@ -28,6 +28,78 @@ const SECTION_ES = {
 };
 
 const $app = document.getElementById("app");
+
+// ---------- idioma ----------
+const EN = {
+  "Conferencias e invitationals": "Conferences & invitationals",
+  "Buscando campeonatos…": "Finding meets…",
+  "Cargando…": "Loading…",
+  "Reintentar": "Retry",
+  "No se pudo cargar la lista de campeonatos. Comprueba la conexión.": "Couldn't load the meet list. Check your connection.",
+  "Resultados de NCAA, USA Swimming y campeonatos de EE. UU.": "NCAA, USA Swimming and US meet results.",
+  "En directo": "Live now",
+  "EN DIRECTO": "LIVE",
+  "Ahora mismo no hay ningún campeonato en directo.": "No meets are live right now.",
+  "El próximo es": "Next up is",
+  "mañana": "tomorrow",
+  "dentro de {n} días": "in {n} days",
+  "en {n} días": "in {n} days",
+  "Mis universidades": "My universities",
+  "Próximamente": "Coming up",
+  "Anunciados, aún sin resultados": "Announced, no results yet",
+  "Temporada {y} · resultados aún no publicados": "{y} season · results not published yet",
+  "pruebas": "events",
+  "No se pudo abrir este campeonato.": "Couldn't open this meet.",
+  "Pruebas": "Events",
+  "Clasificación": "Standings",
+  "Universidades": "Universities",
+  "Campeonatos": "Meets",
+  "Ajustes": "Settings",
+  "Sesión": "Session",
+  "Relevo": "Relay",
+  "Todavía no hay pruebas publicadas.": "No events published yet.",
+  "Tras la prueba {n}": "After event {n}",
+  "La clasificación aparecerá cuando haya pruebas puntuables terminadas.": "Standings will appear once scored events finish.",
+  "Universidades vistas en las últimas pruebas": "Universities seen in recent events",
+  "La lista de universidades aparecerá cuando haya resultados.": "The university list will appear once there are results.",
+  "Lidera {t} con {p} pts": "{t} leads with {p} pts",
+  "Crónica en SwimSwam": "SwimSwam recap",
+  "Última prueba terminada": "Latest finished event",
+  "Inicio": "Home",
+  "Volver": "Back",
+  "Sin parciales": "No splits",
+  "Ver todo de {t}": "All results for {t}",
+  "Esta prueba todavía no tiene resultados. Se comprobará de nuevo cada minuto.": "No results for this event yet. Checking again every minute.",
+  "Solo mis universidades": "Only my universities",
+  "Récords": "Records",
+  "Sin resultados todavía.": "No results yet.",
+  "Clasificación por equipos": "Team standings",
+  "Ver clasificación completa": "Full standings",
+  "Buscando resultados de {t}…": "Finding results for {t}…",
+  "podios": "podiums",
+  "puntos": "points",
+  "No hay campeonatos con resultados ahora mismo.": "No meets with results right now.",
+  "Buscar universidad": "Search university",
+  "Todas": "All", "Hombres": "Men", "Mujeres": "Women", "Saltos": "Diving", "Todos": "All",
+  "Conferencia": "Conference", "Estado": "State", "Equipos": "Teams", "Filtros": "Filters",
+  "universidades": "universities", "Ninguna universidad con estos filtros.": "No universities match these filters.",
+  "Marca con ★ las tuyas: aparecerán en la portada y podrás filtrar los resultados.": "Star ★ yours: they'll show on the home screen and you can filter results.",
+  "Entrenador": "Head coach", "Entrenador (hombres)": "Men's head coach", "Entrenadora/entrenador (mujeres)": "Women's head coach",
+  "No disponible": "Not available", "Ciudad": "City", "División": "Division", "Apodo": "Nickname",
+  "Ver sus resultados": "See their results", "Wikipedia": "Wikipedia", "Web oficial": "Official site",
+  "Datos de Wikipedia (CC BY-SA).": "Data from Wikipedia (CC BY-SA).",
+  "Idioma": "Language", "Tema": "Theme", "Automático": "Automatic", "Claro": "Light", "Oscuro": "Dark", "Fondo": "Background",
+  "Océano": "Ocean", "Atardecer": "Sunset", "Bosque": "Forest", "Lavanda": "Lavender", "Grafito": "Graphite",
+  "Borrar datos guardados": "Clear saved data", "Datos guardados borrados.": "Saved data cleared.",
+  "Acerca de": "About", "Universidad no encontrada.": "University not found.",
+  "Final A": "A Final", "Final B": "B Final", "Final C": "C Final", "Preliminares": "Prelims", "Semifinales": "Semifinals", "Desempate": "Swim-off",
+};
+const lang = () => (store.get("lang", (navigator.language || "es").toLowerCase().startsWith("es") ? "es" : "en") === "en" ? "en" : "es");
+function T(s, vars) {
+  let out = lang() === "en" && EN[s] ? EN[s] : s;
+  if (vars) for (const [k, v] of Object.entries(vars)) out = out.replace(`{${k}}`, v);
+  return out;
+}
 const mem = new Map();
 let refreshTimer = null;
 let logoIndex = null;
@@ -108,6 +180,7 @@ const meetUrlFromId = (id) => normalizeMeetUrl(/^https?:\/\//i.test(id) ? id : S
 const eventKey = (url) => url.split("/").pop().replace(/\.html?$/i, "");
 
 async function loadLogos() {
+  await loadUnis();
   if (logoIndex) return logoIndex;
   const cached = store.get("logos2");
   if (cached && Date.now() - cached.t < 7 * 864e5) {
@@ -137,6 +210,26 @@ async function loadBrands() {
   store.set("brands", { t: Date.now(), v: brands });
   return brands;
 }
+
+// Universidades con natación (web/data/unis.json, generado desde Wikipedia).
+let unis = null;
+let uniIndex = null;
+async function loadUnis() {
+  if (unis) return unis;
+  try {
+    const r = await fetch("/data/unis.json");
+    unis = (await r.json()).unis || [];
+  } catch {
+    unis = [];
+  }
+  uniIndex = {};
+  for (const u of unis) {
+    const info = { logo: u.logo || "", color: "#0b63ce", display: u.n, uni: u };
+    for (const k of [u.n, u.full, `${u.n} ${u.nick || ""}`, u.nick && u.full ? null : null]) if (k && !(norm(k) in uniIndex)) uniIndex[norm(k)] = info;
+  }
+  return unis;
+}
+const findUni = (name) => (uniIndex ? matchTeam(uniIndex, name)?.uni || null : null);
 
 async function loadMeetIndex(id) {
   const url = meetUrlFromId(id);
@@ -188,7 +281,7 @@ async function loadSwimSwam() {
   const feeds = await Promise.all(SWIMSWAM.map((u) => api(u, 600).catch(() => "")));
   const seen = new Map();
   for (const m of feeds.flatMap((x) => (x ? parseFeed(x) : []))) if (!seen.has(m.url)) seen.set(m.url, m);
-  const recent = [...seen.values()].filter((m) => Date.now() - m.date < 5 * 864e5);
+  const recent = [...seen.values()].filter((m) => Date.now() - m.date < 7 * 864e5);
   const metas = await pool(recent, 4, async (f) => {
     const id = f.url;
     const cached = store.get("s:" + id);
@@ -233,7 +326,9 @@ async function loadEvent(url, live, hops = 0) {
 // ---------- utilidades de vista ----------
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const enc = encodeURIComponent;
-const MONTHS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+const MONTHS_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+const MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS = new Proxy([], { get: (_, k) => (lang() === "en" ? MONTHS_EN : MONTHS_ES)[k] });
 function fmtDate(iso) {
   if (!iso) return "";
   const [y, m, d] = iso.split("-").map(Number);
@@ -252,13 +347,14 @@ function fmtDay(text) {
   const m = /(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(text || "");
   const wd = Object.keys(DAYS).find((d) => (text || "").includes(d));
   if (!m) return text || "";
-  return `${wd ? DAYS[wd] + " " : ""}${+m[2]} ${MONTHS[+m[1] - 1]}`;
+  return `${wd ? (lang() === "en" ? wd : DAYS[wd]) + " " : ""}${+m[2]} ${MONTHS[+m[1] - 1]}`;
 }
 function daysUntil(iso) {
   const ms = Date.parse(iso + "T12:00:00Z") - Date.parse(todayUS() + "T12:00:00Z");
   return Math.round(ms / 864e5);
 }
 function englishToSpanish(name) {
+  if (lang() === "en") return name.replace(/\s+/g, " ").trim();
   return name
     .replace(/\bMen\b/g, "Hombres")
     .replace(/\bWomen\b/g, "Mujeres")
@@ -282,7 +378,11 @@ function englishToSpanish(name) {
 }
 
 function crest(team, size = 32) {
-  const info = logoIndex ? matchTeam(logoIndex, team) : null;
+  let info = logoIndex ? matchTeam(logoIndex, team) : null;
+  if (!(info && info.logo) && uniIndex) {
+    const u = matchTeam(uniIndex, team);
+    if (u && u.logo) info = { ...u, color: info ? info.color : u.color };
+  }
   if (info && info.logo) return `<img class="crest" src="${esc(info.logo)}" alt="" width="${size}" height="${size}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'crest badge',textContent:'${esc(initials(team))}'}))">`;
   return `<span class="crest badge" style="--c:${info ? info.color : colorFor(team)};width:${size}px;height:${size}px">${esc(initials(team))}</span>`;
 }
@@ -292,16 +392,16 @@ function orgLogo(org, size = 36) {
   return `<span class="org org-txt" style="width:${size}px;height:${size}px">${esc((ORG[org] || ORG.conf).short)}</span>`;
 }
 const star = (team) => `<button class="star ${favs().has(team) ? "on" : ""}" data-fav="${esc(team)}" aria-label="Favorita">${favs().has(team) ? "★" : "☆"}</button>`;
-const liveDot = `<span class="livetag"><i></i>EN DIRECTO</span>`;
+const liveTag = () => `<span class="livetag"><i></i>${T("EN DIRECTO")}</span>`;
 
 function setTitle(t) {
-  document.title = t ? `${t} · Natación USA` : "Natación USA";
+  document.title = t ? `${t} · ${lang() === "en" ? "Swim USA" : "Natación USA"}` : lang() === "en" ? "Swim USA" : "Natación USA";
 }
 function loading(msg = "Cargando…") {
-  $app.innerHTML = `<div class="loading"><div class="spinner"></div><p>${esc(msg)}</p></div>`;
+  $app.innerHTML = `<div class="loading"><div class="spinner"></div><p>${esc(T(msg))}</p></div>`;
 }
 function errorView(msg) {
-  $app.innerHTML = `<div class="empty"><p>${esc(msg)}</p><button class="btn" onclick="location.reload()">Reintentar</button></div>`;
+  $app.innerHTML = `<div class="empty"><p>${esc(T(msg))}</p><button class="btn" onclick="location.reload()">${T("Reintentar")}</button></div>`;
 }
 function scheduleRefresh(fn) {
   clearInterval(refreshTimer);
@@ -315,18 +415,18 @@ function setTab(name) {
 
 // ---------- vistas ----------
 function meetCard(s) {
-  let when = s.pending ? `Temporada ${s.id.match(/(19|20)\d{2}/)?.[0] || ""} · resultados aún no publicados` : fmtRange(s.start, s.end);
+  let when = s.pending ? `${T("Temporada {y} · resultados aún no publicados", { y: s.id.match(/(19|20)\d{2}/)?.[0] || "" })}` : fmtRange(s.start, s.end);
   if (s.status === "upcoming" && s.start) {
     const d = daysUntil(s.start);
-    when += d === 1 ? " · mañana" : ` · en ${d} días`;
+    when += d === 1 ? ` · ${T("mañana")}` : ` · ${T("en {n} días", { n: d })}`;
   }
   if (s.pending) return `<div class="mcard upcoming pending">${orgLogo(s.org)}<div class="mbody"><strong>${esc(s.name)}</strong><span class="sub">${esc(when)}</span></div></div>`;
   return `<a class="mcard ${s.status}" href="#/m/${enc(s.id)}">
     ${meetBadge(s)}
     <div class="mbody">
-      ${s.status === "live" ? liveDot : ""}
+      ${s.status === "live" ? liveTag() : ""}
       <strong>${esc(s.name)}</strong>
-      <span class="sub">${esc(when)}${s.events ? ` · ${s.events} pruebas` : ""}</span>
+      <span class="sub">${esc(when)}${s.events ? ` · ${s.events} ${T("pruebas")}` : ""}</span>
     </div><span class="chev">›</span></a>`;
 }
 
@@ -352,19 +452,19 @@ async function homeView() {
   $app.innerHTML = `
   <section class="hero">
     <div class="brands">${["ncaa", "usas", "usms"].map((o) => orgLogo(o, 44)).join("")}</div>
-    <h1>Natación USA</h1>
-    <p>Resultados de NCAA, USA Swimming y campeonatos de EE. UU.</p>
+    <h1>${lang() === "en" ? "Swim USA" : "Natación USA"}</h1>
+    <p>${T("Resultados de NCAA, USA Swimming y campeonatos de EE. UU.")}</p>
   </section>
   <section>
-    <h2>En directo</h2>
-    ${live.length ? live.map(meetCard).join("") : `<div class="card muted">Ahora mismo no hay ningún campeonato en directo.${next ? ` El próximo es <a href="#/m/${enc(next.id)}">${esc(next.name)}</a>, ${daysUntil(next.start) === 1 ? "mañana" : `dentro de ${daysUntil(next.start)} días`}.` : ""}</div>`}
+    <h2>${T("En directo")}</h2>
+    ${live.length ? live.map(meetCard).join("") : `<div class="card muted">${T("Ahora mismo no hay ningún campeonato en directo.")}${next ? ` ${T("El próximo es")} <a href="#/m/${enc(next.id)}">${esc(next.name)}</a>, ${daysUntil(next.start) === 1 ? T("mañana") : T("dentro de {n} días", { n: daysUntil(next.start) })}.` : ""}</div>`}
   </section>
-  ${f.length ? `<section><h2>Mis universidades</h2><div class="chips">${f.map((t) => `<a class="chip" href="#/u/${enc(t)}">${crest(t, 22)}${esc(t)}</a>`).join("")}</div></section>` : ""}
-  ${upcoming.length ? `<section><h2>Próximamente</h2>${upcoming.filter((s) => !s.pending).map(meetCard).join("")}${
-    upcoming.some((s) => s.pending) ? `<details class="announced"><summary>Anunciados, aún sin resultados (${upcoming.filter((s) => s.pending).length})</summary>${upcoming.filter((s) => s.pending).map(meetCard).join("")}</details>` : ""
+  ${f.length ? `<section><h2>${T("Mis universidades")}</h2><div class="chips">${f.map((t) => `<a class="chip" href="#/u/${enc(t)}">${crest(t, 22)}${esc(t)}</a>`).join("")}</div></section>` : ""}
+  ${upcoming.length ? `<section><h2>${T("Próximamente")}</h2>${upcoming.filter((s) => !s.pending).map(meetCard).join("")}${
+    upcoming.some((s) => s.pending) ? `<details class="announced"><summary>${T("Anunciados, aún sin resultados")} (${upcoming.filter((s) => s.pending).length})</summary>${upcoming.filter((s) => s.pending).map(meetCard).join("")}</details>` : ""
   }</section>` : ""}
   ${Object.keys(ORG).filter((o) => byOrg[o]).map((o) => `<section><h2 class="orgh">${o === "conf" ? "" : orgLogo(o, 26)} ${esc(ORG[o].full)}</h2>${byOrg[o].map(meetCard).join("")}</section>`).join("")}
-  <p class="foot">Datos de las páginas públicas de resultados HY-TEK. Competiciones en directo encontradas también gracias al canal RSS de <a href="https://swimswam.com" target="_blank" rel="noopener">SwimSwam</a>. Los tiempos son oficiosos hasta su publicación oficial.</p>`;
+  <p class="foot">${lang() === "en" ? `Data from public HY-TEK results pages. Live meets also found via the <a href="https://swimswam.com" target="_blank" rel="noopener">SwimSwam</a> RSS feed. Times are unofficial until published as official.` : `Datos de las páginas públicas de resultados HY-TEK. Competiciones en directo encontradas también gracias al canal RSS de <a href="https://swimswam.com" target="_blank" rel="noopener">SwimSwam</a>. Los tiempos son oficiosos hasta su publicación oficial.`}</p>`;
 }
 
 // Universidad anfitriona a partir del nombre ("2026 Tennessee Invitational" → Tennessee).
@@ -437,37 +537,37 @@ async function meetView(id, tab = "pruebas", silent = false) {
   const host = meet.org === "conf" ? hostOf(meet.name) : null;
   const tint = host ? host.info.color : { ncaa: "#0a5bb5", usas: "#b3123a", usms: "#11306b" }[meet.org] || "#0b3d91";
 
-  const tabs = [["pruebas", "Pruebas"], ["clasificacion", "Clasificación"], ["equipos", "Universidades"]];
+  const tabs = [["pruebas", T("Pruebas")], ["clasificacion", T("Clasificación")], ["equipos", T("Universidades")]];
   let body = "";
   if (tab === "pruebas") {
     body = meet.sessions
       .map(
-        (s) => `<div class="session"><h3>${esc(s.title.replace("Session", "Sesión"))}<span>${esc(fmtDay(s.day))}</span></h3>
-        ${s.events.map((e) => `<a class="erow" data-ev="${esc(e.url)}" href="#/m/${enc(id)}/e/${enc(eventKey(e.url))}"><span class="num">${e.number}</span><span class="ename">${esc(englishToSpanish(e.name))}<small class="win"></small></span>${e.relay ? `<span class="tag">Relevo</span>` : ""}<span class="chev">›</span></a>`).join("")}
+        (s) => `<div class="session"><h3>${esc(s.title.replace("Session", T("Sesión")))}<span>${esc(fmtDay(s.day))}</span></h3>
+        ${s.events.map((e) => `<a class="erow" data-ev="${esc(e.url)}" href="#/m/${enc(id)}/e/${enc(eventKey(e.url))}"><span class="num">${e.number}</span><span class="ename">${esc(englishToSpanish(e.name))}<small class="win"></small></span>${e.relay ? `<span class="tag">${T("Relevo")}</span>` : ""}<span class="chev">›</span></a>`).join("")}
       </div>`
       )
-      .join("") || `<div class="card muted">Todavía no hay pruebas publicadas.</div>`;
+      .join("") || `<div class="card muted">${T("Todavía no hay pruebas publicadas.")}</div>`;
   } else if (tab === "clasificacion") {
     body = standings
-      ? `${podium(standings.scores, id)}<p class="sub pad">Tras la prueba ${standings.number}</p><div class="list">${standings.scores
+      ? `${podium(standings.scores, id)}<p class="sub pad">${T("Tras la prueba {n}", { n: standings.number })}</p><div class="list">${standings.scores
           .map((s) => `<a class="srow" href="#/m/${enc(id)}/t/${enc(s.t)}"><span class="place p${s.p}">${s.p}</span>${crest(s.t, 36)}<span class="sname">${esc(s.t)}</span><span class="pts">${esc(s.pts)}<small> pts</small></span></a>`)
           .join("")}</div>`
-      : `<div class="card muted">La clasificación aparecerá cuando haya pruebas puntuables terminadas.</div>`;
+      : `<div class="card muted">${T("La clasificación aparecerá cuando haya pruebas puntuables terminadas.")}</div>`;
   } else {
     body = teams.length
-      ? `${standings ? "" : `<p class="sub pad">Universidades vistas en las últimas pruebas</p>`}<div class="grid">${teams.map((t) => `<a class="tcard" href="#/m/${enc(id)}/t/${enc(t)}">${crest(t, 56)}<span>${esc(t)}</span></a>`).join("")}</div>`
-      : `<div class="card muted">La lista de universidades aparecerá cuando haya resultados.</div>`;
+      ? `${standings ? "" : `<p class="sub pad">${T("Universidades vistas en las últimas pruebas")}</p>`}<div class="grid">${teams.map((t) => `<a class="tcard" href="#/m/${enc(id)}/t/${enc(t)}">${crest(t, 56)}<span>${esc(t)}</span></a>`).join("")}</div>`
+      : `<div class="card muted">${T("La lista de universidades aparecerá cuando haya resultados.")}</div>`;
   }
 
   $app.innerHTML = `
-  <a class="back" href="#/">‹ Inicio</a>
+  <a class="back" href="#/">‹ ${T("Inicio")}</a>
   <section class="mhero" style="--tint:${tint}">
-    <div class="mtop">${meetBadge({ org: meet.org, name: meet.name }, 60)}<div><h1>${esc(meet.name)}</h1><p>${esc(fmtRange(meet.start, meet.end))}${uniqueEvents(meet).length ? ` · ${uniqueEvents(meet).length} pruebas` : ""}</p>${live ? liveDot : ""}</div></div>
+    <div class="mtop">${meetBadge({ org: meet.org, name: meet.name }, 60)}<div><h1>${esc(meet.name)}</h1><p>${esc(fmtRange(meet.start, meet.end))}${uniqueEvents(meet).length ? ` · ${uniqueEvents(meet).length} pruebas` : ""}</p>${live ? liveTag() : ""}</div></div>
     ${teams.length ? `<div class="strip">${teams.map((t) => `<a href="#/m/${enc(id)}/t/${enc(t)}" title="${esc(t)}">${crest(t, 40)}</a>`).join("")}</div>` : ""}
-    ${standings && tab === "pruebas" && standings.scores[0] ? `<a class="leader" href="#/m/${enc(id)}/clasificacion">${crest(standings.scores[0].t, 28)}<span>Lidera <b>${esc(standings.scores[0].t)}</b> con ${esc(standings.scores[0].pts)} pts</span><span class="chev">›</span></a>` : ""}
+    ${standings && tab === "pruebas" && standings.scores[0] ? `<a class="leader" href="#/m/${enc(id)}/clasificacion">${crest(standings.scores[0].t, 28)}<span>${T("Lidera {t} con {p} pts", { t: `<b>${esc(standings.scores[0].t)}</b>`, p: esc(standings.scores[0].pts) })}</span><span class="chev">›</span></a>` : ""}
   </section>
-  ${(store.get("s:" + id) || {}).article ? `<a class="article" href="${esc(store.get("s:" + id).article)}" target="_blank" rel="noopener">Crónica en SwimSwam ↗</a>` : ""}
-  ${live && meet.lastEventUrl ? `<a class="lastev" href="#/m/${enc(id)}/e/${enc(eventKey(meet.lastEventUrl))}">⚡ Última prueba terminada</a>` : ""}
+  ${(store.get("s:" + id) || {}).article ? `<a class="article" href="${esc(store.get("s:" + id).article)}" target="_blank" rel="noopener">${T("Crónica en SwimSwam")} ↗</a>` : ""}
+  ${live && meet.lastEventUrl ? `<a class="lastev" href="#/m/${enc(id)}/e/${enc(eventKey(meet.lastEventUrl))}">⚡ ${T("Última prueba terminada")}</a>` : ""}
   <nav class="seg">${tabs.map(([k, l]) => `<a class="${k === tab ? "on" : ""}" href="#/m/${enc(id)}${k === "pruebas" ? "" : "/" + k}">${l}</a>`).join("")}</nav>
   ${body}`;
   if (tab === "pruebas") fillWinners(meet, live);
@@ -501,8 +601,8 @@ function resultRow(r, relay, id, fav) {
     ${place}${crest(r.t)}
     <span class="who"><strong>${esc(relay ? r.t + (r.l ? " " + r.l : "") : r.n)}</strong><small>${relay ? "" : esc(r.t) + (r.y ? " · " + esc(r.y) : "")}</small></span>
     <span class="time"><strong>${esc(r.m)}</strong>${r.pv ? `<small>${esc(r.pv)}</small>` : ""}${r.pts ? `<em>${esc(r.pts)} pts</em>` : ""}</span>
-  </summary>${extra.join("") || `<div class="splits muted">Sin parciales</div>`}
-  <a class="tlink" href="#/m/${enc(id)}/t/${enc(r.t)}">Ver todo de ${esc(r.t)} ›</a></details>`;
+  </summary>${extra.join("") || `<div class="splits muted">${T("Sin parciales")}</div>`}
+  <a class="tlink" href="#/m/${enc(id)}/t/${enc(r.t)}">${T("Ver todo de {t}", { t: esc(r.t) })} ›</a></details>`;
 }
 
 async function eventView(id, key, silent = false) {
@@ -516,7 +616,7 @@ async function eventView(id, key, silent = false) {
     const url = link ? link.url : new URL(key + ".htm", meet.url).href;
     ev = await loadEvent(url, meet.status === "live");
   } catch {
-    $app.innerHTML = `<a class="back" href="#/m/${enc(id)}">‹ Volver</a><div class="card muted">Esta prueba todavía no tiene resultados. Se comprobará de nuevo cada minuto.</div>`;
+    $app.innerHTML = `<a class="back" href="#/m/${enc(id)}">‹ ${T("Volver")}</a><div class="card muted">${T("Esta prueba todavía no tiene resultados. Se comprobará de nuevo cada minuto.")}</div>`;
     return scheduleRefresh((s) => eventView(id, key, s));
   }
   setTitle(ev.title);
@@ -529,18 +629,18 @@ async function eventView(id, key, silent = false) {
       let h = "";
       if (r.s && r.s !== lastSec) {
         lastSec = r.s;
-        h = `<div class="sec">${esc(SECTION_ES[r.s] || r.s)}</div>`;
+        h = `<div class="sec">${esc(lang() === "en" ? r.s : SECTION_ES[r.s] || r.s)}</div>`;
       }
       return h + resultRow(r, ev.relay, id, isFav(r.t, f));
     })
     .join("");
   $app.innerHTML = `
   <a class="back" href="#/m/${enc(id)}">‹ ${esc(meet.name)}</a>
-  <section class="ehead"><span class="num big">${ev.number ?? ""}</span><div><h1>${esc(englishToSpanish(ev.title))}</h1><p class="sub">${meet.status === "live" ? liveDot : esc(fmtRange(meet.start, meet.end))}</p></div></section>
-  ${f.size ? `<label class="toggle"><input type="checkbox" id="onlyFav" ${onlyFav ? "checked" : ""}> Solo mis universidades</label>` : ""}
-  ${ev.records.length ? `<details class="records"><summary>Récords</summary>${ev.records.map((r) => `<div>${esc(r)}</div>`).join("")}</details>` : ""}
-  <div class="list">${rows || `<div class="card muted">Sin resultados todavía.</div>`}</div>
-  ${ev.scores.length ? `<h2>Clasificación por equipos</h2><div class="list">${ev.scores.slice(0, 10).map((s) => `<a class="srow" href="#/m/${enc(id)}/t/${enc(s.t)}"><span class="place p${s.p}">${s.p}</span>${crest(s.t)}<span class="sname">${esc(s.t)}</span><span class="pts">${esc(s.pts)}<small> pts</small></span></a>`).join("")}</div><a class="more" href="#/m/${enc(id)}/clasificacion">Ver clasificación completa ›</a>` : ""}`;
+  <section class="ehead"><span class="num big">${ev.number ?? ""}</span><div><h1>${esc(englishToSpanish(ev.title))}</h1><p class="sub">${meet.status === "live" ? liveTag() : esc(fmtRange(meet.start, meet.end))}</p></div></section>
+  ${f.size ? `<label class="toggle"><input type="checkbox" id="onlyFav" ${onlyFav ? "checked" : ""}> ${T("Solo mis universidades")}</label>` : ""}
+  ${ev.records.length ? `<details class="records"><summary>${T("Récords")}</summary>${ev.records.map((r) => `<div>${esc(r)}</div>`).join("")}</details>` : ""}
+  <div class="list">${rows || `<div class="card muted">${T("Sin resultados todavía.")}</div>`}</div>
+  ${ev.scores.length ? `<h2>${T("Clasificación por equipos")}</h2><div class="list">${ev.scores.slice(0, 10).map((s) => `<a class="srow" href="#/m/${enc(id)}/t/${enc(s.t)}"><span class="place p${s.p}">${s.p}</span>${crest(s.t)}<span class="sname">${esc(s.t)}</span><span class="pts">${esc(s.pts)}<small> pts</small></span></a>`).join("")}</div><a class="more" href="#/m/${enc(id)}/clasificacion">${T("Ver clasificación completa")} ›</a>` : ""}`;
   const cb = document.getElementById("onlyFav");
   if (cb) cb.onchange = () => (store.set("onlyFav", cb.checked), eventView(id, key, true));
   if (meet.status === "live") scheduleRefresh((s) => eventView(id, key, s));
@@ -548,7 +648,7 @@ async function eventView(id, key, silent = false) {
 
 async function teamView(id, team, silent = false) {
   setTab("home");
-  if (!silent) loading(`Buscando resultados de ${team}…`);
+  if (!silent) loading(T("Buscando resultados de {t}…", { t: team }));
   await Promise.all([loadLogos().catch(() => {}), loadBrands().catch(() => {})]);
   let meet;
   try {
@@ -575,32 +675,149 @@ async function teamView(id, team, silent = false) {
   rows.sort((a, b) => (a.ev.number ?? 0) - (b.ev.number ?? 0));
   $app.innerHTML = `
   <a class="back" href="#/m/${enc(id)}/equipos">‹ ${esc(meet.name)}</a>
-  <section class="thead">${crest(team, 72)}<div><h1>${esc(team)}</h1><p class="sub">${standing ? `${standing.p}.º · ${esc(standing.pts)} puntos · ` : ""}${medals} podios</p></div>${star(team)}</section>
-  <div class="list">${rows.map(({ ev, r }) => `<a class="trow" href="#/m/${enc(id)}/e/${enc(eventKey(ev.url))}"><span class="place p${r.p}">${esc(r.p)}</span><span class="who"><strong>${esc(ev.relay ? "Relevo " + (r.l || "") : r.n)}</strong><small>${esc(englishToSpanish(ev.title))}${r.s ? " · " + esc(SECTION_ES[r.s] || r.s) : ""}</small></span><span class="time"><strong>${esc(r.m)}</strong>${r.pts ? `<em>${esc(r.pts)} pts</em>` : ""}</span></a>`).join("") || `<div class="card muted">Sin resultados todavía.</div>`}</div>`;
+  <section class="thead">${crest(team, 72)}<div><h1>${findUni(team) ? `<a href="#/uni/${enc(findUni(team).n)}">${esc(team)} ›</a>` : esc(team)}</h1><p class="sub">${standing ? `${standing.p}.º · ${esc(standing.pts)} ${T("puntos")} · ` : ""}${medals} ${T("podios")}</p></div>${star(team)}</section>
+  <div class="list">${rows.map(({ ev, r }) => `<a class="trow" href="#/m/${enc(id)}/e/${enc(eventKey(ev.url))}"><span class="place p${r.p}">${esc(r.p)}</span><span class="who"><strong>${esc(ev.relay ? "Relevo " + (r.l || "") : r.n)}</strong><small>${esc(englishToSpanish(ev.title))}${r.s ? " · " + esc(SECTION_ES[r.s] || r.s) : ""}</small></span><span class="time"><strong>${esc(r.m)}</strong>${r.pts ? `<em>${esc(r.pts)} pts</em>` : ""}</span></a>`).join("") || `<div class="card muted">${T("Sin resultados todavía.")}</div>`}</div>`;
   if (live) scheduleRefresh((s) => teamView(id, team, s));
 }
 
-async function universitiesView(q = "") {
+const DIVS = [["D1", "Division I"], ["D2", "Division II"], ["D3", "Division III"], ["NAIA", "NAIA"]];
+const divLabel = (d) => (DIVS.find(([k]) => k === d) || [, d])[1];
+
+async function universitiesView() {
   setTab("unis");
-  setTitle("Universidades");
+  setTitle(T("Universidades"));
   loading();
   await loadLogos().catch(() => {});
   const f = favs();
-  const seen = new Map();
-  if (logoIndex) for (const info of Object.values(logoIndex)) if (info.display && !seen.has(info.display)) seen.set(info.display, info);
-  for (const t of store.get("seenTeams", [])) if (!seen.has(t)) seen.set(t, null);
-  const all = [...seen.keys()].sort((a, b) => a.localeCompare(b));
-  const render = (query) => {
-    const ql = query.trim().toLowerCase();
-    const list = all.filter((t) => !ql || t.toLowerCase().includes(ql));
+  const flt = { div: "", conf: "", st: "", sex: "", q: "", ...store.get("uniFilters", {}) };
+  const save = () => store.set("uniFilters", { ...flt, q: "" });
+  const confs = (div) => [...new Set(unis.filter((u) => !div || u.div === div).flatMap((u) => [u.cm, u.cw]).filter(Boolean))].sort();
+  const states = [...new Set(unis.map((u) => u.st).filter(Boolean))].sort();
+  const chip = (k, v, label) => `<button class="fchip ${flt[k] === v ? "on" : ""}" data-f="${k}" data-v="${esc(v)}">${esc(label)}</button>`;
+
+  const render = () => {
+    const ql = flt.q.trim().toLowerCase();
+    const list = unis.filter(
+      (u) =>
+        (!flt.div || u.div === flt.div) &&
+        (!flt.conf || u.cm === flt.conf || u.cw === flt.conf) &&
+        (!flt.st || u.st === flt.st) &&
+        (!flt.sex || (flt.sex === "m" ? u.men : u.women)) &&
+        (!ql || [u.n, u.full, u.nick, u.city].some((x) => x && x.toLowerCase().includes(ql)))
+    );
+    document.getElementById("fbar").innerHTML = `
+      <div class="frow">${chip("div", "", T("Todas"))}${DIVS.map(([k]) => chip("div", k, k === "NAIA" ? "NAIA" : k.replace("D", "D-"))).join("")}</div>
+      <div class="frow">${chip("sex", "", T("Todos"))}${chip("sex", "m", T("Hombres"))}${chip("sex", "w", T("Mujeres"))}</div>
+      <div class="frow selects">
+        <label><span>${T("Conferencia")}</span><select id="fconf"><option value="">${T("Todas")}</option>${confs(flt.div).map((c) => `<option ${c === flt.conf ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label>
+        <label><span>${T("Estado")}</span><select id="fst"><option value="">${T("Todos")}</option>${states.map((c) => `<option ${c === flt.st ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label>
+      </div>`;
+    const groups = DIVS.map(([k, label]) => [label, list.filter((u) => u.div === k)]).filter(([, l]) => l.length);
+    const row = (u) => `<a class="urow" href="#/uni/${enc(u.n)}">${crest(u.n, 34)}<span class="uinfo"><b>${esc(u.n)}</b><small>${esc([u.nick, u.city || u.st].filter(Boolean).join(" · "))}</small></span><span class="dtag ${u.div}">${esc(u.cw || u.cm || "")}</span>${star(u.n)}</a>`;
     document.getElementById("ulist").innerHTML =
-      (f.size && !ql ? `<h2>Mis universidades</h2><div class="grid">${[...f].map((t) => `<div class="tcard">${crest(t, 48)}<span>${esc(t)}</span>${star(t)}</div>`).join("")}</div><h2>Todas</h2>` : "") +
-      `<div class="list">${list.slice(0, ql ? 300 : 2000).map((t) => `<div class="urow">${crest(t, 30)}<span>${esc(t)}</span>${star(t)}</div>`).join("")}</div>`;
+      (f.size && !ql && !flt.div && !flt.conf && !flt.st && !flt.sex ? `<h2>${T("Mis universidades")}</h2><div class="grid">${[...f].map((t) => `<a class="tcard" href="#/uni/${enc(t)}">${crest(t, 48)}<span>${esc(t)}</span>${star(t)}</a>`).join("")}</div>` : "") +
+      (groups.length
+        ? groups.map(([label, l]) => `<h2>${esc(label)} <span class="count">${l.length}</span></h2><div class="list">${l.slice(0, 700).map(row).join("")}</div>`).join("")
+        : `<div class="card muted">${T("Ninguna universidad con estos filtros.")}</div>`);
+    document.getElementById("fconf").onchange = (e) => ((flt.conf = e.target.value), save(), render());
+    document.getElementById("fst").onchange = (e) => ((flt.st = e.target.value), save(), render());
   };
-  $app.innerHTML = `<section class="pad"><h1>Universidades</h1><p class="sub">Marca con ★ las tuyas: aparecerán en la portada y podrás filtrar los resultados.</p>
-    <input type="search" id="uq" placeholder="Buscar universidad" value="${esc(q)}"></section><div id="ulist"></div>`;
-  render(q);
-  document.getElementById("uq").oninput = (e) => render(e.target.value);
+  $app.innerHTML = `<section class="pad"><h1>${T("Universidades")}</h1><p class="sub">${T("Marca con ★ las tuyas: aparecerán en la portada y podrás filtrar los resultados.")}</p>
+    <input type="search" id="uq" placeholder="${T("Buscar universidad")}"></section><div id="fbar" class="fbar"></div><div id="ulist"></div>
+    <p class="foot">${unis.length} ${T("universidades")} · ${T("Datos de Wikipedia (CC BY-SA).")}</p>`;
+  document.getElementById("fbar").onclick = (e) => {
+    const b = e.target.closest("[data-f]");
+    if (!b) return;
+    flt[b.dataset.f] = b.dataset.v;
+    if (b.dataset.f === "div") flt.conf = "";
+    save();
+    render();
+  };
+  document.getElementById("uq").oninput = (e) => ((flt.q = e.target.value), render());
+  render();
+}
+
+async function uniView(name) {
+  setTab("unis");
+  loading();
+  await Promise.all([loadLogos().catch(() => {}), loadBrands().catch(() => {})]);
+  const u = unis.find((x) => x.n === name) || findUni(name);
+  if (!u) return errorView("Universidad no encontrada.");
+  setTitle(u.n);
+  const info = logoIndex ? matchTeam(logoIndex, u.n) || matchTeam(logoIndex, u.full) : null;
+  const tint = info && info.color && info.color !== "#0b63ce" ? info.color : "#0b3d91";
+  const fact = (label, value) => (value ? `<div class="fact"><small>${esc(label)}</small><b>${esc(value)}</b></div>` : "");
+  const coach = u.coach || (!u.coachM && !u.coachW ? "" : null);
+  const web = u.web ? (u.web.startsWith("http") ? u.web : "https://" + u.web) : "";
+  $app.innerHTML = `
+  <a class="back" href="#/u">‹ ${T("Universidades")}</a>
+  <section class="mhero uhero" style="--tint:${tint}">
+    <div class="mtop"><span class="bigcrest">${crest(u.n, 76)}</span><div><h1>${esc(u.n)}</h1><p>${esc(u.full)}</p><p>${esc([u.city, u.st].filter(Boolean).join(", "))}</p></div>${star(u.n)}</div>
+    <div class="pills"><span class="pill">${esc(divLabel(u.div))}</span>${u.men ? `<span class="pill">♂ ${T("Hombres")}</span>` : ""}${u.women ? `<span class="pill">♀ ${T("Mujeres")}</span>` : ""}${u.diving ? `<span class="pill">🤿 ${T("Saltos")}</span>` : ""}</div>
+  </section>
+  <div class="facts">
+    ${fact(T("Apodo"), u.nick)}
+    ${fact(T("División"), divLabel(u.div))}
+    ${u.cm && u.cm === u.cw ? fact(T("Conferencia"), u.cm) : fact(`${T("Conferencia")} · ${T("Hombres")}`, u.cm) + fact(`${T("Conferencia")} · ${T("Mujeres")}`, u.cw)}
+    ${fact(T("Ciudad"), [u.city, u.st].filter(Boolean).join(", "))}
+    ${coach !== null ? fact(T("Entrenador"), u.coach || T("No disponible")) : fact(T("Entrenador (hombres)"), u.coachM) + fact(T("Entrenadora/entrenador (mujeres)"), u.coachW)}
+  </div>
+  <a class="btn wide" href="#/u/${enc(u.n)}">🏊 ${T("Ver sus resultados")}</a>
+  <div class="links">${u.wiki ? `<a href="${esc(u.wiki)}" target="_blank" rel="noopener">${T("Wikipedia")} ↗</a>` : ""}${web ? `<a href="${esc(web)}" target="_blank" rel="noopener">${T("Web oficial")} ↗</a>` : ""}</div>
+  <p class="foot">${T("Datos de Wikipedia (CC BY-SA).")}</p>`;
+}
+
+const THEMES = [["auto", "Automático"], ["light", "Claro"], ["dark", "Oscuro"]];
+const BGS = [["ocean", "Océano"], ["sunset", "Atardecer"], ["forest", "Bosque"], ["lavender", "Lavanda"], ["graphite", "Grafito"]];
+function applySettings() {
+  const root = document.documentElement;
+  const th = store.get("theme", "auto");
+  if (th === "auto") delete root.dataset.theme;
+  else root.dataset.theme = th;
+  root.dataset.bg = store.get("bg", "ocean");
+  root.lang = lang();
+  const labels = { home: T("Campeonatos"), unis: T("Universidades"), ajustes: T("Ajustes") };
+  document.querySelectorAll(".tabbar a").forEach((a) => {
+    const l = a.querySelector("em");
+    if (l) l.textContent = labels[a.dataset.tab];
+  });
+  const logo = document.querySelector(".logo b");
+  if (logo) logo.textContent = lang() === "en" ? "Swim USA" : "Natación USA";
+}
+
+function settingsView() {
+  setTab("ajustes");
+  setTitle(T("Ajustes"));
+  const seg = (key, items, cur) => `<div class="seg opts" data-key="${key}">${items.map(([v, l]) => `<button class="${v === cur ? "on" : ""}" data-v="${v}">${esc(T(l))}</button>`).join("")}</div>`;
+  $app.innerHTML = `<section class="pad"><h1>${T("Ajustes")}</h1></section>
+  <div class="card settings">
+    <h3>${T("Idioma")}</h3>${seg("lang", [["es", "Español"], ["en", "English"]], lang())}
+    <h3>${T("Tema")}</h3>${seg("theme", THEMES, store.get("theme", "auto"))}
+    <h3>${T("Fondo")}</h3>
+    <div class="swatches" data-key="bg">${BGS.map(([v, l]) => `<button class="sw ${v === store.get("bg", "ocean") ? "on" : ""}" data-v="${v}" data-bgs="${v}"><i></i><span>${esc(T(l))}</span></button>`).join("")}</div>
+  </div>
+  <div class="card settings"><button class="btn ghost" id="clear">${T("Borrar datos guardados")}</button></div>
+  <p class="foot">${lang() === "en" ? "Swim USA · results from public HY-TEK pages, SwimSwam feed, ESPN team logos and Wikipedia." : "Natación USA · resultados de páginas públicas HY-TEK, canal de SwimSwam, escudos de ESPN y Wikipedia."}</p>`;
+  $app.onclick = null;
+  $app.querySelectorAll("[data-key]").forEach((g) =>
+    g.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-v]");
+      if (!b) return;
+      store.set(g.dataset.key, b.dataset.v);
+      applySettings();
+      settingsView();
+    })
+  );
+  document.getElementById("clear").onclick = () => {
+    const keep = ["favs", "lang", "theme", "bg"].map((k) => [k, store.get(k)]);
+    try {
+      localStorage.clear();
+    } catch {}
+    keep.forEach(([k, v]) => v !== undefined && store.set(k, v));
+    mem.clear();
+    logoIndex = null;
+    document.getElementById("clear").textContent = T("Datos guardados borrados.");
+  };
 }
 
 async function favTeamView(team) {
@@ -616,6 +833,7 @@ async function favTeamView(team) {
 // ---------- enrutado ----------
 function route() {
   clearInterval(refreshTimer);
+  applySettings();
   const parts = location.hash.replace(/^#\/?/, "").split("/").map(decodeURIComponent);
   window.scrollTo(0, 0);
   if (parts[0] === "m" && parts[1]) {
@@ -624,6 +842,8 @@ function route() {
     return meetView(parts[1], parts[2] || "pruebas");
   }
   if (parts[0] === "u" && parts[1]) return favTeamView(parts[1]);
+  if (parts[0] === "uni" && parts[1]) return uniView(parts[1]);
+  if (parts[0] === "ajustes") return settingsView();
   if (parts[0] === "u") return universitiesView();
   return homeView();
 }

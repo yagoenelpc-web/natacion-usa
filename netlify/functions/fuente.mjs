@@ -13,7 +13,7 @@ export function allowed(target) {
     if (u.username || u.password || (u.port && u.port !== "80" && u.port !== "443")) return false;
     if (HOSTS.some((h) => u.hostname === h || u.hostname.endsWith("." + h))) return true;
     // Solo el canal RSS de SwimSwam (titulares y enlaces), no sus artículos.
-    if (u.hostname === "swimswam.com") return /^\/(feed|tag\/live-results\/feed)\/?$/.test(u.pathname);
+    if (u.hostname === "swimswam.com") return /^\/(feed|(tag|category)\/[\w-]+\/feed)\/?$/.test(u.pathname);
     if (/^(localhost|[\d.]+|\[.*\])$/.test(u.hostname) || !u.hostname.includes(".")) return false;
     return HYTEK_PATH.test(u.pathname);
   } catch {
