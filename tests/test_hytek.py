@@ -85,3 +85,11 @@ def test_parse_real_relay_page():
     assert asu.swimmers == ["Chaney, Adam", "Dobrzanski, Andy", "Kharun, Ilya", "Kulow, Jonny"]
     assert asu.splits[-1] == "1:20.07"
     assert ev.results[1].swimmers[1] == "de Groot, Koen"
+
+
+def test_parse_diving_scores_over_100():
+    ev = parse_event(read("event_diving.htm"), BASE + "260325F008.htm")
+    assert len(ev.results) == 4
+    assert ev.results[0].times == ["379.65", "428.10"] and ev.results[0].points == "20"
+    assert ev.results[1].team == "Miami (FL)"
+    assert ev.results[3].name == "Winn IV, Raymond" and ev.results[3].mark == "328.55"

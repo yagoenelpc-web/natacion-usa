@@ -26,7 +26,7 @@ ROUND_WORDS = {
 }
 
 # Una marca: 1:22.34, 42.49, 412.35 (saltos), con prefijo X o sufijo de récord.
-TIME_RE = re.compile(r"^[xX*]?(\d{1,2}:)?\d{1,2}\.\d{2}[A-Za-z!#$&*@^]*$")
+TIME_RE = re.compile(r"^[xX*]?(\d{1,2}:)?\d{1,3}\.\d{2}[A-Za-z!#$&*@^]*$")
 STATUS_RE = re.compile(r"^[xX]?(DQ|DFS|NS|SCR|DNF|DNS|NT|NP)$", re.I)
 YEAR_CODES = {"FR", "SO", "JR", "SR", "5Y", "GR", "RS"}
 
