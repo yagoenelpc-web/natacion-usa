@@ -118,7 +118,7 @@ function roster(html, base) {
       const small = urls.join(" ").match(/https:\S+rs:fit:(?:480|300|360|600):\S+/)?.[0];
       return small || urls[0] || "";
     };
-    for (const m of html.matchAll(/<a href="([^"]*\/roster\/player\/[^"]+)"[^>]*>([\s\S]{0,300}?)<\/a>/g)) {
+    for (const m of html.matchAll(/<a href="([^"]*\/roster\/player\/[^"]+)"[^>]*>([\s\S]{0,1500}?)<\/a>/g)) {
       const n = dec(m[2].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
       if (!n || out.has(n) || !/^[\p{L}'’.\- ]{3,60}$/u.test(n)) continue;
       out.set(n, photo(n));
