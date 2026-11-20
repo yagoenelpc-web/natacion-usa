@@ -13,6 +13,9 @@ MEET = "https://swimmeetresults.tech/NCAA-Division-I-Men-2026"
 
 
 def run(coro):
+    # Cada asyncio.run crea un bucle nuevo: el cliente HTTP y el semáforo deben ser nuevos también.
+    fetch._client = None
+    fetch._sem = asyncio.Semaphore(4)
     return asyncio.run(coro)
 
 
