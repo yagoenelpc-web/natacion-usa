@@ -100,7 +100,6 @@ function fromNuxt(html, url) {
       if (!val) continue;
       const txt = htmlToText(val);
       if (txt.length > 140) extra += `\n## ${label || ""}\n${txt}`;
-      else if (label && txt && !f.some(([l]) => l === label)) f.push([decode(label), txt]);
     }
   }
   if (process.env.PROBE && (p.bioFields || p.rankedBioFields)) console.log("bioFields:", JSON.stringify(p.bioFields || p.rankedBioFields).slice(0, 600));
