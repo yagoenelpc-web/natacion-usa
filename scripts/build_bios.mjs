@@ -89,10 +89,25 @@ function fromNuxt(html, url) {
   const f = [];
   for (const [k, l] of FIELDS) if (typeof p[k] === "string" && p[k].trim() && p[k].length < 120) f.push([l, decode(p[k].trim())]);
   if (p.heightFeet) f.push(["Altura", `${p.heightFeet}' ${p.heightInches || 0}"`]);
+  // Algunas webs guardan la biografía por apartados (bioFields: título + texto).
+  let extra = "";
+  for (const k of ["bioFields", "rankedBioFields", "historicalFields"]) {
+    if (!Array.isArray(p[k])) continue;
+    for (const it of p[k]) {
+      if (!it || typeof it !== "object") continue;
+      const label = [it.title, it.label, it.name, it.fieldName].find((x) => typeof x === "string" && x.trim());
+      const val = [it.value, it.content, it.text, it.fieldValue, it.bio].find((x) => typeof x === "string" && x.trim());
+      if (!val) continue;
+      const txt = htmlToText(val);
+      if (txt.length > 140) extra += `\n## ${label || ""}\n${txt}`;
+      else if (label && txt && !f.some(([l]) => l === label)) f.push([decode(label), txt]);
+    }
+  }
+  if (process.env.PROBE && (p.bioFields || p.rankedBioFields)) console.log("bioFields:", JSON.stringify(p.bioFields || p.rankedBioFields).slice(0, 600));
   const im = p.image && typeof p.image === "object" ? p.image : null;
   let img = im ? im.absoluteUrl || im.url || "" : typeof p.image === "string" ? p.image : "";
   if (img && !/^https?:/.test(img)) img = new URL(img, url).href;
-  return { b: htmlToText(String(p.bio || p.biography || "")), f, img };
+  return { b: (htmlToText(String(p.bio || p.biography || "")) + extra).replace(/^Follow @\S+\n/, "").trim(), f, img };
 }
 // Webs clásicas y otras: bloque de biografía y datos con etiqueta.
 function fromHtml(html) {
