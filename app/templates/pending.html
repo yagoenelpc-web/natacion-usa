@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% set refresh = True %}
+{% block main %}
+{% if meet %}<p><a href="/campeonato?url={{ meet.url|q }}">← {{ meet.name }}</a></p>{% endif %}
+<div class="card">Esta prueba todavía no tiene resultados publicados. La página se vuelve a comprobar cada minuto.</div>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block main %}
+<p><a href="/">← Inicio</a></p>
+<h1>{{ meet.name }}</h1>
+<p class="sub">{{ meet.start_date or '' }}{% if meet.city %} · {{ meet.city }}{% endif %}{% if meet.course %} · {{ meet.course }}{% endif %}</p>
+<form class="inline card" method="get"><select name="equipo" onchange="this.form.submit()"><option value="">Todos los equipos</option>{% for c in clubs %}<option {% if c==equipo %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></form>
+{% for name, swims in events.items() %}
+<h2>{{ name }}</h2>
+<table><tr><th class="num">Pos.</th><th>Nadador</th><th>Equipo</th><th class="num">Marca</th></tr>
+{% for s in swims %}<tr><td class="num">{{ s.place or '' }}</td><td>{% if s.is_relay %}{{ s.swimmer }}{% else %}<a href="/nadador?nombre={{ s.swimmer|q }}">{{ s.swimmer }}</a>{% endif %}</td><td>{{ s.club }}</td><td class="num">{{ s.time }}</td></tr>{% endfor %}
+</table>
+{% endfor %}
+{% endblock %}

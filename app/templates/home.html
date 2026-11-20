@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block main %}
+{% if request.query_params.get('importado') %}<div class="notice">Importado: {{ request.query_params.get('importado') }}</div>{% endif %}
+<h1>Resultados de natación de EE. UU.</h1>
+<p class="sub">NCAA, nacionales y cualquier campeonato que publique resultados con HY-TEK.</p>
+
+<div class="card">
+  <form class="inline" method="get" action="/campeonato">
+    <input type="text" name="url" placeholder="Pega la dirección de resultados de un campeonato (HY-TEK)" required>
+    <button>Abrir</button>
+  </form>
+  <p class="muted" style="margin:8px 0 0;font-size:13px">También puedes ver <a href="/directo">lo que está en directo ahora</a> o buscar en el <a href="/catalogo">catálogo de campeonatos</a>.</p>
+</div>
+
+<h2>Mis campeonatos</h2>
+{% if saved %}
+<div class="grid">
+{% for m in saved %}
+  <a class="meet" href="/campeonato?url={{ m.url|q }}"><strong>{{ m.name }}</strong><div class="when">{{ m.url }}</div></a>
+{% endfor %}
+</div>
+{% else %}<p class="muted">Aún no has guardado ninguno. Abre un campeonato y pulsa «Guardar».</p>{% endif %}
+
+<h2>Ficheros importados</h2>
+<div class="card">
+  <form class="inline" method="post" action="/importar" enctype="multipart/form-data">
+    <input type="file" name="fichero" accept=".zip,.cl2,.sd3,.hy3" required>
+    <button>Importar resultados</button>
+  </form>
+  <p class="muted" style="margin:8px 0 0;font-size:13px">Ficheros .zip, .cl2, .sd3 o .hy3 de HY-TEK. Las fechas de nacimiento no se guardan.</p>
+</div>
+{% if imported %}
+<table><tr><th>Campeonato</th><th class="hide-sm">Fechas</th><th class="num">Nados</th></tr>
+{% for m in imported %}<tr><td><a href="/meet/{{ m.id }}">{{ m.name }}</a></td><td class="hide-sm">{{ m.start_date or '' }}</td><td class="num">{{ m.swims }}</td></tr>{% endfor %}
+</table>
+{% endif %}
+{% endblock %}

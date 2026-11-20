@@ -1,0 +1,5 @@
+<a class="meet" href="/campeonato?url={{ m.url|q }}">
+  {% if live_flag %}<span class="pill live">En directo</span>{% endif %}
+  <div><strong>{{ m.name }}</strong></div>
+  <div class="when">{% if m.start %}{{ m.start.strftime('%d/%m/%Y') }}{% if m.end and m.end != m.start %} – {{ m.end.strftime('%d/%m/%Y') }}{% endif %}{% endif %} · {{ m.events|length }} pruebas</div>
+</a>

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% set refresh = live %}
+{% block title %}{{ ev.title }}{% endblock %}
+{% block main %}
+{% if meet %}<p><a href="/campeonato?url={{ meet.url|q }}">← {{ meet.name }}</a></p>{% endif %}
+<h1>{% if ev.number %}#{{ ev.number }} {% endif %}{{ ev.title }} {% if live %}<span class="pill live">En directo</span>{% endif %}</h1>
+<p class="sub">{{ ev.meet_name }}{% if equipo %} · solo <strong>{{ equipo }}</strong> (<a href="?url={{ ev.url|q }}&meet={{ (meet.url if meet else '')|q }}">ver todos</a>){% endif %}</p>
+<form class="inline card" method="get">
+  <input type="hidden" name="url" value="{{ ev.url }}"><input type="hidden" name="meet" value="{{ meet.url if meet else '' }}">
+  <select name="equipo" onchange="this.form.submit()"><option value="">Todas las universidades y equipos</option>{% for t in ev.teams %}<option {% if t==equipo %}selected{% endif %}>{{ t }}</option>{% endfor %}</select>
+</form>
+{% if ev.records %}<details class="card"><summary>Récords</summary><pre style="margin:8px 0 0;white-space:pre-wrap">{{ ev.records|join('\n') }}</pre></details>{% endif %}
+<div class="scroll"><table>
+<tr><th class="num">Pos.</th><th>{{ 'Equipo' if ev.is_relay else 'Nadador' }}</th>{% if not ev.is_relay %}<th class="hide-sm">Año</th><th>Equipo</th>{% endif %}<th class="num hide-sm">Previa</th><th class="num">Marca</th><th class="num hide-sm">Puntos</th></tr>
+{% set ns = namespace(sec=None) %}
+{% for r in results %}
+  {% if r.section and r.section != ns.sec %}{% set ns.sec = r.section %}<tr class="section"><td colspan="7">{{ r.section|ronda }}</td></tr>{% endif %}
+  <tr>
+    <td class="num">{{ r.place }}</td>
+    {% if ev.is_relay %}
+      <td><a href="/campeonato/equipo?url={{ (meet.url if meet else ev.url)|q }}&equipo={{ r.team|q }}">{{ r.team }}</a> {{ r.relay_letter }}{% if r.swimmers %}<div class="splits">{{ r.swimmers|join(' · ') }}</div>{% endif %}</td>
+    {% else %}
+      <td>{{ r.name }}{% if r.splits %}<div class="splits">{{ r.splits|join(' · ') }}</div>{% endif %}</td>
+      <td class="hide-sm">{{ r.year }}</td>
+      <td>{% if meet %}<a href="/campeonato/equipo?url={{ meet.url|q }}&equipo={{ r.team|q }}">{{ r.team }}</a>{% else %}{{ r.team }}{% endif %}</td>
+    {% endif %}
+    <td class="num hide-sm">{{ r.previous }}</td>
+    <td class="num"><strong>{{ r.mark }}</strong></td>
+    <td class="num hide-sm">{{ r.points }}</td>
+  </tr>
+{% else %}<tr><td colspan="7" class="muted">Sin resultados todavía.</td></tr>{% endfor %}
+</table></div>
+{% if ev.team_scores and not equipo %}
+<h2>Clasificación por equipos</h2>
+<table><tr><th class="num">Pos.</th><th>Equipo</th><th class="num">Puntos</th></tr>
+{% for p, t, pts in ev.team_scores %}<tr><td class="num">{{ p }}</td><td>{{ t }}</td><td class="num">{{ pts }}</td></tr>{% endfor %}</table>
+{% endif %}
+{% if live %}<p class="muted">La página se actualiza cada minuto.</p>{% endif %}
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block main %}
+<h1>Buscar nadador o equipo</h1>
+<p class="sub">Busca en los ficheros que has importado.</p>
+<form class="inline card" method="get"><input type="search" name="q" value="{{ q }}" placeholder="Apellido, nombre o equipo" autofocus><button>Buscar</button></form>
+{% if q and not rows %}<p class="muted">Sin resultados para «{{ q }}».</p>{% endif %}
+{% if rows %}<div class="scroll"><table><tr><th>Nadador</th><th>Equipo</th><th>Prueba</th><th class="num">Marca</th><th class="hide-sm">Campeonato</th></tr>
+{% for s in rows %}<tr><td><a href="/nadador?nombre={{ s.swimmer|q }}">{{ s.swimmer }}</a></td><td>{{ s.club }}</td><td>{{ s.event }}</td><td class="num">{{ s.time }}</td><td class="hide-sm"><a href="/meet/{{ s.meet_id }}">{{ s.meet_name }}</a></td></tr>{% endfor %}
+</table></div>{% endif %}
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block main %}
+<h1>En directo ahora</h1>
+<p class="sub">Campeonatos cuyas fechas incluyen hoy ({{ today.strftime('%d/%m/%Y') }}, hora del Pacífico), entre tus guardados y el catálogo.</p>
+{% if live %}<div class="grid">{% for m in live %}{% set live_flag = True %}{% include "_meetcard.html" %}{% endfor %}</div>
+{% else %}<div class="card">No hay ningún campeonato en directo ahora mismo en las fuentes conocidas. Si sabes la dirección de resultados de uno, pégala en la <a href="/">portada</a>.</div>{% endif %}
+{% if upcoming %}<h2>Próximos</h2><div class="grid">{% for m in upcoming %}{% set live_flag = False %}{% include "_meetcard.html" %}{% endfor %}</div>{% endif %}
+{% if errors %}<p class="muted">No se pudieron leer: {{ errors|join(', ') }}.</p>{% endif %}
+{% if catalog_error %}<p class="muted">El catálogo no respondió: {{ catalog_error }}</p>{% endif %}
+{% endblock %}

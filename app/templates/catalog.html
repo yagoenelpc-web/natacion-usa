@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block main %}
+<h1>Campeonatos</h1>
+<p class="sub">Catálogo de {{ sources|join(', ') }}.</p>
+<form class="inline card" method="get"><input type="search" name="q" value="{{ q }}" placeholder="Filtrar: NCAA, Big Ten, Junior Nationals…"><button>Filtrar</button></form>
+{% for y in years %}
+<h2>{{ y }}</h2>
+<div class="events card">{% for m in by_year[y] %}<a href="/campeonato?url={{ m.url|q }}">{{ m.name }}</a>{% endfor %}</div>
+{% else %}<p class="muted">No se encontró ningún campeonato.</p>{% endfor %}
+{% endblock %}

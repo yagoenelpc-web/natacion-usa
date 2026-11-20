@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% set refresh = live %}
+{% block title %}{{ meet.name }}{% endblock %}
+{% block main %}
+<p><a href="/">← Inicio</a></p>
+<h1>{{ meet.name }} {% if live %}<span class="pill live">En directo</span>{% endif %}</h1>
+<p class="sub">{% if meet.start %}{{ meet.start.strftime('%d/%m/%Y') }}{% if meet.end and meet.end != meet.start %} – {{ meet.end.strftime('%d/%m/%Y') }}{% endif %} · {% endif %}{{ meet.events|length }} pruebas · <a href="{{ meet.url }}" target="_blank" rel="noopener">fuente original</a></p>
+<div class="chips" style="margin-bottom:16px">
+  <a class="chip" href="/campeonato/equipos?url={{ meet.url|q }}">Universidades y equipos · clasificación</a>
+  {% if meet.last_event_url %}<a class="chip" href="/prueba?url={{ meet.last_event_url|q }}&meet={{ meet.url|q }}">Última prueba terminada</a>{% endif %}
+  <form method="post" action="/campeonato/{{ 'quitar' if saved else 'guardar' }}" style="display:inline"><input type="hidden" name="url" value="{{ meet.url }}"><button class="ghost">{{ 'Quitar de mis campeonatos' if saved else 'Guardar' }}</button></form>
+</div>
+{% for s in meet.sessions %}
+<div class="card session">
+  <h3>{{ s.title|replace('Session','Sesión') }} <span class="day">{{ s.day }}</span></h3>
+  <div class="events">{% for e in s.events %}<a href="/prueba?url={{ e.url|q }}&meet={{ meet.url|q }}">#{{ e.number }} {{ e.name }}</a>{% endfor %}</div>
+</div>
+{% else %}<p class="muted">Este índice no tiene pruebas publicadas todavía.</p>{% endfor %}
+{% if live %}<p class="muted">La página se actualiza cada minuto.</p>{% endif %}
+{% endblock %}

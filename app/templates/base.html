@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+{% if refresh %}<meta http-equiv="refresh" content="60">{% endif %}
+<title>{% block title %}Natación USA{% endblock %}</title>
+<link rel="stylesheet" href="/static/style.css">
+</head><body>
+<header><div class="bar">
+  <a class="brand" href="/">🏊 Natación USA</a>
+  <nav>
+    <a href="/directo">En directo</a>
+    <a href="/catalogo">Campeonatos</a>
+    <a href="/buscar">Buscar nadador</a>
+  </nav>
+</div></header>
+<main>{% block main %}{% endblock %}</main>
+</body></html>

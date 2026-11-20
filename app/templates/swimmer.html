@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block main %}
+<h1>{{ nombre }}</h1>
+<h2>Mejores marcas</h2>
+<table><tr><th>Prueba</th><th class="num">Marca</th><th>Campeonato</th></tr>
+{% for b in best %}<tr><td>{{ b.event }}</td><td class="num"><strong>{{ b.time }}</strong></td><td>{{ b.meet_name }}</td></tr>{% else %}<tr><td colspan="3" class="muted">Sin marcas.</td></tr>{% endfor %}</table>
+<h2>Todos los nados</h2>
+<table><tr><th>Prueba</th><th class="num">Marca</th><th>Campeonato</th></tr>
+{% for s in swims if s.swimmer == nombre %}<tr><td>{{ s.event }}</td><td class="num">{{ s.time }}</td><td><a href="/meet/{{ s.meet_id }}">{{ s.meet_name }}</a></td></tr>{% endfor %}</table>
+{% endblock %}

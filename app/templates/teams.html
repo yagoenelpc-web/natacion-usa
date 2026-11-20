@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block main %}
+<p><a href="/campeonato?url={{ meet.url|q }}">← {{ meet.name }}</a></p>
+<h1>Universidades y equipos</h1>
+<p class="sub">{{ meet.name }} · {{ counts|length }} equipos</p>
+{% if scores %}
+<h2>Clasificación{% if scores_after %} tras la prueba #{{ scores_after.number }}{% endif %}</h2>
+<table><tr><th class="num">Pos.</th><th>Equipo</th><th class="num">Puntos</th></tr>
+{% for p, t, pts in scores %}<tr><td class="num">{{ p }}</td><td>{{ t }}</td><td class="num">{{ pts }}</td></tr>{% endfor %}</table>
+{% endif %}
+<h2>Elige un equipo</h2>
+<div class="chips">{% for t, n in counts %}<a class="chip" href="/campeonato/equipo?url={{ meet.url|q }}&equipo={{ t|q }}">{{ t }} <span class="muted">{{ n }}</span></a>{% endfor %}</div>
+{% endblock %}
