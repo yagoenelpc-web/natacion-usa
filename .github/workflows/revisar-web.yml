@@ -1,0 +1,29 @@
+name: Revisar web publicada
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Dirección de la app publicada
+        default: https://resultsusaswim.netlify.app/
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Proxy de la app
+        run: |
+          curl -sS -o /dev/null -w "portada %{http_code}\n" "${{ inputs.url }}"
+          curl -sS -w "\nproxy %{http_code}\n" "${{ inputs.url }}api/fuente?url=https%3A%2F%2Fswimmeetresults.tech%2F" | tail -c 200
+      - name: Capturas
+        env:
+          BASE: ${{ inputs.url }}
+          CAPTURAS_LOG: "1"
+        run: |
+          npm install --no-save playwright@1.48.2
+          npx playwright install --with-deps chromium
+          node scripts/capturas.mjs capturas
