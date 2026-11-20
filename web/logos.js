@@ -4,7 +4,7 @@ const ALIASES = {
   asu: "arizona state", "arizona st": "arizona state", fsu: "florida state", "florida st": "florida state",
   osu: "ohio state", "ohio st": "ohio state", vt: "virginia tech", gt: "georgia tech", unc: "north carolina",
   "southern california": "usc", "u.s. navy": "navy", "us navy": "navy", "miami (fl)": "miami", "miami fl": "miami",
-  "miami (oh)": "miami (oh)", "miami oh": "miami (oh)", "miami ohio": "miami (oh)", "miami (ohio)": "miami (oh)", "brigham young": "byu",
+  "miami (oh)": "miami (oh)", "miami oh": "miami (oh)", "miami ohio": "miami (oh)", "miami (ohio)": "miami (oh)", "noth carolina": "north carolina", "brigham young": "byu",
   "cal baptist": "california baptist", "cbu": "california baptist", "csun": "cal state northridge", "lmu": "loyola marymount", "iu indianapolis": "iu indy",
   iupui: "iu indy", csub: "cal state bakersfield", cal: "california", "penn st": "penn state", tamu: "texas a&m",
   pitt: "pittsburgh", uk: "kentucky", ut: "texas", wvu: "west virginia", ucsd: "uc san diego",
