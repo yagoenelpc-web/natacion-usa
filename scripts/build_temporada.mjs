@@ -135,17 +135,21 @@ for (const [d, bySex] of Object.entries(WIKI)) {
       const j = await (await fetch("https://en.wikipedia.org/w/api.php?" + new URLSearchParams({ action: "parse", page: title, prop: "wikitext", redirects: "1", format: "json", formatversion: "2" }), { headers: UA })).json();
       const wt = j.parse?.wikitext || "";
       const rows = wt.split(/\n\|-/).filter((r) => /\b20\d{2}\b/.test(r));
-      let best = null;
-      for (const r of rows) {
-        const yr = +(/\b(20\d{2})\b/.exec(r)?.[1] || 0);
-        if (!best || yr > best.yr) best = { yr, r };
-      }
-      if (!best) continue;
-      const cells = best.r.split(/\n[|!]|\|\||!!/).map((c) => strip(c.replace(/^[^|\n[]*?(style|align|rowspan|colspan|bgcolor|scope)=[^|]*\|/i, ""))).filter(Boolean);
       const num = (c) => /^\d+(\.\d+)?$/.test(c);
-      const pts = cells.map((c, i) => (num(c) && i > 0 && !num(cells[i - 1]) && !/^(19|20)\d{2}$/.test(c) ? i : -1)).filter((i) => i > 0);
+      const cand = rows
+        .map((r) => ({ yr: +(/\b(20\d{2})\b/.exec(r)?.[1] || 0), r }))
+        .filter((x) => x.yr && x.yr <= new Date().getUTCFullYear())
+        .sort((a, b) => b.yr - a.yr)
+        .map((x) => {
+          const cells = x.r.split(/\n==|\n\{\{/)[0].split(/\n[|!]|\|\||!!/).map((c) => strip(c.replace(/^[^|\n[]*?(style|align|rowspan|colspan|bgcolor|scope)=[^|]*\|/i, ""))).filter(Boolean);
+          const pts = cells.map((c, i) => (num(c) && i > 0 && !num(cells[i - 1]) && !/^(19|20)\d{2}$/.test(c) ? i : -1)).filter((i) => i > 0);
+          return { ...x, cells, pts };
+        })
+        .filter((x) => x.pts.length >= 2);
+      const best = cand[0];
+      if (!best) continue;
+      const { cells, pts } = best;
       console.log("wiki", d, g, best.yr, JSON.stringify(cells).slice(0, 300));
-      if (pts.length < 2) continue;
       const teams = pts.slice(0, 2).map((i, k) => ({ p: k + 1, t: cells[i - 1].replace(/\s*\(.*$/, ""), pts: cells[i] }));
       ncaa.divisions[d] ||= {};
       ncaa.divisions[d][g] = { year: String(best.yr), meet: title, teams, partial: true };
