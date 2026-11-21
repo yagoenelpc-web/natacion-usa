@@ -313,7 +313,7 @@ const seasonStart = `${now.getUTCMonth() >= 7 ? now.getUTCFullYear() : now.getUT
 const slugT = (t) => norm(t).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "x";
 const shortEv = (title) => title.replace(/^(Women|Men|Girls|Boys|Mixed)\s+/i, "").replace(/\s+Yard\s+/i, " Y ").replace(/\s+LC\s+Meter\s+|\s+SC\s+Meter\s+|\s+Meter\s+/i, " M ").replace(/Freestyle/i, "Free").replace(/Backstroke/i, "Back").replace(/Breaststroke/i, "Breast").replace(/Butterfly/i, "Fly").replace(/Individual Medley/i, "IM").replace(/\s+(Time Trial|Swim-?off|Prelims|Finals|Consolation|Bonus)\b.*$/i, "").trim();
 const sexOfT = (t) => (/women|girls/i.test(t) ? "W" : /\bmen\b|boys/i.test(t) ? "M" : "");
-const fixName = (n) => (n.includes(",") ? n.split(",").map((x) => x.trim()).filter(Boolean).reverse().join(" ") : n).replace(/\s+/g, " ").trim().replace(/\s+[A-Z]\.?(?=\s)/g, "");
+const fixName = (n0) => { const n = n0.replace(/ϐ/g, "f"); return (n.includes(",") ? n.split(",").map((x) => x.trim()).filter(Boolean).reverse().join(" ") : n).replace(/\s+/g, " ").trim().replace(/\s+[A-Z]\.?(?=\s)/g, ""); };
 const IND = /^\d+ [YM] (Free|Back|Breast|Fly|IM)$/, REL = /^\d+ [YM] (Free|Medley) Relay$/;
 // Dos temporadas: la actual y la anterior completa (la app usa la anterior hasta que la actual tenga datos suficientes).
 const prevStart = `${+seasonStart.slice(0, 4) - 1}-08-01`;
@@ -379,8 +379,69 @@ const rank = { cur: {}, prev: {} }, files = {};
 const unisAll = JSON.parse(await readFile("web/data/unis.json", "utf8")).unis;
 const uniKeys = new Set(unisAll.flatMap((u) => [u.n, u.full, `${u.n} ${u.nick || ""}`].filter(Boolean).map((x) => norm(x))));
 const isUni = (raw) => alias[raw] || uniKeys.has(norm(raw)) || uniKeys.has(norm(raw.replace(/-[A-Z]{2}$/, ""))) || /universit|college|\bU\b|institute|academy/i.test(raw);
+// Mismo nadador escrito de dos maneras dentro de un equipo ("Mario Poulsen" y "Mario Rodriguez Poulsen",
+// "Poulsen Mario", "J. Smith" con el mismo tiempo que "Jack Smith"): se juntan en el nombre más largo.
+const toks = (n) => n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z ]+/g, " ").trim().split(/\s+/).filter(Boolean);
+const firstOk = (a, b) => a === b || (a.length >= 3 && b.length >= 3 && (a.startsWith(b) || b.startsWith(a))) || (a.length >= 4 && b.length >= 4 && a.slice(0, 4) === b.slice(0, 4));
+const sameWho = (a, b, sharedTime) => {
+  const A = toks(a), B = toks(b);
+  if (A.length < 2 || B.length < 2) return false;
+  const sa = [...A].sort().join(" "), sb = [...B].sort().join(" ");
+  if (sa === sb) return true;
+  const ra = A.slice(1), rb = B.slice(1);
+  if (firstOk(A[0], B[0])) {
+    if (ra.every((x) => rb.includes(x)) || rb.every((x) => ra.includes(x))) return true;
+    if (A.at(-1) === B.at(-1)) return true;
+  }
+  if (A.at(-1) !== B.at(-1)) return false;
+  // Mismo apellido y nombre en forma corta ("Kate"/"Kathryn", "Joey"/"Joseph", "J."/"James") o con una letra perdida al leer el PDF ("So ia"/"Sofia").
+  const fa = A.slice(0, -1).join(""), fb = B.slice(0, -1).join("");
+  if (fa.length <= 2 || fb.length <= 2) return fa[0] === fb[0];
+  if (fa.replace(/f/g, "") === fb.replace(/f/g, "")) return true;
+  // Dos personas distintas de la misma plantilla oficial (hermanos): nunca se juntan.
+  const ua = rosterWho.get(rosterKey(a)), ub = rosterWho.get(rosterKey(b));
+  if (ua && ub && [...ua].some((u) => ub.has(u))) return false;
+  if ((NICK.get(A[0]) || []).some((x) => (NICK.get(B[0]) || []).includes(x))) return true;
+  if (A[0].slice(0, 3) === B[0].slice(0, 3)) return true;
+  if (lev1(A[0], B[0])) return true;
+  // Mismo apellido e inicial, y solo uno de los dos está en alguna plantilla: es su nombre corto.
+  if (A[0][0] === B[0][0] && (!!ua !== !!ub)) return true;
+  // Inicial igual y mismo apellido: solo si comparten algún tiempo exacto (evita juntar hermanos).
+  return !!sharedTime && A[0][0] === B[0][0];
+};
+const NICK = new Map();
+const lev1 = (a, b) => { if (a.length < 4 || b.length < 4 || Math.abs(a.length - b.length) > 1) return false; let i = 0; while (i < a.length && a[i] === b[i]) i++; const x = a.slice(i + 1), y = b.slice(i + 1); return x === y || a.slice(i) === y || x === b.slice(i); };
+for (const grp of ["joseph joe joey jo", "john jack johnny jon", "michael mike mikey mick", "katherine kathryn katelyn katie kate kat kathy catherine cate", "jacob jake jakob", "samuel sam sammy", "samantha sam sammie", "william will billy bill liam", "robert rob bob bobby robbie", "alexander alex xander", "alexandra alex alexa lexi", "matthew matt matty", "nicholas nick nico nicolas", "christopher chris topher", "thomas tom tommy", "daniel dan danny", "benjamin ben benji benny", "anthony tony", "elizabeth liz lizzie libby beth eliza ellie", "margaret maggie meg peggy", "megan meg", "abigail abby abbie", "gabriella gabrielle gabby gabi", "gabriel gabe", "eleanor ellie elle nora", "james jim jimmy jamie", "andrew andy drew", "edward ed eddie ted", "charles charlie chuck", "zachary zach zack", "maximilian max", "nathan nate nathaniel", "joshua josh", "timothy tim timmy", "stephen steven steve", "gregory greg", "patrick pat", "jennifer jen jenny", "rebecca becca becky", "allison ally allie", "madison maddie maddy", "madeline maddie maddy madelyn", "olivia liv livvy", "oliver ollie", "emily em emmy", "emilia emelia emmy", "isabella isabel bella izzy", "victoria tori vicky", "anne annie ann anna", "kamdyn kami", "reginald reggie", "regan reggie", "janos jancsi", "oceane oc", "rudy ru", "justin jb", "isabelle izzy isabel", "isadora izzy", "isobel izzy", "lucas luke", "allison ali", "evelyn evie", "jocelyn josie", "josephine josie", "volodymyr vova", "nikola nick", "michail mike", "mingna min", "elizabeth ella", "eleanor ella", "cameron cam", "connor cam"]) { const w = grp.split(" "); for (const x of w) (NICK.get(x) || NICK.set(x, []).get(x)).push(w[0]); }
+const dedupeTeam = (T, g) => {
+  const names = new Map(); // nombre -> set de "prueba|tiempo"
+  for (const [ev, l] of Object.entries(T[g])) for (const [t, who] of l.values()) (names.get(who) || names.set(who, new Set()).get(who)).add(ev + "|" + t);
+  for (const l of Object.values(T["R" + g])) for (const [, who] of l.values()) if (Array.isArray(who)) for (const w of who) if (!names.has(w)) names.set(w, new Set());
+  const together = new Set();
+  for (const l of Object.values(T["R" + g])) for (const [, who] of l.values()) if (Array.isArray(who)) for (const a of who) for (const b of who) if (a !== b) together.add(a + "|" + b);
+  const inR = (n) => (rosterWho.has(rosterKey(n)) ? 1 : 0);
+  const list = [...names.keys()].sort((a, b) => inR(b) - inR(a) || b.length - a.length || a.localeCompare(b));
+  const canon = new Map();
+  for (const n of list) {
+    if (canon.has(n)) continue;
+    canon.set(n, n);
+    for (const m of list) {
+      if (canon.has(m)) continue;
+      const shared = [...names.get(m)].some((x) => names.get(n).has(x));
+      if (!together.has(n + "|" + m) && sameWho(n, m, shared)) canon.set(m, n);
+    }
+  }
+  const out = {};
+  for (const [ev, l] of Object.entries(T[g])) {
+    const nl = new Map();
+    for (const [t, who] of l.values()) { const c = canon.get(who) || who, k = whoKey(c), p = nl.get(k); if (!p || secs(t) < secs(p[0])) nl.set(k, [t, c]); }
+    out[ev] = nl;
+  }
+  T[g] = out;
+  for (const l of Object.values(T["R" + g])) for (const v of l.values()) if (Array.isArray(v[1])) v[1] = v[1].map((w) => canon.get(w) || w);
+};
 for (const [sk, S] of Object.entries(seasons)) for (const [k, T] of Object.entries(S.teams)) {
   if (!isUni(T.n)) continue;
+  for (const g of ["M", "W"]) dedupeTeam(T, g);
   const out = { M: {}, W: {}, R: { M: {}, W: {} } }, best = { M: {}, W: {} };
   for (const g of ["M", "W"]) {
     for (const [ev, l] of Object.entries(T[g])) {

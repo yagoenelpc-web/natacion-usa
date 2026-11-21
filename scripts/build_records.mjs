@@ -136,12 +136,20 @@ function parseRecords(text, g0) {
   }
   return rec;
 }
-const sportPages = (u) => (cal.src?.[u.n] || []).map((s) => [s.split("|")[0], s.slice(s.indexOf("|") + 1).replace(/\/schedule.*$/, "")]);
+// Páginas del deporte: las del calendario y, si no hay, la de la plantilla o las direcciones típicas de Sidearm/Presto.
+const SLUGS = [["M", "mens-swimming-and-diving"], ["W", "womens-swimming-and-diving"], ["", "swimming-and-diving"], ["", "swimming-diving"], ["M", "mens-swimming"], ["W", "womens-swimming"], ["", "swimming"], ["M", "mswimdive"], ["W", "wswimdive"], ["", "swimdive"], ["M", "mswim"], ["W", "wswim"]];
+const sportPages = (u) => {
+  const l = (cal.src?.[u.n] || []).map((s) => [s.split("|")[0], s.slice(s.indexOf("|") + 1).replace(/\/schedule.*$/, "")]);
+  if (u.rosterUrl) l.push(["", u.rosterUrl.replace(/\/roster.*$/, "")]);
+  if (!l.length && u.web && !/splash|portada/.test(u.web)) { const o = u.web.replace(/\/+$/, ""); for (const [g, s] of SLUGS) l.push([g, `${o}/sports/${s}`]); }
+  return [...new Map(l.map((x) => [x[1], x])).values()];
+};
 const todo = unis.filter((u) => (!SOLO.length || SOLO.includes(u.n)) && sportPages(u).length);
 await pool(todo, 6, async (u) => {
   const res = { M: {}, W: {} };
   let src = "";
   for (const [g, sp] of sportPages(u)) {
+    if (Object.keys(res.M).length >= 8 && Object.keys(res.W).length >= 8) break;
     const page = await get(sp);
     if (!page) continue;
     const origin = new URL(page.url).origin;
@@ -149,6 +157,7 @@ await pool(todo, 6, async (u) => {
     const cands = new Set();
     for (const m of page.body.matchAll(/"title":"([^"]*Records?[^"]*)"[^{}]*?"url":"([^"]+)"/gi)) if (!/national|ncaa|conference|pool|facility/i.test(m[1])) cands.add(new URL(m[2], origin).href);
     for (const m of page.body.matchAll(/<a[^>]+href="([^"]+)"[^>]*>([^<]{0,60}Records?[^<]{0,30})<\/a>/gi)) if (!/national|ncaa|conference/i.test(m[2])) cands.add(new URL(m[1].replace(/&amp;/g, "&"), origin).href);
+    if (!cands.size) for (const x of ["records", "records/records", "history"]) cands.add(`${sp.replace(/\/+$/, "")}/${x}`);
     for (const c of [...cands].filter((c) => !/\/news\//i.test(c)).slice(0, 3)) {
       let r = await get(c, true);
       if (!r) continue;
