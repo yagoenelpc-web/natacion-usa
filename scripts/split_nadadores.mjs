@@ -54,10 +54,12 @@ let rosterWho = new Map(), rosterKey = () => "";
   d.mi ||= {};
   let added = 0, better = 0, files = 0, taFiles = 0;
   const taAll = {};
+  const aliasOf = {};
   for (const f of await readdir("web/data/m").catch(() => [])) {
     let x;
     try { x = JSON.parse(await readFile("web/data/m/" + f, "utf8")); } catch { continue; }
     const id = "r:" + f.replace(/\.json$/, "");
+    if (x.alias) { aliasOf[id] = x.alias; continue; }
     files++;
     // Códigos de equipo de ESTA competición ("NS", "CN") → universidad, por los nadadores que salen en su plantilla.
     {
@@ -115,6 +117,13 @@ let rosterWho = new Map(), rosterKey = () => "";
         if (!sw.m.includes(id)) sw.m.push(id);
       }
     }
+  }
+  // Piezas de una competición unida (Day 1, Day 2…) → la competición completa.
+  const fin = (id) => aliasOf[id] || id;
+  for (const id of Object.keys(aliasOf)) delete d.mi[id];
+  for (const sw of d.swimmers) {
+    if (sw.m.some((x) => aliasOf[x])) sw.m = [...new Set(sw.m.map(fin))];
+    for (const v of Object.values(sw.b)) if (aliasOf[v[2]]) v[2] = fin(v[2]);
   }
   // Últimas 15 competiciones de cada uno, de la más antigua a la más reciente.
   const dt = (x) => (d.mi[x] ? d.mi[x][1] : "") || "";

@@ -277,6 +277,28 @@ const add = (u, uni, g, d, o, season) => {
 };
 for (const [uni, games] of Object.entries(cal.cal || {})) for (const g of games) { add(g.res, uni, g.g || "", g.d, g.o, label(seasonY)); if (g.live && g.live !== g.res) add(g.live, uni, g.g || "", g.d, g.o, label(seasonY)); }
 console.log("enlaces de esta temporada por leer:", cand.length);
+// Crónicas de la universidad: suelen enlazar los PDF de todos los días (el calendario solo enlaza uno).
+{
+  const recapDone = new Set(idx.recapDone || []);
+  const lim = new Date(Date.now() - 45 * 864e5).toISOString().slice(0, 10);
+  const fresh = new Date(Date.now() - 6 * 864e5).toISOString().slice(0, 10);
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const todo = [];
+  for (const [uni, games] of Object.entries(cal.cal || {})) for (const g of games) if (g.recap && g.d >= lim && g.d <= todayISO && (!recapDone.has(g.recap) || g.d >= fresh) && !todo.some((t) => t.url === g.recap)) todo.push({ url: g.recap, uni, g: g.g || "", d: g.d, o: g.o });
+  let found = 0;
+  await pool(todo, 8, async (t) => {
+    const r = await get(t.url);
+    if (!r) return;
+    const art = (/<article[\s\S]*?<\/article>/i.exec(r.body) || /<main[\s\S]*?<\/main>/i.exec(r.body) || [r.body])[0];
+    for (const m of art.matchAll(/href="([^"]+)"/gi)) {
+      let href; try { href = new URL(m[1].replace(/&amp;/g, "&"), r.url).href; } catch { continue; }
+      if ((isPdf(href) && /\/documents\//i.test(href) && !/roster|program|heat|psych|schedule|order|entries|media|guide/i.test(href)) || (isHy(href) && !inArchive.has(normalizeMeetUrl(href)))) { const n = cand.length; add(href, t.uni, t.g, t.d, t.o, label(seasonY)); if (cand.length > n) found++; }
+    }
+    recapDone.add(t.url);
+  });
+  idx.recapDone = [...recapDone].slice(-6000);
+  console.log("crónicas leídas:", todo.length, "· documentos nuevos en ellas:", found);
+}
 
 // Temporadas anteriores: calendario de cada año en la web de la universidad (Sidearm: /schedule/2025-26).
 const MON = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
@@ -440,8 +462,52 @@ const slim = (b) => Object.fromEntries(Object.entries(b).map(([k, v]) => [k, v[2
 const list = [...map.values()].map(({ y: yy, ...s }) => ({ ...s, ...(yy ? { y: yy } : {}), b: slim(s.b), m: s.m.slice().sort((a, b) => dateOfM(a).localeCompare(dateOfM(b))).slice(-12) }));
 list.sort((a, b) => a.n.localeCompare(b.n));
 await writeFile("web/data/nadadores.json", JSON.stringify({ ...sw, swimmers: list, mi }));
+// ---------- Unir documentos de la misma competición ----------
+// Cada día o sesión suele publicarse en un PDF aparte ("Day 1", "Day 2"…): se juntan en una sola competición.
+// Las piezas se quedan como {alias: id} para que los enlaces antiguos sigan funcionando.
+{
+  const baseOf = (n) => n.toLowerCase().replace(/\b(day|session|sesion|night|part)\s*#?\s*\d+\b|\b(prelims?|finals?|timed finals|results?|scores?|saturday|friday|thursday|wednesday|sunday|monday|tuesday|morning|evening|am|pm)\b|[-–:|()#]/g, " ").replace(/\s+/g, " ").trim();
+  const byBase = new Map();
+  for (const m of meetsById.values()) { const k = baseOf(m.n); if (k.length < 8) continue; if (!byBase.has(k)) byBase.set(k, []); byBase.get(k).push(m); }
+  let groups = 0, pieces = 0;
+  for (const list of byBase.values()) {
+    if (list.length < 2) continue;
+    list.sort((a, b) => (a.d || "").localeCompare(b.d || ""));
+    const runs = [];
+    for (const m of list) { const r = runs[runs.length - 1]; if (r && m.d && r[r.length - 1].d && (Date.parse(m.d) - Date.parse(r[r.length - 1].d)) / 864e5 <= 6) r.push(m); else runs.push([m]); }
+    for (const run of runs) {
+      if (run.length < 2) continue;
+      const files = [];
+      for (const m of run) { const x = await readJSON(`web/data/m/${m.id.slice(2)}.json`, null); if (x && !x.alias) files.push([m, x]); }
+      if (files.length < 2) continue;
+      files.sort((a, b) => b[1].ev.length - a[1].ev.length);
+      const [tm, tx] = files[0];
+      const sig = (e) => e.ti + "|" + (e.res || []).slice(0, 3).map((r) => r[1] + r[4]).join(",");
+      const seen = new Set(tx.ev.map(sig));
+      const srcs = new Set([tx.src, ...(tx.parts || [])]);
+      for (const [m, x] of files.slice(1)) {
+        for (const e of x.ev) if (!seen.has(sig(e))) { seen.add(sig(e)); tx.ev.push(e); }
+        for (const u of x.u || []) if (!tx.u.includes(u)) tx.u.push(u);
+        if (x.d && (!tx.d || x.d < tx.d)) tx.d = x.d;
+        if ((x.e || x.d) > (tx.e || "")) tx.e = x.e || x.d;
+        srcs.add(x.src); for (const p of x.parts || []) srcs.add(p);
+        await writeFile(`web/data/m/${m.id.slice(2)}.json`, JSON.stringify({ alias: tm.id }));
+        meetsById.delete(m.id);
+        for (const [u, v] of Object.entries(done)) if (v === m.id) done[u] = tm.id;
+        pieces++;
+      }
+      tx.ev.sort((a, b) => (+a.no || 999) - (+b.no || 999));
+      tx.parts = [...srcs].filter((x) => x && x !== tx.src);
+      tx.n = tx.n.replace(/\s*[-–:]?\s*\b(day|session)\s*#?\s*\d+\b/gi, "").trim() || tx.n;
+      await writeFile(`web/data/m/${tm.id.slice(2)}.json`, JSON.stringify(tx));
+      Object.assign(tm, { n: tx.n.slice(0, 120), d: tx.d, e: tx.e, u: tx.u, ev: tx.ev.length });
+      groups++;
+    }
+  }
+  console.log("competiciones unidas:", groups, "· piezas juntadas:", pieces);
+}
 const meets = [...meetsById.values()].sort((a, b) => (b.d || "").localeCompare(a.d || ""));
-await writeFile("web/data/encuentros.json", JSON.stringify({ v: VER, updated: new Date().toISOString().slice(0, 10), meets, done, pastDone: [...pastDone] }));
+await writeFile("web/data/encuentros.json", JSON.stringify({ v: VER, updated: new Date().toISOString().slice(0, 10), meets, done, pastDone: [...pastDone], recapDone: idx.recapDone || [] }));
 console.log("nadadores:", list.length, "marcas nuevas o mejoradas:", marks, "· con marcas:", list.filter((s) => Object.keys(s.b).length).length);
 console.log("ejemplos:", meets.slice(0, 15).map((m) => `${m.d} ${m.n} [${m.u.join(", ")}] ${m.ev} pruebas`).join("\n"));
 await rm(TMP, { recursive: true, force: true });
