@@ -57,9 +57,9 @@ function facts(text) {
 // Instagram del equipo de natación (no el general de deportes).
 function instagram(html) {
   const hs = [...new Set([...html.matchAll(/instagram\.com\/([A-Za-z0-9_.]{2,30})\/?["'?]/g)].map((m) => m[1]).filter((h) => !/^(p|explore|accounts|reel|stories|tv|sharer)$/i.test(h)))];
-  return { swim: hs.find((h) => /swim|dive|sd$|_sd|aquatic/i.test(h)) || "", all: hs.filter((h) => !/swim|dive|aquatic/i.test(h)).slice(0, 1)[0] || "" };
+  return { swim: hs.find((h) => /swim|dive|sd$|_sd|aquatic/i.test(h)) || "", all: hs.find((h) => /athletic|sports$|^go[a-z]+$/i.test(h)) || "" };
 }
-// Primer vídeo de YouTube que aparezca en la página (incrustado o enlazado).
+// Primer vídeo de YouTube de la página de la piscina (suele ser un recorrido por ella).
 function youtube(html) {
   const m = /(?:youtube(?:-nocookie)?\.com\/(?:embed\/|watch\?v=)|youtu\.be\/)([A-Za-z0-9_-]{11})/.exec(html);
   return m ? m[1] : "";
@@ -82,8 +82,7 @@ await pool(todo, 8, async (u) => {
     const ig = instagram(p.html);
     r.ig ||= ig.swim;
     r.igAll ||= ig.all;
-    r.yt ||= youtube(p.html);
-    for (const m of p.html.matchAll(/<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]{0,200}?)<\/a>/gi)) if (/facilit/i.test(m[1]) && POOLRE.test(dec(m[2]) + " " + m[1])) poolLinks.push([dec(m[2]), abs(m[1], p.url)]);
+    for (const m of p.html.matchAll(/<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]{0,200}?)<\/a>/gi)) { const t = dec(m[2]); if ((/facilit/i.test(m[1]) && POOLRE.test(t + " " + m[1])) || (POOLRE.test(t) && t.length < 70 && !/schedule|results|roster|news|camp/i.test(m[1]))) poolLinks.push([t, abs(m[1], p.url)]); }
   }
   // Página general de instalaciones.
   if (!poolLinks.length) {
@@ -104,11 +103,15 @@ await pool(todo, 8, async (u) => {
     seen.add(h);
     const p = await get(h);
     if (!p) continue;
-    const title = dec((/<h1[^>]*>([\s\S]*?)<\/h1>/i.exec(p.html) || [])[1] || "") || t;
-    const name = (POOLRE.test(title) ? title : t).replace(/\s*[-|–].*$/, "").slice(0, 80).trim();
+    const meta = (k) => dec((new RegExp(`<meta[^>]+property=["']${k}["'][^>]+content=["']([^"']+)`, "i").exec(p.html) || [])[1] || "");
+    const slug = decodeURIComponent(p.url.split(/[?#]/)[0].split("/").filter((x) => x && !/^\d+$/.test(x)).pop() || "").replace(/\.aspx$/, "").replace(/^(information-)?facilities-/, "").replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    const cands = [dec((/<h1[^>]*>([\s\S]*?)<\/h1>/i.exec(p.html) || [])[1] || ""), meta("og:title"), dec((/<title>([\s\S]*?)<\/title>/i.exec(p.html) || [])[1] || ""), t, slug].map((x) => x.split(/\s+[-|–]\s+/)[0].trim());
+    const name = (cands.find((x) => POOLRE.test(x) && x.length < 80 && !/details|opens in|new window|read more|learn more|facilities$/i.test(x)) || "").slice(0, 80);
+    if (!name) continue;
     const text = dec((/<main[\s\S]*?<\/main>/i.exec(p.html) || /<article[\s\S]*?<\/article>/i.exec(p.html) || [p.html])[0]);
-    r.fac = { n: name, url: p.url, img: ogImage(p.html, p.url), ...facts(text) };
-    r.yt ||= youtube(p.html);
+    const img = ogImage(p.html, p.url);
+    r.fac = { n: name, url: p.url, img: /logo|site\.png|placeholder|default/i.test(img) ? "" : img, ...facts(text) };
+    r.yt = youtube(p.html);
     break;
   }
   if (r.ig || r.igAll || r.fac || r.yt) out[u.n] = Object.fromEntries(Object.entries(r).filter(([, v]) => v));
