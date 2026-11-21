@@ -509,3 +509,10 @@ h2 { letter-spacing: -0.01em; }
 small, .muted { line-height: 1.35; }
 img.face, .face img { object-fit: cover; }
 .fact b img.conflogo { height: 20px; max-width: 44px; object-fit: contain; vertical-align: -4px; margin-right: 6px; }
+.evsearch { margin: 4px 0 14px; }
+.evsearch .msearch { width: 100%; }
+.evsearch .chips { margin-top: 10px; gap: 8px; }
+.evsearch .chip { padding: 7px 14px; border: 1px solid rgba(15, 40, 90, 0.08); background: var(--glass); color: var(--text); font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; }
+.evsearch .chip.on { background: var(--brand); color: #fff; border-color: transparent; }
+.evsearch #evnone { margin-top: 10px; }
+.erow[hidden], .session[hidden] { display: none !important; }
