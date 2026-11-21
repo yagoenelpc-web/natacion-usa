@@ -1,12 +1,12 @@
 /* Estilo "cristal líquido": capas translúcidas, desenfoque y bordes muy redondeados. */
 :root {
-  --bg1: #dfeaff;
-  --bg2: #f4f0ff;
-  --blob1: rgba(56, 140, 255, 0.45);
-  --blob2: rgba(0, 210, 200, 0.35);
-  --blob3: rgba(255, 120, 170, 0.28);
-  --glass: rgba(255, 255, 255, 0.62);
-  --glass-strong: rgba(255, 255, 255, 0.78);
+  --bg1: #eef3fb;
+  --bg2: #f7f8fc;
+  --blob1: rgba(56, 140, 255, 0.22);
+  --blob2: rgba(0, 210, 200, 0.16);
+  --blob3: rgba(255, 120, 170, 0.12);
+  --glass: rgba(255, 255, 255, 0.82);
+  --glass-strong: rgba(255, 255, 255, 0.92);
   --glass-line: rgba(255, 255, 255, 0.85);
   --glass-edge: rgba(15, 40, 90, 0.08);
   --text: #0c1830;
@@ -21,7 +21,7 @@
   --r-xl: 30px;
   --r-lg: 24px;
   --r-md: 18px;
-  --shadow: 0 10px 30px rgba(20, 50, 110, 0.10), 0 1px 2px rgba(20, 50, 110, 0.06);
+  --shadow: 0 4px 16px rgba(20, 50, 110, 0.06), 0 1px 2px rgba(20, 50, 110, 0.05);
   --hi: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(255, 255, 255, 0.25);
   --blur: blur(24px) saturate(180%);
   color-scheme: light;
@@ -502,3 +502,10 @@ h2 { text-wrap: balance; }
 input.msearch { box-shadow: var(--shadow), var(--hi); }
 input.msearch:focus { outline: 2px solid rgba(10, 100, 224, 0.35); outline-offset: 1px; }
 .mlink { margin-top: 1px; }
+
+/* Diseño limpio: más aire, separadores finos y sin ruido. */
+h2 { letter-spacing: -0.01em; }
+.srow, .urow, .mrow, .erow { border: 1px solid rgba(15, 40, 90, 0.06); }
+small, .muted { line-height: 1.35; }
+img.face, .face img { object-fit: cover; }
+.fact b img.conflogo { height: 20px; max-width: 44px; object-fit: contain; vertical-align: -4px; margin-right: 6px; }

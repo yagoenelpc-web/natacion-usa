@@ -1,5 +1,5 @@
 // Guarda la app para que abra al instante y funcione sin conexión con lo último visto.
-const CACHE = "natacion-v15";
+const CACHE = "natacion-v16";
 const SHELL = ["/", "/index.html", "/style.css", "/app.js", "/parser.js", "/logos.js", "/data/unis.json", "/manifest.webmanifest", "/icons/icon-192.png"];
 
 self.addEventListener("install", (e) => {

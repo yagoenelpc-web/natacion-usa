@@ -225,7 +225,7 @@ async function loadLogos() {
 }
 
 async function loadBrands() {
-  const cached = store.get("brands5");
+  const cached = store.get("brands6");
   if (cached && Date.now() - cached.t < 30 * 864e5 && Object.keys(cached.v).length) return (brands = cached.v);
   const entries = await Promise.all(
     Object.entries(BRAND_PAGES).map(async ([k, page]) => {
@@ -244,7 +244,7 @@ async function loadBrands() {
   const espn = { acc: 1, big12: 4, bigten: 5, sec: 8, pac12: 9, cusa: 12, mac: 15, mw: 17, sunbelt: 37, aac: 151 };
   for (const [k, g] of Object.entries(espn)) brands[k] = `https://a.espncdn.com/i/teamlogos/ncaa_conf/500/${g}.png`;
   Object.assign(brands, mk?.conf || {});
-  store.set("brands5", { t: Date.now(), v: brands });
+  store.set("brands6", { t: Date.now(), v: brands });
   return brands;
 }
 
@@ -1050,6 +1050,8 @@ async function uniView(name) {
   const info = logoIndex ? matchTeam(logoIndex, u.n) || matchTeam(logoIndex, u.full) : null;
   const tint = info && info.color && info.color !== "#0b63ce" ? info.color : "#0b3d91";
   const fact = (label, value) => (value ? `<div class="fact"><small>${esc(label)}</small><b>${esc(value)}</b></div>` : "");
+  // Conferencia con su logo.
+  const cfact = (label, value) => { if (!value) return ""; const k = CONF_WORDS.find(([re]) => re.test(value))?.[1]; const img = k && brands?.[k]; return `<div class="fact"><small>${esc(label)}</small><b>${img ? `<img class="conflogo" src="${esc(img)}" alt="" onerror="this.remove()">` : ""}${esc(value)}</b></div>`; };
   const web = hrefOk(u.web);
   const ncaaRow = (g, label) => {
     const x = r?.[g];
@@ -1094,7 +1096,7 @@ async function uniView(name) {
   <div class="facts">
     ${fact(T("Apodo"), u.nick)}
     ${fact(T("División"), divLabel(u.div))}
-    ${u.cm && u.cm === u.cw ? fact(T("Conferencia"), u.cm) : fact(`${T("Conferencia")} · ${T("Hombres")}`, u.cm) + fact(`${T("Conferencia")} · ${T("Mujeres")}`, u.cw)}
+    ${u.cm && u.cm === u.cw ? cfact(T("Conferencia"), u.cm) : cfact(`${T("Conferencia")} · ${T("Hombres")}`, u.cm) + cfact(`${T("Conferencia")} · ${T("Mujeres")}`, u.cw)}
     ${fact(T("Ciudad"), place(u))}
     ${coachLine}
     ${u.email ? `<div class="fact"><small>${T("Correo de la universidad")}</small><b><a href="mailto:${esc(u.email)}">${esc(u.email)}</a></b></div>` : ""}
