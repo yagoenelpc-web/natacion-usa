@@ -34,6 +34,9 @@ jobs:
         env:
           MAX_MIN: ${{ inputs.minutos || '40' }}
           URLS: ${{ inputs.urls }}
+      - run: node scripts/build_fotos.mjs
+        if: ${{ !inputs.urls }}
+        continue-on-error: true
       - name: Guardar
         if: ${{ !inputs.urls }}
         run: scripts/datos-rama.sh subir
