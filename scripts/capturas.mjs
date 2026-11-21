@@ -34,7 +34,9 @@ if (ev.length) {
   await shot("5-relevo", ev[1]);
 }
 await shot("6-universidades", "#/u");
-await shot("7-ficha", "#/uni/Texas", ".facts");
+await shot("7-ficha", "#/uni/Texas", ".rkcard");
+await shot("7b-ficha-info", "#/uni/Stanford/info", ".facts");
+await shot("7c-ranking", "#/rank/conf/SSC/W", ".rkrow");
 await shot("8-ajustes", "#/ajustes", ".settings");
 await page.goto(base + "#/n");
 await page.fill("#sq", process.env.NADADOR || "Gemmell");
