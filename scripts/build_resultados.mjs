@@ -124,13 +124,15 @@ function parseAltMeet(text) {
   return { name, start, end, events: events.filter((e) => e.results.length) };
 }
 function parsePdfMeet(text, url) {
+  // Cabeceras sin espacios al sacar el texto del PDF: "Event1Women400YardMedleyRelay" → "Event 1 Women 400 Yard Medley Relay".
+  text = text.replace(/^(\s*\(?)Event\s*(\d+)\s*((?:Women|Men|Girls|Boys|Mixed)\S*.*)$/gm, (m, a, n, rest) => /\s{2,}\S/.test(rest.trim()) && !/^(Women|Men|Girls|Boys|Mixed)\d/.test(rest) ? m : `${a}Event ${n} ${rest.replace(/([a-z])([A-Z0-9])/g, "$1 $2").replace(/(\d)([A-Za-z])/g, "$1 $2").replace(/\s+/g, " ").trim()}`);
   if (/^\s*Event\s*#\s*\d+\s*-\s*\d/m.test(text) && !/^\s*\(?Event\s+\d+\s+(Women|Men|Girls|Boys)/m.test(text)) { const alt = parseAltMeet(text); if (alt.events.length) return alt; }
   // Programas, psych sheets y horarios no son resultados (llevan marcas de inscripción).
   const kind = /Meet Program|Psych Sheet|Heat Sheet|Session Report|Entry List|Entries -|Timeline|Order of Events/i.exec(text.slice(0, 3000));
   if (kind) return { name: "", start: "", end: "", events: [], why: kind[0] };
   // Dos columnas de pruebas en la misma línea: no se puede leer bien.
   // PDF a dos columnas: se corta cada página por la columna donde empieza la segunda prueba y se lee primero la izquierda.
-  const TWO = /^(.*?(?:Event|#)\s*\d+\s+(?:Women|Men|Girls|Boys|Mixed)\b.{5,}?\s{3,})\(?(?:Event|#)\s*\d+\s+(?:Women|Men|Girls|Boys|Mixed)\b/i;
+  const TWO = /^(.*?(?:(?:Event|#)\s*\d+\s+)?(?:Women|Men|Girls|Boys|Mixed)\s+\d+\s+(?:Yard|Meter|LC|SC)\b.{5,}?\s{3,})\(?(?:(?:Event|#)\s*\d+\s+)?(?:Women|Men|Girls|Boys|Mixed)\s+\d+\s+(?:Yard|Meter|LC|SC)\b/i;
   const pages = text.split("\f").map((page) => {
     const ls = page.split(/\r?\n/);
     const cuts = ls.map((l) => TWO.exec(l)?.[1].length).filter(Boolean);
@@ -172,7 +174,10 @@ function parsePdfMeet(text, url) {
   const order = [];
   let cur = null;
   const tail = [];
-  for (const l of lines) {
+  let synth = 900;
+  for (const l0 of lines) {
+    // Pruebas sin número ("Women 50 Yard Freestyle" a secas): se les pone uno.
+    const l = /^\s*(?:Women|Men|Girls|Boys|Mixed)\s+\d+\s+(?:Yard|Meter|LC Meter|SC Meter)\s+[A-Za-z ]+$/.test(l0) && !/\d[:.]\d\d/.test(l0) ? `Event ${synth++} ${l0.trim()}` : l0;
     const m = /^\s*\(?\s*(?:#|Event)\s*(\d+)\s+(.*?)\)?\s*$/.exec(l);
     if (m && /yard|meter|metre|relay|diving|free|back|breast|fly|medley|IM\b/i.test(m[2]) && m[2].length < 80) {
       const key = m[1] + "|" + m[2].replace(/\s+/g, " ").toLowerCase();
