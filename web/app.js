@@ -312,7 +312,7 @@ async function loadSwimmers() {
   if (swimmers) return swimmers;
   await loadLogos().catch(() => {});
   // Índice ligero (nad-indice.json); las marcas de cada uno se bajan al abrir su ficha (web/data/nad/<trozo>.json).
-  let [d, pl] = await Promise.all([loadData("nad-indice"), loadData("plantillas")]);
+  let [d, pl, fpast, fextra] = await Promise.all([loadData("nad-indice"), loadData("plantillas"), loadData("fotos-pasadas").catch(() => null), loadData("fotos-extra").catch(() => null)]);
   if (d?.s) d = { updated: d.updated, swimmers: d.s.map(([n, t, g, y, te, tt, l]) => ({ n, t, g, y, l, b: {}, m: [], top: te ? [te, tt] : null, src: [[n, t]] })) };
   else d = await loadData("nadadores");
   const secs = (t) => { const m = /^(?:(\d+):)?(\d+\.\d+)/.exec(t || ""); return m ? (+m[1] || 0) * 60 + +m[2] : Infinity; };
@@ -367,6 +367,21 @@ async function loadSwimmers() {
     x.ro = true;
     x.rf = r.full;
     if (r.img) x.img = r.img;
+  }
+  // Sin foto este año: la de su plantilla de temporadas anteriores, o una foto libre de Wikimedia Commons.
+  const pastBy = new Map();
+  for (const [name, m] of Object.entries(fpast?.u || {})) { const u = unis.find((x) => x.n === name); if (u) pastBy.set(u, Object.entries(m).map(([full, img]) => { const tk = full.trim().split(/\s+/); return { first: tk[0], last: tk.slice(1).join(" "), img }; })); }
+  const kx = (n) => low(n).replace(/[^a-z ]+/g, " ").replace(/\s+/g, " ").trim();
+  for (const x of merged.values()) {
+    if (x.img) continue;
+    const ps = x.u && pastBy.get(x.u);
+    if (ps) {
+      const tk = x.n.split(/\s+/), f = low(tk[0]), rest = tk.slice(1).map(low);
+      const r = ps.find((r) => { const l = low(r.last).split(/[\s-]+/); return (rest.includes(l[0]) || rest.includes(l[l.length - 1])) && (low(r.first).startsWith(f) || f.startsWith(low(r.first))); });
+      if (r) { x.img = r.img; continue; }
+    }
+    const ex = fextra?.f?.[kx(x.n)];
+    if (ex) x.img = ex;
   }
   for (const [u, ro] of byUni) for (const r of ro) if (!r.used) merged.set("ro|" + u.n + "|" + r.full, { n: r.full, t: u.n, u, g: r.g, b: {}, m: [], ro: true, ...(r.img ? { img: r.img } : {}) });
   swimmers = [...merged.values()].sort((a, b) => a.n.localeCompare(b.n)).map((x, i) => ({ ...x, i }));
