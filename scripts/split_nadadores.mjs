@@ -26,3 +26,38 @@ await mkdir("web/data/nad", { recursive: true });
 for (const [k, v] of Object.entries(shards)) await writeFile(`web/data/nad/${k}.json`, JSON.stringify(v));
 await writeFile("web/data/nad-indice.json", JSON.stringify({ v: 1, updated: d.updated || new Date().toISOString().slice(0, 10), s: idx }));
 console.log("índice:", idx.length, "nadadores ·", JSON.stringify(idx).length, "bytes · trozos:", Object.keys(shards).length);
+
+// Equipos: mejores tiempos de la temporada por prueba (top 10 por equipo y sexo) y la mejor marca de cada equipo para el ranking.
+import { norm } from "../web/logos.js";
+const now = new Date();
+const seasonStart = `${now.getUTCMonth() >= 7 ? now.getUTCFullYear() : now.getUTCFullYear() - 1}-08-01`;
+const slugT = (t) => norm(t).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "x";
+const teams = {};
+for (const s of d.swimmers) {
+  const g = s.g === "M" || s.g === "W" ? s.g : "";
+  if (!g || !s.t) continue;
+  const k = slugT(s.t);
+  const T = (teams[k] ||= { n: s.t, M: {}, W: {} });
+  for (const [ev, v] of Object.entries(s.b || {})) {
+    if (!/^\d+ [YM] (Free|Back|Breast|Fly|IM)$/.test(ev)) continue;
+    const dt = v[2] && mi[v[2]] ? mi[v[2]][1] : "";
+    if (dt && dt < seasonStart) continue;
+    (T[g][ev] ||= []).push([v[0], s.n]);
+  }
+}
+await rm("web/data/equipos", { recursive: true, force: true });
+await mkdir("web/data/equipos", { recursive: true });
+const rank = {};
+for (const [k, T] of Object.entries(teams)) {
+  const out = { n: T.n, M: {}, W: {} }, best = { M: {}, W: {} };
+  for (const g of ["M", "W"]) for (const [ev, list] of Object.entries(T[g])) {
+    list.sort((a, b) => secs(a[0]) - secs(b[0]));
+    out[g][ev] = list.slice(0, 10);
+    best[g][ev] = list.slice(0, 3).map((x) => x[0]);
+  }
+  if (!Object.keys(out.M).length && !Object.keys(out.W).length) continue;
+  await writeFile(`web/data/equipos/${k}.json`, JSON.stringify(out));
+  rank[k] = [T.n, best];
+}
+await writeFile("web/data/equipos-rank.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), season: seasonStart, t: rank }));
+console.log("equipos:", Object.keys(rank).length, "· ranking:", JSON.stringify(rank).length, "bytes");
