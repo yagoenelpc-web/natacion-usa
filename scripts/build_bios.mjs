@@ -56,7 +56,10 @@ function nuxtPeople(html, want) {
     if (Array.isArray(v)) {
       if (typeof v[0] === "string" && /^(Reactive|ShallowReactive|Ref|ShallowRef)$/.test(v[0])) return res(v[1], depth + 1);
       if (v[0] === "Date") return v[1];
-      return v.map((x) => res(x, depth + 1));
+      const a = [];
+      seen.set(i, a);
+      for (const x of v.slice(0, 400)) a.push(res(x, depth + 1));
+      return a;
     }
     if (v && typeof v === "object") {
       const o = {};
@@ -69,6 +72,10 @@ function nuxtPeople(html, want) {
   const out = [];
   arr.forEach((v, i) => {
     if (v && typeof v === "object" && !Array.isArray(v) && "firstName" in v && "lastName" in v) {
+      if (want && typeof arr[v.firstName] === "string" && typeof arr[v.lastName] === "string") {
+        const raw = `${arr[v.firstName] ?? ""} ${arr[v.lastName] ?? ""}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z]+/g, "");
+        if (raw !== want) return;
+      }
       const o = res(i);
       const full = `${o.firstName || ""} ${o.lastName || ""}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z]+/g, "");
       if (want && full !== want) return;
