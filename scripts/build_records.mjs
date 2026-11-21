@@ -129,7 +129,7 @@ function parseRecords(text, g0) {
     const after = line.slice(line.indexOf(time) + time.length).trim();
     const before = e ? line.slice(0, line.indexOf(time)).replace(/^.*?\b(free(style)?|back(stroke)?|breast(stroke)?|fly|butterfly|im|individual medley|relay)\b/i, "").trim() : line.slice(0, line.indexOf(time)).trim();
     const year = /\b(19[6-9]\d|20[0-2]\d)\b/.exec(line)?.[1] || "";
-    const who = (after.replace(/\b(19|20)\d{2}\b.*$/, "") || before).replace(/[,;|-]+$/, "").replace(/\s{2,}/g, " ").trim().slice(0, 120);
+    const who = (after.replace(/\b(19|20)\d{2}\b.*$/, "") || before).replace(/^(relay|team)\s+/i, "").replace(/[,;|-]+$/, "").replace(/\s{2,}/g, " ").trim().slice(0, 120);
     rec[g][evNow] = { t: time, n: who, y: year };
     ev = "";
   }
@@ -148,7 +148,7 @@ await pool(todo, 6, async (u) => {
     const cands = new Set();
     for (const m of page.body.matchAll(/"title":"([^"]*Records?[^"]*)"[^{}]*?"url":"([^"]+)"/gi)) if (!/national|ncaa|conference|pool|facility/i.test(m[1])) cands.add(new URL(m[2], origin).href);
     for (const m of page.body.matchAll(/<a[^>]+href="([^"]+)"[^>]*>([^<]{0,60}Records?[^<]{0,30})<\/a>/gi)) if (!/national|ncaa|conference/i.test(m[2])) cands.add(new URL(m[1].replace(/&amp;/g, "&"), origin).href);
-    for (const c of [...cands].slice(0, 3)) {
+    for (const c of [...cands].filter((c) => !/\/news\//i.test(c)).slice(0, 3)) {
       let r = await get(c, true);
       if (!r) continue;
       let text = "";
