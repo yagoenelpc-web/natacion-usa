@@ -157,10 +157,13 @@ function splitRest(rest) {
   return { times, points };
 }
 
-export function parseEvent(html, url) {
+export function parseEvent(html, url, opts = {}) {
   const pre = /<pre[^>]*>([\s\S]*?)<\/pre>/i.exec(html);
   const text = decode((pre ? pre[1] : html).replace(/<[^>]*>/g, ""));
   const ev = { url, meetName: "", title: "", number: null, relay: false, records: [], results: [], scores: [] };
+  // Psych sheet (aún sin nadar): solo se lee si se pide (la app la enseña como lista de inscritos).
+  const psych = opts.entries && /Psych Sheet|Heat Sheet/i.test(text.slice(0, 1500));
+  if (psych) ev.psych = true;
   let header = false;
   let section = "";
   let inScores = false;
@@ -198,7 +201,7 @@ export function parseEvent(html, url) {
       continue;
     }
     if (!header) {
-      if (/^\s*(Name|Team|School)\b/.test(line) && /Finals|Prelims|Time|Score|Seed/.test(line)) {
+      if (/^\s*(Name|Team|School)\b/.test(line) && (/Finals|Prelims|Time|Score|Seed/.test(line) || (psych && /Age|School|Year|Team/.test(line)))) {
         header = true;
         continue;
       }

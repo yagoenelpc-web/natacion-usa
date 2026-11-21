@@ -33,6 +33,7 @@ const $app = document.getElementById("app");
 
 // ---------- idioma ----------
 const EN = {
+  "piscina larga": "long course", "Atrás": "Back", "Ranking de la temporada": "Season ranking", "{n} equipos": "{n} teams", "Chicos": "Men", "Chicas": "Women", "Aún no hay tiempos de esta temporada para estos equipos.": "No times this season for these teams yet.", "Sin tiempos esta temporada": "No times this season", "Ranking orientativo calculado con los 3 mejores tiempos de cada equipo en cada prueba individual de yardas esta temporada, puntuando como un campeonato (20, 17, 16… a los 16 primeros).": "Approximate ranking using each team's top 3 times in every individual yards event this season, scored like a championship (20, 17, 16… for the top 16).", "Actualizado": "Updated", "Natación": "Swimming", "Universidad": "School", "Tiempos del equipo": "Team times", "{p} pts · de {n}": "{p} pts · of {n}", "Sin tiempos aún": "No times yet", "Aún no hay tiempos de esta temporada para este equipo.": "No times this season for this team yet.", "Sí": "Yes", "Ver el campus en vídeo": "Watch a campus video", "Instalaciones de natación": "Swimming facilities", "Instagram del equipo": "Team Instagram", "Instagram de deportes": "Athletics Instagram", "Web de natación": "Swimming website", "Piscina": "Pool", "Piscina de 25 yardas": "25-yard pool", "Piscina de 50 metros": "50-meter pool", "Piscina de 25 metros": "25-meter pool", "Carriles": "Lanes", "Foso de saltos": "Diving well", "Aforo": "Seating", "Inaugurada": "Opened", "Litros de agua": "Water volume", "galones": "gallons", "Más sobre la piscina": "More about the pool", "Equipo de saltos": "Diving team", "La universidad no publica los datos de su piscina en un formato que se pueda leer.": "The school doesn't publish its pool details in a readable format.", "Buscarla": "Search for it", "Datos": "Facts", "Nombre completo": "Full name", "Datos de la web oficial de deportes de la universidad, Wikipedia (CC BY-SA) y Wikidata.": "Data from the school's official athletics site, Wikipedia (CC BY-SA) and Wikidata.", "Conócela": "Get to know it",
   "Aún no tiene marcas en los resultados guardados de esta temporada.": "No times yet in this season's saved results.", "En la plantilla oficial de su universidad": "On their school's official roster",
   "Calendario y resultados": "Schedule and results", "próximamente": "upcoming", "Y {n} más en la ficha de cada universidad.": "And {n} more on each school's page.",
   "Encuentros entre universidades": "Dual meets", "Ranking NCAA": "NCAA ranking", "Ranking: puesto en los últimos campeonatos NCAA/NAIA (♂ chicos, ♀ chicas).": "Ranking: place at the last NCAA/NAIA championships (♂ men, ♀ women).",
@@ -97,7 +98,7 @@ const EN = {
   "puntos": "points",
   "No hay campeonatos con resultados ahora mismo.": "No meets with results right now.",
   "Buscar universidad": "Search university",
-  "Convertir tiempo": "Convert time", "Buscar prueba: espalda, 200 estilos…": "Search event: back, 200 IM…", "Ninguna prueba coincide.": "No events match.", "Más encuentros con resultados": "More dual meets with results", "Su universidad está compitiendo ahora: es probable que {n} esté nadando aquí.": "Their school is competing now, so {n} is probably swimming here.", "Próxima competición de su universidad": "Their school's next meet", "¿Dónde compite su universidad?": "Where is their school competing?", "Equipo masculino": "Men's team", "Equipo femenino": "Women's team", "Otros nadadores": "Other swimmers", "nadadores": "swimmers", "Buscar competición por nombre…": "Search meets by name…", "Resultados de la búsqueda": "Search results", "No hay ninguna competición con ese nombre.": "No meets with that name.", "Ficha en la web de la universidad": "Profile on the school website", "Su universidad no publica una biografía que se pueda leer.": "The school doesn't publish a readable bio.", "Entrenador": "Coach", "Resultados originales en la web de la universidad": "Original results on the school website", "Resultados completos guardados": "Saved full results", "Temporada": "Season", "Aún no tiene marcas en los resultados guardados.": "No times in the saved results yet.", "Mis favoritas": "My favorites", "Mis nadadores": "My swimmers", "Marca con ☆ a tus nadadores y saldrán aquí.": "Tap ☆ on your swimmers and they'll show up here.", "Aún no tienes universidades favoritas. Toca ☆ en cualquiera para guardarla.": "No favorite schools yet. Tap ☆ on any school to save it.", "Últimas competiciones": "Latest meets", "Cerrar": "Close", "Libre": "Free", "Espalda": "Back", "Braza": "Breast", "Mariposa": "Fly", "Estilos": "IM", "Yardas (25 yd)": "Yards (25 yd)", "Piscina corta (25 m)": "Short course (25 m)", "Piscina larga (50 m)": "Long course (50 m)", "Conversión aproximada con los factores habituales (yardas ×1,11 y virajes de 25 m). Úsala como orientación.": "Approximate conversion using the usual factors (yards ×1.11 and 25 m turns). Use it as a guide.",
+  "Convertir tiempo": "Convert time", "Buscar prueba: espalda, 200 estilos…": "Search event: back, 200 IM…", "Ninguna prueba coincide.": "No events match.", "{n} inscritos · aún sin nadar": "{n} entries · not swum yet", "Aún no hay resultados de esta prueba. Esta es la lista de inscritos con su marca de inscripción; se actualizará sola cuando la publiquen.": "No results for this event yet. This is the entry list with seed times; it will update by itself once results are posted.", "Más encuentros con resultados": "More dual meets with results", "Su universidad está compitiendo ahora: es probable que {n} esté nadando aquí.": "Their school is competing now, so {n} is probably swimming here.", "Próxima competición de su universidad": "Their school's next meet", "¿Dónde compite su universidad?": "Where is their school competing?", "Equipo masculino": "Men's team", "Equipo femenino": "Women's team", "Otros nadadores": "Other swimmers", "nadadores": "swimmers", "Buscar competición por nombre…": "Search meets by name…", "Resultados de la búsqueda": "Search results", "No hay ninguna competición con ese nombre.": "No meets with that name.", "Ficha en la web de la universidad": "Profile on the school website", "Su universidad no publica una biografía que se pueda leer.": "The school doesn't publish a readable bio.", "Entrenador": "Coach", "Resultados originales en la web de la universidad": "Original results on the school website", "Resultados completos guardados": "Saved full results", "Temporada": "Season", "Aún no tiene marcas en los resultados guardados.": "No times in the saved results yet.", "Mis favoritas": "My favorites", "Mis nadadores": "My swimmers", "Marca con ☆ a tus nadadores y saldrán aquí.": "Tap ☆ on your swimmers and they'll show up here.", "Aún no tienes universidades favoritas. Toca ☆ en cualquiera para guardarla.": "No favorite schools yet. Tap ☆ on any school to save it.", "Últimas competiciones": "Latest meets", "Cerrar": "Close", "Libre": "Free", "Espalda": "Back", "Braza": "Breast", "Mariposa": "Fly", "Estilos": "IM", "Yardas (25 yd)": "Yards (25 yd)", "Piscina corta (25 m)": "Short course (25 m)", "Piscina larga (50 m)": "Long course (50 m)", "Conversión aproximada con los factores habituales (yardas ×1,11 y virajes de 25 m). Úsala como orientación.": "Approximate conversion using the usual factors (yards ×1.11 and 25 m turns). Use it as a guide.",
   "Compitiendo ahora": "Competing now", "Última competición": "Last meet", "Próxima competición": "Next meet", "¿Dónde compite?": "Where are they competing?", "Ahora mismo no está compitiendo.": "Not competing right now.", "Ver resultados aquí": "See results here", "Ver en la web de la universidad": "See on the school's site", "en casa": "at home",
   "Todas": "All", "Hombres": "Men", "Mujeres": "Women", "Saltos": "Diving", "Todos": "All",
   "Conferencia": "Conference", "Estado": "State", "Equipos": "Teams", "Filtros": "Filters",
@@ -312,7 +313,7 @@ async function loadSwimmers() {
   if (swimmers) return swimmers;
   await loadLogos().catch(() => {});
   // Índice ligero (nad-indice.json); las marcas de cada uno se bajan al abrir su ficha (web/data/nad/<trozo>.json).
-  let [d, pl, fpast, fextra] = await Promise.all([loadData("nad-indice"), loadData("plantillas"), loadData("fotos-pasadas").catch(() => null), loadData("fotos-extra").catch(() => null)]);
+  let [d, pl, fpast, fextra, forig] = await Promise.all([loadData("nad-indice"), loadData("plantillas"), loadData("fotos-pasadas").catch(() => null), loadData("fotos-extra").catch(() => null), loadData("origen").catch(() => null)]);
   if (d?.s) d = { updated: d.updated, swimmers: d.s.map(([n, t, g, y, te, tt, l]) => ({ n, t, g, y, l, b: {}, m: [], top: te ? [te, tt] : null, src: [[n, t]] })) };
   else d = await loadData("nadadores");
   const secs = (t) => { const m = /^(?:(\d+):)?(\d+\.\d+)/.exec(t || ""); return m ? (+m[1] || 0) * 60 + +m[2] : Infinity; };
@@ -383,7 +384,16 @@ async function loadSwimmers() {
     const ex = fextra?.f?.[kx(x.n)];
     if (ex) x.img = ex;
   }
-  for (const [u, ro] of byUni) for (const r of ro) if (!r.used) merged.set("ro|" + u.n + "|" + r.full, { n: r.full, t: u.n, u, g: r.g, b: {}, m: [], ro: true, ...(r.img ? { img: r.img } : {}) });
+  // Ciudad de origen (para la bandera) desde las plantillas de esta temporada y las anteriores.
+  for (const x of merged.values()) {
+    const o = x.u && forig?.u?.[x.u.n];
+    if (!o) continue;
+    if (o[x.rf || x.n]) { x.ht = o[x.rf || x.n]; continue; }
+    const tk = x.n.split(/\s+/), f = low(tk[0]), rest = tk.slice(1).map(low);
+    const hit = Object.entries(o).find(([n]) => { const t = n.split(/\s+/).map(low); return (rest.includes(t[1]) || rest.includes(t[t.length - 1])) && (t[0].startsWith(f) || f.startsWith(t[0])); });
+    if (hit) x.ht = hit[1];
+  }
+  for (const [u, ro] of byUni) for (const r of ro) if (!r.used) merged.set("ro|" + u.n + "|" + r.full, { n: r.full, t: u.n, u, g: r.g, b: {}, m: [], ro: true, ...(r.img ? { img: r.img } : {}), ...(forig?.u?.[u.n]?.[r.full] ? { ht: forig.u[u.n][r.full] } : {}) });
   swimmers = [...merged.values()].sort((a, b) => a.n.localeCompare(b.n)).map((x, i) => ({ ...x, i }));
   swimmers.updated = d?.updated || "";
   swimmers.mi = d?.mi || {};
@@ -545,12 +555,13 @@ async function loadEvent(url, live, hops = 0) {
     return ev;
   }
   const html = await api(url, live ? 45 : 6 * 3600);
-  let ev = parseEvent(html, url);
+  let ev = parseEvent(html, url, { entries: true });
   if (!ev.title && hops < 2) {
     // "Última prueba" a veces es una página que redirige (meta refresh, marco o script).
     const m = /http-equiv=["']?refresh["']?[^>]*url=([^"'>\s]+)/i.exec(html) || /<i?frame[^>]+src=["']?([^"'>\s]+)/i.exec(html) || /location(?:\.href)?\s*=\s*["']([^"']+)/i.exec(html);
     if (m) return loadEvent(new URL(m[1], url).href, live, hops + 1);
   }
+  if (ev.psych) for (const r of ev.results) if (/^\d+$/.test(r.y)) r.y = "";
   rememberTeams(ev);
   return ev;
 }
@@ -893,6 +904,10 @@ async function fillWinners(meet, live) {
   await pool(urls, 3, async (url) => {
     if (location.hash !== here) return;
     const ev = await loadEvent(url, live);
+    if (ev.psych) {
+      for (const row of document.querySelectorAll(`.erow[data-ev="${CSS.escape(url)}"]`)) if (ev.results.length) row.querySelector(".win").textContent = `📋 ${T("{n} inscritos · aún sin nadar", { n: ev.results.length })}`;
+      return;
+    }
     const w = ev.results.find((r) => r.p === "1" && (!r.s || /Final|Champ/i.test(r.s))) || ev.results.find((r) => r.p === "1");
     if (!w) return;
     for (const row of document.querySelectorAll(`.erow[data-ev="${CSS.escape(url)}"]`)) {
@@ -968,6 +983,7 @@ async function eventView(id, key, silent = false) {
   $app.innerHTML = `
   <a class="back" href="#/m/${enc(id)}">‹ ${esc(meet.name)}</a>
   <section class="ehead"><span class="num big">${ev.number ?? ""}</span><div><h1>${esc(englishToSpanish(ev.title))}</h1><p class="sub">${meet.status === "live" ? liveTag() : esc(fmtRange(meet.start, meet.end))}</p></div></section>
+  ${ev.psych ? `<div class="card muted">📋 ${T("Aún no hay resultados de esta prueba. Esta es la lista de inscritos con su marca de inscripción; se actualizará sola cuando la publiquen.")}</div>` : ""}
   ${f.size ? `<label class="toggle"><input type="checkbox" id="onlyFav" ${onlyFav ? "checked" : ""}> ${T("Solo mis universidades")}</label>` : ""}
   ${ev.records.length ? `<details class="records"><summary>${T("Récords")}</summary>${ev.records.map((r) => `<div>${esc(r).replace(/\b((?:\d{1,2}:)?\d{1,2}\.\d{2})\b/g, `<b class="convt" data-conv="$1" data-ev="${esc(ev.title)}" role="button">$1</b>`)}</div>`).join("")}</details>` : ""}
   <div class="list">${rows || `<div class="card muted">${T("Sin resultados todavía.")}</div>`}</div>
@@ -1087,22 +1103,96 @@ async function universitiesView() {
 
 const ord = (n) => (lang() === "en" ? n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th") : `${n}º`);
 const hrefOk = (u) => (u ? (u.startsWith("http") ? u : "https://" + u) : "");
-async function uniView(name) {
+// ── Ranking de la temporada y tiempos del equipo (web/data/equipos-rank.json y equipos/<equipo>.json) ──
+const NCAA_EVS = ["50 Y Free", "100 Y Free", "200 Y Free", "500 Y Free", "1000 Y Free", "1650 Y Free", "100 Y Back", "200 Y Back", "100 Y Breast", "200 Y Breast", "100 Y Fly", "200 Y Fly", "200 Y IM", "400 Y IM"];
+const CH_PTS = [20, 17, 16, 15, 14, 13, 12, 11, 9, 7, 6, 5, 4, 3, 2, 1];
+const tSecs = (t) => { const m = /^(?:(\d+):)?(\d+\.\d+)/.exec(t || ""); return m ? (+m[1] || 0) * 60 + +m[2] : Infinity; };
+const teamSlug = (t) => norm(t).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "x";
+const STROKE_ES = { Free: "Libre", Back: "Espalda", Breast: "Braza", Fly: "Mariposa", IM: "Estilos" };
+const evLabel = (ev) => { const [d, c, s] = ev.split(" "); return `${d} ${T(STROKE_ES[s] || s)}${c === "M" ? " · " + T("piscina larga") : ""}`; };
+let seasonData = null;
+async function loadSeason() {
+  if (seasonData) return seasonData;
+  await loadUnis();
+  const d = await loadData("equipos-rank");
+  const byUni = new Map();
+  for (const [slug, [raw, best]] of Object.entries(d?.t || {})) {
+    const u = findUni(raw);
+    if (!u) continue;
+    const x = byUni.get(u) || { slugs: [], M: {}, W: {} };
+    x.slugs.push(slug);
+    for (const g of ["M", "W"]) for (const [ev, ts] of Object.entries(best[g] || {})) x[g][ev] = [...(x[g][ev] || []), ...ts.map(tSecs)].sort((a, b) => a - b).slice(0, 3);
+    byUni.set(u, x);
+  }
+  return (seasonData = { byUni, updated: d?.updated || "", season: d?.season || "" });
+}
+// Puntuación como un campeonato: los 3 mejores de cada equipo en cada prueba, 20-17-16…1 a los 16 primeros.
+function rankTeams(list, g, byUni) {
+  const pts = new Map();
+  for (const u of list) if (byUni.get(u) && Object.keys(byUni.get(u)[g]).length) pts.set(u, 0);
+  for (const ev of NCAA_EVS) {
+    const swims = [];
+    for (const u of pts.keys()) for (const s of byUni.get(u)[g][ev] || []) if (s < Infinity) swims.push([s, u]);
+    swims.sort((a, b) => a[0] - b[0]).slice(0, 16).forEach(([, u], i) => pts.set(u, pts.get(u) + CH_PTS[i]));
+  }
+  return [...pts].sort((a, b) => b[1] - a[1] || a[0].n.localeCompare(b[0].n)).map(([u, p], i) => ({ u, p, pos: i + 1 }));
+}
+const CONF_NAMES = { MVC: "Missouri Valley", ASUN: "ASUN", MPSF: "Mountain Pacific", CAA: "Coastal Athletic", NEC: "Northeast", A10: "Atlantic 10", MW: "Mountain West", RMAC: "Rocky Mountain", NE10: "Northeast-10", GLIAC: "Great Lakes (GLIAC)", NSIC: "Northern Sun", PCSC: "Pacific Collegiate", PSAC: "Pennsylvania (PSAC)", NSISC: "Northern Sun", GLVC: "Great Lakes Valley", SSC: "Sunshine State", GNAC: "Great Northwest", NESCAC: "NESCAC", CCIW: "CCIW", SCAC: "Southern Collegiate", SCIAC: "SCIAC", NEWMAC: "NEWMAC", ODAC: "Old Dominion", SAA: "Southern Athletic", UAA: "University Athletic", CUNYAC: "CUNY", SUNYAC: "SUNY", AEC: "America East", ARC: "American Rivers", NJAC: "New Jersey (NJAC)", NCAC: "North Coast", NAC: "North Atlantic", PAC: "Presidents' (PAC)", ISC: "Independent Swimming", E8: "Empire 8", MSC: "Mid-South", SCSC: "Sooner (SCSC)", KCAC: "Kansas (KCAC)" };
+const confName = (c) => CONF_NAMES[c] || c;
+const confOf = (u, g) => (g === "M" ? u.cm : u.cw) || u.cw || u.cm || "";
+const inGroup = (kind, key, g) => (u) => (g === "M" ? u.men : u.women) && (kind === "div" ? u.div === key : confOf(u, g) === key);
+const confLogo = (c, size = 18) => { const k = CONF_WORDS.find(([re]) => re.test(c || ""))?.[1]; const img = k && brands?.[k]; return img ? `<img class="conflogo" src="${esc(img)}" alt="" width="${size}" height="${size}" onerror="this.remove()">` : ""; };
+const uniTint = (u) => { const info = logoIndex ? matchTeam(logoIndex, u.n) || matchTeam(logoIndex, u.full) : null; return info && info.color && info.color !== "#0b63ce" ? info.color : "#0b3d91"; };
+
+async function rankView(kind, key, g) {
+  setTab("unis");
+  loading();
+  await Promise.all([loadLogos().catch(() => {}), loadBrands().catch(() => {})]);
+  const { byUni, updated } = await loadSeason();
+  g = g === "W" ? "W" : "M";
+  const title = kind === "div" ? divLabel(key) : confName(key);
+  setTitle(title);
+  const all = unis.filter(inGroup(kind, key, g));
+  const ranked = rankTeams(all, g, byUni);
+  const top = ranked[0]?.p || 1;
+  const missing = all.filter((u) => !ranked.some((r) => r.u === u));
+  const base = `#/rank/${kind}/${enc(key)}`;
+  const row = (r) => `<a class="rkrow" href="#/uni/${enc(r.u.n)}"><span class="rkpos ${r.pos <= 3 ? "p" + r.pos : ""}">${r.pos}</span>${crest(r.u.n, 34)}<span class="uinfo"><b>${esc(r.u.n)}</b><span class="rkbar"><i style="width:${Math.max(4, (r.p / top) * 100).toFixed(1)}%"></i></span></span><span class="rkpts"><b>${r.p}</b><small>pts</small></span></a>`;
+  $app.innerHTML = `
+  <a class="back" href="javascript:history.back()">‹ ${T("Atrás")}</a>
+  <section class="ghero">
+    <div class="ghead">${kind === "conf" ? `<span class="gico">${confLogo(key, 44) || "🏆"}</span>` : `<span class="gico txt">${esc(key === "NAIA" ? "NAIA" : key.replace("D", "D-"))}</span>`}<div><small>${T("Ranking de la temporada")}</small><h1>${esc(title)}</h1><p>${T("{n} equipos", { n: all.length })}</p></div></div>
+  </section>
+  <nav class="seg"><a href="${base}/M" class="${g === "M" ? "on" : ""}">♂ ${T("Chicos")}</a><a href="${base}/W" class="${g === "W" ? "on" : ""}">♀ ${T("Chicas")}</a></nav>
+  ${ranked.length ? `<div class="glist">${ranked.map(row).join("")}</div>` : `<div class="card muted">${T("Aún no hay tiempos de esta temporada para estos equipos.")}</div>`}
+  ${missing.length ? `<h2>${T("Sin tiempos esta temporada")} <span class="count">${missing.length}</span></h2><div class="glist">${missing.map((u) => `<a class="rkrow dim" href="#/uni/${enc(u.n)}"><span class="rkpos">–</span>${crest(u.n, 30)}<span class="uinfo"><b>${esc(u.n)}</b></span><span class="chev">›</span></a>`).join("")}</div>` : ""}
+  <p class="foot">${T("Ranking orientativo calculado con los 3 mejores tiempos de cada equipo en cada prueba individual de yardas esta temporada, puntuando como un campeonato (20, 17, 16… a los 16 primeros).")}${updated ? ` ${T("Actualizado")}: ${esc(updated)}.` : ""}</p>`;
+}
+
+async function uniView(name, tab = "") {
   setTab("unis");
   loading();
   await Promise.all([loadLogos().catch(() => {}), loadBrands().catch(() => {})]);
   const u = unis.find((x) => x.n === name) || findUni(name);
   if (!u) return errorView("Universidad no encontrada.");
   setTitle(u.n);
-  const [ranks, sw, calD, meets] = await Promise.all([loadRanks().catch(() => new Map()), loadSwimmers().catch(() => []), loadData("calendario"), loadArchiveRaw().catch(() => []), loadResIndex().catch(() => null)]);
+  const tint = uniTint(u);
+  const confs = u.cm && u.cw && u.cm !== u.cw ? [u.cm, u.cw] : [u.cw || u.cm].filter(Boolean);
+  const hero = `
+  <a class="back" href="#/u">‹ ${T("Universidades")}</a>
+  <section class="uhero2" style="--tint:${tint}">
+    <div class="uh-top"><span class="uh-crest">${crest(u.n, 72)}</span>${star(u.n)}</div>
+    <h1>${esc(u.n)}</h1>
+    <p class="uh-sub">${esc(u.nick || u.full)}${place(u) ? ` · 📍 ${esc(place(u))}` : ""}</p>
+    <div class="uh-chips"><a class="gchip" href="#/rank/div/${enc(u.div)}/${u.women ? "W" : "M"}">${esc(divLabel(u.div))}</a>${confs.map((c) => `<a class="gchip" href="#/rank/conf/${enc(c)}/${c === u.cw && u.women ? "W" : "M"}">${confLogo(c, 16)}${esc(confName(c))}</a>`).join("")}</div>
+  </section>
+  <nav class="seg useg"><a href="#/uni/${enc(u.n)}" class="${tab ? "" : "on"}">🏊 ${T("Natación")}</a><a href="#/uni/${enc(u.n)}/info" class="${tab ? "on" : ""}">🏛️ ${T("Universidad")}</a></nav>`;
+  if (tab === "info") return uniInfoView(u, hero);
+  const [ranks, sw, calD, meets, season] = await Promise.all([loadRanks().catch(() => new Map()), loadSwimmers().catch(() => []), loadData("calendario"), loadArchiveRaw().catch(() => []), loadSeason().catch(() => null), loadResIndex().catch(() => null)]);
   const games = calD?.cal?.[u.n] || [];
   const r = ranks.get(u);
   const team = sw.filter((x) => x.u === u);
-  const info = logoIndex ? matchTeam(logoIndex, u.n) || matchTeam(logoIndex, u.full) : null;
-  const tint = info && info.color && info.color !== "#0b63ce" ? info.color : "#0b3d91";
   const fact = (label, value) => (value ? `<div class="fact"><small>${esc(label)}</small><b>${esc(value)}</b></div>` : "");
-  // Conferencia con su logo.
-  const cfact = (label, value) => { if (!value) return ""; const k = CONF_WORDS.find(([re]) => re.test(value))?.[1]; const img = k && brands?.[k]; return `<div class="fact"><small>${esc(label)}</small><b>${img ? `<img class="conflogo" src="${esc(img)}" alt="" onerror="this.remove()">` : ""}${esc(value)}</b></div>`; };
   const web = hrefOk(u.web);
   const ncaaRow = (g, label) => {
     const x = r?.[g];
@@ -1112,9 +1202,7 @@ async function uniView(name) {
   };
   const year = r?.M?.year || r?.W?.year || "";
   const staff = [...(u.staff || [])];
-  const coachLine = u.coach ? fact(T("Entrenador principal"), u.coach) : fact(T("Entrenador (hombres)"), u.coachM) + fact(T("Entrenador (mujeres)"), u.coachW);
   const bios = await loadBio(u.n);
-  // Entrenadores que salen en su web aunque no estén en la lista de Wikipedia.
   for (const n of Object.keys(bios?.c || {})) if (!staff.some((p) => nameKey(p.n) === nameKey(n))) staff.push({ n, t: (bios.c[n].f || []).find(([l]) => l === "Cargo")?.[1] || T("Entrenador") });
   const staffHtml = staff.length
     ? `<div class="list staff">${staff
@@ -1123,8 +1211,7 @@ async function uniView(name) {
     : `<div class="card muted">${T("Esta universidad no publica su equipo técnico en un formato que se pueda leer.")}${u.staffUrl || web ? ` <a href="${esc(u.staffUrl || web)}" target="_blank" rel="noopener">${T("Ver en su web")} ↗</a>` : ""}</div>`;
   const yr = (y) => ({ FR: T("1º año"), SO: T("2º año"), JR: T("3º año"), SR: T("4º año"), GR: T("Posgrado"), "5Y": T("5º año") }[y] || "");
   const top = (x) => (x.top ? [x.top[0], [x.top[1]]] : Object.entries(x.b)[0]);
-  const row = (x) => { const bi = findBio(bios?.p, x.rf || x.n); return `<a class="urow" href="#/n/${x.i}">${face(x.img || !bi?.img ? x : { ...x, img: bi.img })}<span class="uinfo"><b>${esc(x.n)} ${flagHtml(bi)}</b><small>${esc([yr(x.y), top(x) ? `${top(x)[0]} ${top(x)[1][0]}` : ""].filter(Boolean).join(" · "))}</small></span><span class="chev">›</span></a>`; };
-  // Equipo masculino y femenino, plegados: se despliegan con la flecha.
+  const row = (x) => { const bi = findBio(bios?.p, x.rf || x.n); return `<a class="urow" href="#/n/${x.i}">${face(x.img || !bi?.img ? x : { ...x, img: bi.img })}<span class="uinfo"><b>${esc(x.n)} ${flagHtml(bi, x)}</b><small>${esc([yr(x.y), top(x) ? `${top(x)[0]} ${top(x)[1][0]}` : ""].filter(Boolean).join(" · "))}</small></span><span class="chev">›</span></a>`; };
   const squad = (g, label) => {
     const list = team.filter((x) => (x.g || "") === g).sort((a, b) => a.n.localeCompare(b.n));
     if (!list.length) return "";
@@ -1134,35 +1221,118 @@ async function uniView(name) {
   const teamHtml = team.length
     ? squad("M", T("Equipo masculino")) + squad("W", T("Equipo femenino")) + squad("", T("Otros nadadores"))
     : `<div class="card muted">${T("Aún no hay nadadores de esta universidad en los resultados guardados de esta temporada.")}</div>`;
-  const link = (h, label) => (h ? `<a href="${esc(h)}" target="_blank" rel="noopener">${label} ↗</a>` : "");
-  $app.innerHTML = `
-  <a class="back" href="#/u">‹ ${T("Universidades")}</a>
-  <section class="mhero uhero" style="--tint:${tint}">
-    <div class="mtop"><span class="bigcrest">${crest(u.n, 76)}</span><div><h1>${esc(u.n)}</h1><p>${esc(u.full)}</p><p>${esc(place(u))}</p></div>${star(u.n)}</div>
-    <div class="pills"><span class="pill">${esc(divLabel(u.div))}</span>${u.men ? `<span class="pill">♂ ${T("Hombres")}</span>` : ""}${u.women ? `<span class="pill">♀ ${T("Mujeres")}</span>` : ""}${u.diving ? `<span class="pill">🤿 ${T("Saltos")}</span>` : ""}</div>
-  </section>
+  // Chicos / chicas: un solo selector para el ranking y los tiempos del equipo.
+  const sexes = [u.men && "M", u.women && "W"].filter(Boolean);
+  let g = store.get("uniSex", "W");
+  if (!sexes.includes(g)) g = sexes[0] || "W";
+  $app.innerHTML = `${hero}
   ${nowSection(u, games, meets)}
+  <div class="ghead2"><h2>${T("Ranking de la temporada")}</h2>${sexes.length > 1 ? `<div class="mini-seg" id="sexsel">${sexes.map((s) => `<button data-g="${s}">${s === "M" ? T("Chicos") : T("Chicas")}</button>`).join("")}</div>` : ""}</div>
+  <div class="rkcards" id="rkcards"></div>
+  <div class="ghead2"><h2>${T("Tiempos del equipo")}</h2><select id="evsel" class="gselect"></select></div>
+  <div id="ttimes"></div>
   <h2>🏆 ${T("Últimos campeonatos nacionales")} ${year ? `<span class="count">${esc(year)}</span>` : ""}</h2>
   <div class="card ncaa">${u.men ? ncaaRow("M", "♂ " + T("Hombres")) : ""}${u.women ? ncaaRow("W", "♀ " + T("Mujeres")) : ""}</div>
+  <h2>🏊 ${T("Nadadores")} ${team.length ? `<span class="count">${team.length}</span>` : ""}</h2>
+  ${teamHtml}
+  <a class="btn wide" href="#/u/${enc(u.n)}">🏊 ${T("Ver sus resultados")}</a>
+  ${u.hytek ? `<a class="btn wide alt" href="#/m/${enc(`https://www.sidearmstats.com/${u.hytek}/swim/evtindex.htm`)}">⏱️ ${T("Su última competición en casa")}</a>` : ""}
+  ${games.length ? `<h2>📅 ${T("Calendario y resultados")} <span class="count">${games.length}</span></h2><div class="list">${games.map((x) => gameRow(u.n, x)).join("")}</div>` : ""}
+  ${storedSection(u)}
+  <h2>👥 ${T("Equipo técnico y contacto")} ${staff.length ? `<span class="count">${staff.length}</span>` : ""}</h2>
+  ${staffHtml}
+  ${extButtons([[SC_TEAM(u.full || u.n), "SwimCloud", "sc"], [USAS_SWIMMER(u.full || u.n), "USA Swimming", "usas"]])}
+  <p class="foot">${T("Nadadores sacados de los resultados públicos de esta temporada y de los últimos NCAA. Datos de Wikipedia (CC BY-SA), Wikidata y la web oficial de la universidad.")}</p>`;
+  // Tiempos del equipo: une los nombres con que sale la universidad en los resultados.
+  const mine = season?.byUni.get(u);
+  const files = await Promise.all((mine?.slugs || []).map((s) => loadData("equipos/" + s).catch(() => null)));
+  const times = { M: {}, W: {} };
+  for (const f of files) if (f) for (const s of ["M", "W"]) for (const [ev, list] of Object.entries(f[s] || {})) times[s][ev] = [...(times[s][ev] || []), ...list];
+  for (const s of ["M", "W"]) for (const ev of Object.keys(times[s])) {
+    const seen = new Set();
+    times[s][ev] = times[s][ev].sort((a, b) => tSecs(a[0]) - tSecs(b[0])).filter(([, n]) => !seen.has(n) && seen.add(n)).slice(0, 10);
+  }
+  const swByName = new Map(team.map((x) => [nameKey(x.n), x]));
+  const findSw = (n) => swByName.get(nameKey(n.replace(/\s+[A-Z]\.?(?=\s)/g, "")));
+  const paint = () => {
+    for (const b of document.querySelectorAll("#sexsel button")) b.classList.toggle("on", b.dataset.g === g);
+    const cards = [];
+    if (season) {
+      const one = (kind, key, label, ico) => {
+        const list = unis.filter(inGroup(kind, key, g));
+        const rk = rankTeams(list, g, season.byUni);
+        const me = rk.find((x) => x.u === u);
+        return `<a class="rkcard" href="#/rank/${kind}/${enc(key)}/${g}"><span class="rkico">${ico}</span><b>${me ? "#" + me.pos : "–"}</b><span>${esc(label)} ›</span><small>${me ? T("{p} pts · de {n}", { p: me.p, n: rk.length }) : T("Sin tiempos aún")}</small></a>`;
+      };
+      cards.push(one("div", u.div, divLabel(u.div), `<span class="gico txt sm">${esc(u.div === "NAIA" ? "NAIA" : u.div.replace("D", "D-"))}</span>`));
+      const c = confOf(u, g);
+      if (c) cards.push(one("conf", c, confName(c), confLogo(c, 26) || "🏆"));
+    }
+    document.getElementById("rkcards").innerHTML = cards.join("");
+    const evs = Object.keys(times[g]).sort((a, b) => evOrder(a) - evOrder(b));
+    const sel = document.getElementById("evsel");
+    let ev = sel.value && evs.includes(sel.value) ? sel.value : evs.includes(store.get("uniEv", "")) ? store.get("uniEv", "") : evs.find((e) => e === "100 Y Free") || evs[0];
+    sel.innerHTML = evs.map((e) => `<option value="${esc(e)}" ${e === ev ? "selected" : ""}>${esc(evLabel(e))}</option>`).join("");
+    sel.style.display = evs.length ? "" : "none";
+    const list = times[g][ev] || [];
+    document.getElementById("ttimes").innerHTML = list.length
+      ? `<div class="glist">${list.map(([t, n], i) => { const x = findSw(n); const inner = `<span class="rkpos ${i < 3 ? "p" + (i + 1) : ""}">${i + 1}</span>${x ? face(x) : `<span class="avatar">${esc(initials(n))}</span>`}<span class="uinfo"><b>${esc(x?.n || n)}</b><small>${esc(evLabel(ev))}</small></span><span class="ttime">${esc(t)}</span>`; return x ? `<a class="rkrow" href="#/n/${x.i}">${inner}</a>` : `<div class="rkrow">${inner}</div>`; }).join("")}</div>`
+      : `<div class="card muted">${T("Aún no hay tiempos de esta temporada para este equipo.")}</div>`;
+  };
+  document.getElementById("sexsel")?.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; g = b.dataset.g; store.set("uniSex", g); paint(); });
+  document.getElementById("evsel").onchange = (e) => { store.set("uniEv", e.target.value); paint(); };
+  paint();
+}
+
+async function uniInfoView(u, hero) {
+  const inst = (await loadData("instalaciones").catch(() => null))?.u?.[u.n] || {};
+  const f = inst.fac;
+  const web = hrefOk(u.web);
+  const ddg = (q) => "https://duckduckgo.com/?q=" + enc("\\" + q);
+  const lrow = (href, ico, label, sub) => (href ? `<a class="lrow" href="${esc(href)}" target="_blank" rel="noopener"><span class="lico">${ico}</span><span class="uinfo"><b>${label}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span><span class="chev">›</span></a>` : "");
+  const yes = (v) => (v ? `<b class="ok">✓ ${T("Sí")}</b>` : `<b class="muted">—</b>`);
+  const prow = (label, val) => `<div class="prow"><span>${label}</span>${val}</div>`;
+  const video = `<a class="vcard ph" style="--tint:${uniTint(u)}" href="https://www.youtube.com/results?search_query=${enc((u.full || u.n) + " campus tour")}" target="_blank" rel="noopener"><span class="play">▶</span><b>${T("Ver el campus en vídeo")}</b><small>${esc(u.full || u.n)}</small></a>`;
+  const poolVideo = inst.yt ? `<div class="vcard pv"><iframe src="https://www.youtube-nocookie.com/embed/${esc(inst.yt)}" title="${esc(f?.n || u.n)}" loading="lazy" allow="encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : "";
+  const fact = (label, value) => (value ? `<div class="fact"><small>${esc(label)}</small><b>${esc(value)}</b></div>` : "");
+  const cfact = (label, value) => (value ? `<div class="fact"><small>${esc(label)}</small><b>${confLogo(value)}${esc(value)}</b></div>` : "");
+  const coachLine = u.coach ? fact(T("Entrenador principal"), u.coach) : fact(T("Entrenador (hombres)"), u.coachM) + fact(T("Entrenador (mujeres)"), u.coachW);
+  $app.innerHTML = `${hero}
+  <h2>${T("Conócela")}</h2>
+  ${video}
+  <div class="glist links2">
+    ${lrow(f?.url || ddg(`${u.full || u.n} swimming pool aquatic center`), "🏊", T("Instalaciones de natación"), f?.n || "")}
+    ${lrow(inst.ig ? `https://www.instagram.com/${inst.ig}/` : ddg(`${u.full || u.n} swimming diving instagram site:instagram.com`), "📸", T("Instagram del equipo"), inst.ig ? "@" + inst.ig : "")}
+    ${inst.igAll && !inst.ig ? lrow(`https://www.instagram.com/${inst.igAll}/`, "📷", T("Instagram de deportes"), "@" + inst.igAll) : ""}
+    ${lrow(web, "🌐", T("Web de natación"), web.replace(/^https?:\/\/(www\.)?/, ""))}
+    ${lrow(hrefOk(u.uweb), "🎓", T("Web de la universidad"), (u.uweb || "").replace(/^https?:\/\/(www\.)?/, ""))}
+    ${lrow(u.rosterUrl || u.rosterWUrl || u.rosterMUrl, "📋", T("Plantilla oficial"), "")}
+    ${lrow(u.wiki, "📖", "Wikipedia", "")}
+  </div>
+  <h2>${T("Piscina")}</h2>
+  ${f ? `<div class="pcard">${f.img ? `<img class="pimg" src="${esc(f.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<div class="pbody"><b class="pname">${esc(f.n)}</b>
+    ${prow(T("Piscina de 25 yardas"), yes(f.y25))}
+    ${prow(T("Piscina de 50 metros"), yes(f.m50))}
+    ${f.m25 ? prow(T("Piscina de 25 metros"), yes(1)) : ""}
+    ${f.lanes ? prow(T("Carriles"), `<b>${f.lanes}</b>`) : ""}
+    ${prow(T("Foso de saltos"), yes(f.dive || u.diving))}
+    ${f.seats ? prow(T("Aforo"), `<b>${f.seats.toLocaleString(lang() === "en" ? "en-US" : "es-ES")}</b>`) : ""}
+    ${f.year ? prow(T("Inaugurada"), `<b>${f.year}</b>`) : ""}
+    ${f.gal ? prow(T("Litros de agua"), `<b>${esc(f.gal)} ${T("galones")}</b>`) : ""}
+    <a class="plink" href="${esc(f.url)}" target="_blank" rel="noopener">${T("Más sobre la piscina")} ↗</a></div></div>${poolVideo}`
+    : `<div class="pcard"><div class="pbody">${prow(T("Equipo de saltos"), yes(u.diving))}<p class="muted small">${T("La universidad no publica los datos de su piscina en un formato que se pueda leer.")} <a href="${esc(ddg(`${u.full || u.n} aquatic center`))}" target="_blank" rel="noopener">${T("Buscarla")} ↗</a></p></div></div>`}
+  <h2>${T("Datos")}</h2>
   <div class="facts">
+    ${fact(T("Nombre completo"), u.full)}
     ${fact(T("Apodo"), u.nick)}
     ${fact(T("División"), divLabel(u.div))}
     ${u.cm && u.cm === u.cw ? cfact(T("Conferencia"), u.cm) : cfact(`${T("Conferencia")} · ${T("Hombres")}`, u.cm) + cfact(`${T("Conferencia")} · ${T("Mujeres")}`, u.cw)}
     ${fact(T("Ciudad"), place(u))}
+    ${fact(T("Equipos"), [u.men && T("Hombres"), u.women && T("Mujeres"), u.diving && T("Saltos")].filter(Boolean).join(" · "))}
     ${coachLine}
     ${u.email ? `<div class="fact"><small>${T("Correo de la universidad")}</small><b><a href="mailto:${esc(u.email)}">${esc(u.email)}</a></b></div>` : ""}
   </div>
-  <a class="btn wide" href="#/u/${enc(u.n)}">🏊 ${T("Ver sus resultados")}</a>
-  ${u.hytek ? `<a class="btn wide alt" href="#/m/${enc(`https://www.sidearmstats.com/${u.hytek}/swim/evtindex.htm`)}">⏱️ ${T("Su última competición en casa")}</a>` : ""}
-  ${games.length ? `<h2>📅 ${T("Calendario y resultados")} <span class="count">${games.length}</span></h2><div class="list">${games.map((g) => gameRow(u.n, g)).join("")}</div>` : ""}
-  ${storedSection(u)}
-  <h2>👥 ${T("Equipo técnico y contacto")} ${staff.length ? `<span class="count">${staff.length}</span>` : ""}</h2>
-  ${staffHtml}
-  <h2>🏊 ${T("Nadadores")} ${team.length ? `<span class="count">${team.length}</span>` : ""}</h2>
-  ${teamHtml}
-  ${extButtons([[SC_TEAM(u.full || u.n), "SwimCloud", "sc"], [USAS_SWIMMER(u.full || u.n), "USA Swimming", "usas"]])}
-  <div class="links">${link(web, T("Web oficial"))}${link(u.uweb, T("Web de la universidad"))}${link(u.staffUrl || u.staffMUrl, T("Equipo técnico"))}${link(u.staffWUrl, T("Equipo técnico (mujeres)"))}${link(u.rosterUrl || u.rosterMUrl, T("Plantilla oficial"))}${link(u.rosterWUrl, T("Plantilla oficial (mujeres)"))}${link(u.wiki, "Wikipedia")}</div>
-  <p class="foot">${T("Nadadores sacados de los resultados públicos de esta temporada y de los últimos NCAA. Datos de Wikipedia (CC BY-SA), Wikidata y la web oficial de la universidad.")}</p>`;
+  <p class="foot">${T("Datos de la web oficial de deportes de la universidad, Wikipedia (CC BY-SA) y Wikidata.")}</p>`;
 }
 
 // Botones que abren SwimCloud y USA Swimming ya buscando lo que estás viendo (sin copiar enlaces).
@@ -1315,7 +1485,7 @@ async function swimmersView() {
     store.set("swq", q);
     const words = q.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(/\s+/).filter(Boolean);
     const box = document.getElementById("slist");
-    const row = (x) => `<a class="urow" href="#/n/${x.i}">${x.img ? face(x, 34) : crest(x.u ? x.u.n : x.t, 34)}<span class="uinfo"><b>${esc(x.n)}</b><small>${esc([x.u ? x.u.n : x.t, x.g === "W" ? "♀" : x.g === "M" ? "♂" : "", x.y].filter(Boolean).join(" · "))}</small></span>${swStar(x)}</a>`;
+    const row = (x) => `<a class="urow" href="#/n/${x.i}">${x.img ? face(x, 34) : crest(x.u ? x.u.n : x.t, 34)}<span class="uinfo"><b>${esc(x.n)} ${flagHtml(null, x)}</b><small>${esc([x.u ? x.u.n : x.t, x.g === "W" ? "♀" : x.g === "M" ? "♂" : "", x.y].filter(Boolean).join(" · "))}</small></span>${swStar(x)}</a>`;
     const fs = favSw();
     const mine = fs.size ? sw.filter((x) => fs.has(swKey(x))) : [];
     const favHtml = mine.length ? `<h2>★ ${T("Mis nadadores")} <span class="count">${mine.length}</span></h2><div class="list">${mine.map(row).join("")}</div>` : "";
@@ -1352,7 +1522,7 @@ function findBio(list, name) {
 }
 const FACT_EN = { Ciudad: "Hometown", Instituto: "High school", "Universidad anterior": "Previous school", Carrera: "Major", Especialidad: "Position", Curso: "Class", Cargo: "Title", "Universidad donde estudió": "Alma mater", Experiencia: "Experience", Altura: "Height" };
 // Bandera como imagen (los emojis de bandera no salen en todos los móviles/ordenadores).
-const flagHtml = (bio) => { const f = flagOf((bio?.f || []).find(([l]) => l === "Ciudad")?.[1]); return f ? `<img class="flag" src="https://flagcdn.com/w40/${f.cc.toLowerCase()}.png" alt="${esc(f.name)}" title="${esc(f.name)}" width="20" height="15" loading="lazy" onerror="this.remove()">` : ""; };
+const flagHtml = (bio, x) => { const f = flagOf((bio?.f || []).find(([l]) => l === "Ciudad")?.[1] || x?.ht); return f ? `<img class="flag" src="https://flagcdn.com/w40/${f.cc.toLowerCase()}.png" alt="${esc(f.name)}" title="${esc(f.name)}" width="20" height="15" loading="lazy" onerror="this.remove()">` : ""; };
 function bioBlock(bio) {
   if (!bio || (!bio.b && !(bio.f || []).length)) return "";
   const facts = (bio.f || []).filter(([l]) => l !== "Cargo" && FACT_EN[l]).map(([l, v]) => `<div class="nrow"><span>${esc(lang() === "en" ? FACT_EN[l] || l : l)}</span><b>${l === "Ciudad" ? flagHtml(bio) + " " : ""}${esc(v)}</b></div>`).join("");
@@ -1423,7 +1593,7 @@ async function swimmerView(i) {
   if (x.u) try { const calD = await loadData("calendario"); nowHtml = nowSection(x.u, calD?.cal?.[x.u.n] || [], arch, { g: x.g === "M" || x.g === "W" ? x.g : "", n: x.n.split(" ")[0] }); } catch {}
   $app.innerHTML = `<a class="back" href="#/n">‹ ${T("Nadadores")}</a>
   <section class="mhero uhero" style="--tint:${tint}">
-    <div class="mtop">${x.img ? `<span class="bigphoto"><img src="${esc(x.img)}" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('nophoto')"><i>${crest(uname, 30)}</i></span>` : `<span class="bigcrest">${crest(uname, 76)}</span>`}<div><h1>${esc(x.n)} ${flagHtml(bio)}</h1><p>${x.u ? `<a href="#/uni/${enc(x.u.n)}">${esc(x.u.full || x.u.n)}</a>` : esc(x.t)}</p><p>${esc([x.g === "W" ? T("Mujeres") : x.g === "M" ? T("Hombres") : "", yr].filter(Boolean).join(" · "))}</p></div>${swStar(x)}</div>
+    <div class="mtop">${x.img ? `<span class="bigphoto"><img src="${esc(x.img)}" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('nophoto')"><i>${crest(uname, 30)}</i></span>` : `<span class="bigcrest">${crest(uname, 76)}</span>`}<div><h1>${esc(x.n)} ${flagHtml(bio, x)}</h1><p>${x.u ? `<a href="#/uni/${enc(x.u.n)}">${esc(x.u.full || x.u.n)}</a>` : esc(x.t)}</p><p>${esc([x.g === "W" ? T("Mujeres") : x.g === "M" ? T("Hombres") : "", yr].filter(Boolean).join(" · "))}</p></div>${swStar(x)}</div>
   </section>
   ${bioBlock(bio)}
   ${nowHtml}
@@ -1511,7 +1681,8 @@ function route() {
     return meetView(parts[1], parts[2] || "pruebas");
   }
   if (parts[0] === "u" && parts[1]) return favTeamView(parts[1]);
-  if (parts[0] === "uni" && parts[1]) return uniView(parts[1]);
+  if (parts[0] === "uni" && parts[1]) return uniView(parts[1], parts[2] || "");
+  if (parts[0] === "rank" && parts[1] && parts[2]) return rankView(parts[1], parts[2], parts[3]);
   if (parts[0] === "coach" && parts[1] && parts[2]) return coachView(parts[1], parts[2]);
   if (parts[0] === "ajustes") return settingsView();
   if (parts[0] === "n" && parts[1]) return swimmerView(parts[1]);
