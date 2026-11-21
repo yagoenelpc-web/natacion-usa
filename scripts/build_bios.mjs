@@ -159,7 +159,8 @@ await pool(todo, 10, async (t) => {
   const r = fromNuxt(html, t.u) || fromHtml(html);
   if (!r) { none++; files.get(t.uni)[t.k][t.n] = { u: t.u, d: Date.now() }; return; }
   if (r.b.length > 6000) r.b = r.b.slice(0, 6000).replace(/\s+\S*$/, "") + "…";
-  files.get(t.uni)[t.k][t.n] = { ...(r.b ? { b: r.b } : {}), ...(r.f.length ? { f: r.f } : {}), ...(r.img ? { img: r.img } : {}), u: t.u, d: Date.now() };
+  // Copia limpia (JSON): los trozos de texto de V8 retienen la página entera y agotan la memoria.
+  files.get(t.uni)[t.k][t.n] = JSON.parse(JSON.stringify({ ...(r.b ? { b: r.b } : {}), ...(r.f.length ? { f: r.f } : {}), ...(r.img ? { img: r.img } : {}), u: t.u, d: Date.now() }));
   ok++;
   if (process.env.PROBE && shown++ < 6) console.log("== ", t.k, t.n, t.u, "\n", JSON.stringify(r.f), "\n", r.b.slice(0, 700));
 });
