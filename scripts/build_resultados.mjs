@@ -239,6 +239,15 @@ await pool(pastList, 8, async (p) => {
   for (const x of pastGames(r.body, r.url, p.sy)) add(x.href, p.uni, p.g, x.d, x.o, label(p.sy));
   pastDone.add(p.url);
 });
+// Universidad de un enlace sin calendario: por el dominio de su web de deportes.
+const hostUni = {};
+for (const [uni, list] of Object.entries(cal.src || {})) for (const e of list) { const h = /https?:\/\/([^/]+)/.exec(e)?.[1]; if (h) hostUni[h] = uni; }
+const uniOf = (u) => hostUni[/https?:\/\/([^/]+)/.exec(u)?.[1]] || "";
+const seasonOf = (d) => { const [yy, mm] = (d || "").split("-").map(Number); return yy ? label(mm >= 8 ? yy : yy - 1) : ""; };
+// Volver a leer los documentos que antes no dieron resultados (tras mejorar el lector).
+if (process.env.RETRY_EMPTY) for (const [u, v] of Object.entries(done)) if (v === 0 && !cand.some((c) => c.url === u)) { delete done[u]; cand.push({ url: u, uni: uniOf(u), g: "", d: "", o: "", season: "" }); }
+// Prueba con enlaces concretos (no guarda).
+if (process.env.URLS) { cand.length = 0; for (const u of process.env.URLS.split(/\s+/).filter(Boolean)) cand.push({ url: u, uni: "", g: "", d: "", o: "", season: "" }); }
 console.log("calendarios de años anteriores leídos:", pastDone.size, "de", pastTodo.length, "· enlaces por leer en total:", cand.length);
 
 // ---------- Descarga y lectura ----------
@@ -280,16 +289,16 @@ await pool(cand, 6, async (c) => {
     if (!meet) { fail++; return; }
   }
   const swims = meet.events.reduce((a, e) => a + e.results.length, 0);
-  if (!meet.events.length || swims < 4) { whyC[meet.why || (meet.events.length ? "pocas filas" : "sin pruebas")] = (whyC[meet.why || (meet.events.length ? "pocas filas" : "sin pruebas")] || 0) + 1; if (DEBUG && dbg.pe++ < 6) console.log("SIN-PRUEBAS", c.url, meet.events.length, swims, "\n" + (meet.text || "").split("\n").slice(0, 25).join("\n")); done[c.url] = 0; empty++; return; }
+  if (!meet.events.length || swims < 4) { whyC[meet.why || (meet.events.length ? "pocas filas" : "sin pruebas")] = (whyC[meet.why || (meet.events.length ? "pocas filas" : "sin pruebas")] || 0) + 1; if (DEBUG && dbg.pe++ < 6) console.log("SIN-PRUEBAS", c.url, meet.events.length, swims, "\n" + (meet.text || "").split("\n").slice(0, process.env.URLS ? 90 : 25).join("\n")); done[c.url] = 0; empty++; return; }
   meet.start ||= c.d || "";
   meet.end ||= meet.start;
   meet.name = (meet.name || "").replace(/(\s+-\s+copied)+$/i, "").trim();
-  if (!meet.name || meet.name.length < 4 || /^(results?|dual meet)$/i.test(meet.name)) meet.name = !c.o ? c.uni : EVENTY.test(c.o) ? c.o : `${c.uni} ${/^(at|vs)\b/i.test(c.o) ? "" : "vs "}${c.o}`.replace(/\s+/g, " ");
+  if (!meet.name || meet.name.length < 4 || /^(results?|dual meet)$/i.test(meet.name)) meet.name = !c.o ? (decodeURIComponent(c.url.split("/").pop().replace(/\.pdf.*$/i, "")).replace(/[_+]+/g, " ").replace(/\b(results?|scores?|final)\b/gi, "").replace(/\s+/g, " ").trim() || c.uni) : EVENTY.test(c.o) ? c.o : `${c.uni} ${/^(at|vs)\b/i.test(c.o) ? "" : "vs "}${c.o}`.replace(/\s+/g, " ");
   const id = "r:" + createHash("sha1").update(sigOf(meet)).digest("hex").slice(0, 12);
   done[c.url] = id;
   const prev = meetsById.get(id);
-  if (prev) { if (!prev.u.includes(c.uni)) prev.u.push(c.uni); return; }
-  const entry = { id, n: meet.name.slice(0, 120), d: meet.start, e: meet.end, u: [c.uni], s: c.season, src: c.url, ev: meet.events.length };
+  if (prev) { if (c.uni && !prev.u.includes(c.uni)) prev.u.push(c.uni); return; }
+  const entry = { id, n: meet.name.slice(0, 120), d: meet.start, e: meet.end, u: [c.uni].filter(Boolean), s: c.season || seasonOf(meet.start), src: c.url, ev: meet.events.length };
   meetsById.set(id, entry);
   newMeets.push({ entry, meet });
   await writeFile(`web/data/m/${id.slice(2)}.json`, JSON.stringify({ n: entry.n, d: entry.d, e: entry.e, u: entry.u, src: c.url, ev: meet.events.map(compact) }));

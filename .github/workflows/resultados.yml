@@ -14,12 +14,18 @@ on:
       debug:
         description: Mostrar muestras del texto de los PDF
         default: "0"
+      urls:
+        description: Probar solo estos enlaces (no guarda)
+        default: ""
+      reintentar:
+        description: Volver a leer los documentos que no dieron resultados (si/no)
+        default: "no"
 
 permissions:
   contents: write
 
 concurrency:
-  group: datos-app
+  group: ${{ inputs.urls && 'resultados-prueba' || 'datos-app' }}
   cancel-in-progress: false
 
 jobs:
@@ -38,7 +44,9 @@ jobs:
           MAX_MIN: ${{ inputs.minutos || '40' }}
           DEBUG: ${{ inputs.debug || '0' }}
           FRESH: ${{ (inputs.guardar == 'no') && '1' || '' }}
+          URLS: ${{ inputs.urls }}
+          RETRY_EMPTY: ${{ (inputs.reintentar == 'si') && '1' || '' }}
       - run: node scripts/split_nadadores.mjs
       - name: Guardar
-        if: ${{ inputs.guardar != 'no' }}
+        if: ${{ inputs.guardar != 'no' && inputs.urls == '' }}
         run: scripts/datos-rama.sh subir
