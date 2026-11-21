@@ -15,6 +15,8 @@ const tmp = await mkdtemp(join(tmpdir(), "rec-"));
 let nTmp = 0;
 
 async function get(url, bin = false) {
+  // Documentos de Google públicos: se piden como texto.
+  url = url.replace(/^https:\/\/docs\.google\.com\/document\/d\/([\w-]+).*$/, "https://docs.google.com/document/d/$1/export?format=txt").replace(/^https:\/\/docs\.google\.com\/spreadsheets\/d\/([\w-]+).*$/, "https://docs.google.com/spreadsheets/d/$1/export?format=csv");
   try {
     const r = await fetch(url, { headers: UA, redirect: "follow", signal: AbortSignal.timeout(25000) });
     if (!r.ok) return null;
@@ -28,7 +30,41 @@ async function pool(items, n, fn) {
 async function pdfText(buf) {
   const f = join(tmp, `d${nTmp++}.pdf`);
   await writeFile(f, buf);
-  try { return execFileSync("pdftotext", ["-layout", f, "-"], { maxBuffer: 50e6 }).toString("utf8"); } catch { return ""; }
+  try { return splitColumns(execFileSync("pdftotext", ["-layout", f, "-"], { maxBuffer: 50e6 }).toString("utf8")); } catch { return ""; }
+}
+// Libros de récords a dos o tres columnas ("50 FREESTYLE    1650 FREESTYLE    100 BREASTSTROKE"): se separa cada
+// columna y se pone una debajo de otra, para que cada prueba quede con sus propias líneas.
+const EVH = /\b(?:25|50|100|200|400|500|800|1,?000|1,?650)\s*(?:-?\s*(?:yard|yd|y|meter|m)\.?\s+)?(?:free(?:style)?|back(?:stroke)?|breast(?:stroke)?|butterfly|fly|individual medley|i\.?m\.?|medley relay|free(?:style)? relay)\b/gi;
+function splitColumns(text) {
+  const out = [];
+  let cols = null, block = [], lastCuts = null;
+  // Corte entre columnas: el hueco en blanco más ancho (en todas las líneas) entre dos títulos de prueba.
+  const cuts = (hs, lines) => {
+    const data = lines.slice(1).filter((l) => l.trim());
+    const blank = (x) => data.every((l) => x >= l.length || l[x] === " ");
+    const res = [0];
+    for (let i = 1; i < hs.length; i++) {
+      let best = null, run = null;
+      for (let x = hs[i - 1] + 4; x <= hs[i] + 2; x++) {
+        if (blank(x)) { run = run ? [run[0], x] : [x, x]; if (!best || run[1] - run[0] >= best[1] - best[0]) best = [...run]; } else run = null;
+      }
+      res.push(best ? best[1] + 1 : hs[i]);
+    }
+    return res;
+  };
+  const flush = () => {
+    if (cols) { const few = block.slice(1).filter((l) => l.trim()).length < 2; const c = few && lastCuts?.length === cols.length ? lastCuts : cuts(cols, block); if (!few) lastCuts = c; for (let i = 0; i < c.length; i++) for (const l of block) out.push(l.slice(c[i], i + 1 < c.length ? c[i + 1] : undefined)); }
+    else out.push(...block);
+    block = [];
+  };
+  for (const line of text.split("\n")) {
+    const hs = [...line.matchAll(EVH)].filter((m, i, a) => i === 0 || m.index - a[i - 1].index > 12);
+    if (hs.length >= 2 && !/\d{1,2}\.\d{2}/.test(line)) { flush(); cols = hs.map((m) => m.index); block.push(line); continue; }
+    if (hs.length === 1 && !/\d{1,2}\.\d{2}/.test(line) && cols && line.search(EVH) < 6) { flush(); cols = null; }
+    block.push(line);
+  }
+  flush();
+  return out.join("\n");
 }
 const dec = (s) => s.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, " ").replace(/<br\s*\/?>|<\/(p|div|tr|li|h\d)>/gi, "\n").replace(/<\/t[dh]>/gi, "  ").replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&#39;|&rsquo;|&#8217;/g, "'").replace(/&quot;/g, '"').replace(/&nbsp;|&#160;/g, " ").replace(/&#8211;|&ndash;|&#8212;|&mdash;/g, "-").replace(/[ \t]+/g, " ");
 
@@ -114,7 +150,7 @@ const out = {};
 function parseRecords(text, g0) {
   const rec = { M: {}, W: {} };
   let g = g0, ev = "";
-  const lines = text.split("\n").map((x) => x.replace(/\s+/g, " ").trim()).filter(Boolean);
+  const lines = text.split("\n").map((x) => x.replace(/(?:\.\s?){2,}/g, " ").replace(/\s+/g, " ").trim()).filter(Boolean);
   for (let li = 0; li < lines.length; li++) {
     const line = lines[li];
     if (!line) continue;
@@ -290,6 +326,7 @@ function cleanUni(x0, name) {
       if (c && low && (low === nickOf[name] || name.toLowerCase().includes(low) || (nickOf[name] && low.includes(nickOf[name])))) c.n = "";
       if (c && (c.n || /Relay/.test(ev))) res[g][ev] = c; else bad++;
     }
+    if (SOLO.length && ent.length) console.log("limpieza", name, g, "pruebas", ent.length, "malas", bad, "batidas", beaten(name, g, res[g]), "con nombre", Object.keys(res[g]).length);
     // Si fallan muchos, la tabla entera está mal leída (o es la del otro sexo).
     if (ent.length && bad / ent.length > 0.3) res[g] = {};
     // Si varios nadadores actuales ya son más rápidos, no es la tabla de récords (o está muy vieja).
