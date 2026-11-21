@@ -337,7 +337,8 @@ function cleanUni(x0, name) {
     // Si fallan muchos, la tabla entera está mal leída (o es la del otro sexo).
     if (ent.length && bad / ent.length > 0.3) res[g] = {};
     // Si varios nadadores actuales ya son más rápidos, no es la tabla de récords (o está muy vieja).
-    if (beaten(name, g, res[g]) >= 3) res[g] = {};
+    // (Unas pocas sí pueden estar batidas si el libro es de antes del último campeonato: esas se quitan una a una.)
+    { const ni = Object.keys(res[g]).filter((ev) => !/Relay/.test(ev)).length, nb = beaten(name, g, res[g]); if (nb >= 3 && nb >= ni * 0.4) res[g] = {}; }
     // Un récord concreto superado por un nadador actual: no se enseña un dato viejo.
     for (const [ev, r] of Object.entries(res[g])) if (!/Relay/.test(ev) && (bests[name]?.[g]?.[ev] ?? Infinity) < secs(r.t) - 0.25) delete res[g][ev];
     // Pocas pruebas individuales con nombre: tabla incompleta, mejor no enseñarla.
