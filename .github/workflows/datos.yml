@@ -27,6 +27,8 @@ jobs:
       - run: scripts/datos-rama.sh bajar
       - if: ${{ inputs.rehacer }}
         run: node scripts/build_unis.mjs web/data/unis.json && python3 scripts/fix_unis.py web/data/unis.json
+      - if: ${{ !inputs.rehacer }}
+        run: python3 scripts/fix_unis.py web/data/unis.json
       - run: node scripts/enriquecer.mjs web/data/unis.json
       - name: Guardar
         run: scripts/datos-rama.sh subir

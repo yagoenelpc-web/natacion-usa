@@ -12,6 +12,7 @@ const pace = ([ev, v]) => secs(v[0]) / (+(/^(\d+)/.exec(ev)?.[1]) || 100);
 // Alias de equipos: códigos de los resultados ("GAC-MN", "KEN", "Gusties-MN") → universidad, según en qué plantilla
 // oficial (de este año o anteriores) salen sus nadadores. La app lo usa cuando el nombre no basta.
 const alias = {};
+let rosterWho = new Map(), rosterKey = () => "";
 {
   const J = async (f) => JSON.parse(await readFile("web/data/" + f, "utf8").catch(() => "{}"));
   const [pl, past] = [(await J("plantillas.json")).plant || {}, (await J("fotos-pasadas.json")).u || {}];
@@ -29,6 +30,7 @@ const alias = {};
     const [best, hits] = Object.entries(c).sort((a, b) => b[1] - a[1])[0] || [];
     if (best && hits >= 3 && hits >= ns.length * 0.4) alias[t] = best;
   }
+  rosterWho = who; rosterKey = key;
   await writeFile("web/data/alias-equipos.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), a: alias }));
   console.log("alias de equipos:", Object.keys(alias).length, "de", byTeam.size);
 }
@@ -50,12 +52,36 @@ const alias = {};
   const findRest = (k) => { const [f, r] = restOf(k); const c = (byRest.get(r) || []).filter(([f2]) => f.length >= 3 && f2.length >= 3 && (f.startsWith(f2) || f2.startsWith(f))); return c.length === 1 ? c[0][1] : null; };
   for (const s of d.swimmers) { const k = nk(s.n, s.t); if (!byKey.has(k)) { byKey.set(k, s); addRest(k, s); } }
   d.mi ||= {};
-  let added = 0, better = 0, files = 0;
+  let added = 0, better = 0, files = 0, taFiles = 0;
+  const taAll = {};
   for (const f of await readdir("web/data/m").catch(() => [])) {
     let x;
     try { x = JSON.parse(await readFile("web/data/m/" + f, "utf8")); } catch { continue; }
     const id = "r:" + f.replace(/\.json$/, "");
     files++;
+    // Códigos de equipo de ESTA competición ("NS", "CN") → universidad, por los nadadores que salen en su plantilla.
+    {
+      const cnt = {};
+      for (const ev of x.ev || []) for (const r of ev.res || []) {
+        const [, n0, team] = r;
+        if (!n0 || !team || alias[team]) continue;
+        const c = (cnt[team] ||= { _n: new Set() });
+        const nm = fixN(n0);
+        if (c._n.has(nm)) continue;
+        c._n.add(nm);
+        for (const u of rosterWho.get(rosterKey(nm)) || []) c[u] = (c[u] || 0) + 1;
+      }
+      const ta = {};
+      for (const [team, c] of Object.entries(cnt)) {
+        const tot = c._n.size; delete c._n;
+        const [best, hits] = Object.entries(c).sort((a, b) => b[1] - a[1])[0] || [];
+        if (best && hits >= 2 && hits >= tot * 0.5) ta[team] = best;
+      }
+      const had = JSON.stringify(x.ta || {});
+      if (Object.keys(ta).length) x.ta = ta; else delete x.ta;
+      if (JSON.stringify(x.ta || {}) !== had) { await writeFile("web/data/m/" + f, JSON.stringify(x)); taFiles++; }
+      for (const [k, v] of Object.entries(x.ta || {})) taAll[k + "|" + id] = v;
+    }
     d.mi[id] ||= [x.n, x.d];
     for (const ev of x.ev || []) {
       if (ev.r || /diving/i.test(ev.ti || "")) continue;
@@ -75,12 +101,12 @@ const alias = {};
         if (pc < 0.36 || pc > cap) continue;
         const name = fixN(n0);
         if (name.split(" ").length < 2) continue;
-        const k = nk(name, team);
+        const k = nk(name, x.ta?.[team] || team);
         let sw = byKey.get(k) || findRest(k);
         if (sw) byKey.set(k, sw);
         if (!sw) {
           if (!x.d || x.d < minDate) continue;
-          sw = { n: name.replace(/\s+[A-Z]\.?(?=\s)/g, ""), t: team, g, b: {}, m: [] };
+          sw = { n: name.replace(/\s+[A-Z]\.?(?=\s)/g, ""), t: x.ta?.[team] || team, g, b: {}, m: [] };
           if (n0.includes(",")) sw.l = n0.split(",")[0].trim();
           d.swimmers.push(sw); byKey.set(k, sw); addRest(k, sw); added++;
         }
@@ -93,6 +119,7 @@ const alias = {};
   // Últimas 15 competiciones de cada uno, de la más antigua a la más reciente.
   const dt = (x) => (d.mi[x] ? d.mi[x][1] : "") || "";
   for (const sw of d.swimmers) if (sw.m.length > 1) sw.m = sw.m.sort((a, b) => dt(a).localeCompare(dt(b))).slice(-15);
+  console.log("códigos de equipo resueltos por competición:", Object.keys(taAll).length, "· ficheros actualizados:", taFiles);
   console.log("competiciones guardadas leídas:", files, "· marcas mejoradas:", better, "· nadadores nuevos:", added);
 }
 
@@ -155,8 +182,8 @@ for (const f of await readdir("web/data/m").catch(() => [])) {
       const pc = secs(t) / +evn.split(" ")[0];
       const st = /Back|Fly|IM/.test(evn) ? 1.0 : /Breast/.test(evn) ? 1.1 : 0.9;
       if (pc < (rel ? 0.33 : 0.36) || pc > st * (/ M /.test(evn) ? 1.12 : 1)) continue;
-      if (rel) { const sw = (r[8] || []).map(fixName); put(T0(S, team)["R" + g], evn, t, sw.length ? sw : [r[7] || "A"]); }
-      else if (n && /^[\p{L}][\p{L}'’.,\- ]+$/u.test(n.trim())) put(T0(S, team)[g], evn, t, fixName(n));
+      if (rel) { const sw = (r[8] || []).map(fixName); put(T0(S, x.ta?.[team] || team)["R" + g], evn, t, sw.length ? sw : [r[7] || "A"]); }
+      else if (n && /^[\p{L}][\p{L}'’.,\- ]+$/u.test(n.trim())) put(T0(S, x.ta?.[team] || team)[g], evn, t, fixName(n));
     }
   }
 }

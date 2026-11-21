@@ -90,7 +90,7 @@ function parseTables(wikitext) {
   return out;
 }
 
-const TWO_WORD = /\b(Golden|Blue|Red|Big|Purple|Fighting|Lady|Black|Green|Crimson|Mountain|Sea|Scarlet|Yellow|Thundering|Screaming|Flying|Runnin'?|Running|Ragin'?|Mean|Great|Gray|Grey|Silver|Orange|Royal|Nittany|Tar|Sun|Horned|Wolf)\s+\S+$/;
+const TWO_WORD = /\b(Golden|Blue|Red|Big|Purple|Fighting|Lady|Black|Green|Crimson|Mountain|Sea|Scarlet|Yellow|Thundering|Screaming|Flying|Runnin'?|Running|Ragin'?|Mean|Great|Gray|Grey|Silver|Orange|Royal|Nittany|Tar|Sun|Horned|Wolf|War|Little|Mighty|Fightin'?|River|Night|Rough|Iron|Storm|Wild|Bald|Fire|Demon|Ice)\s+\S+$/;
 function shortFromTeam(team) {
   const m = TWO_WORD.exec(team);
   if (m && team.split(" ").length > 2) return team.slice(0, m.index).trim();

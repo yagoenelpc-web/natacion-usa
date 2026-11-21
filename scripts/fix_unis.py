@@ -24,6 +24,20 @@ for u in d["unis"]:
     if u["n"] in ("Big", "Red", "Golden", "Blue") or len(u["n"]) < 3 and u["n"] not in ("MIT",):
         u["n"] = re.sub(r"\b(University|College|of|The)\b", "", u["full"]).strip(" ,")
     u["n"] = re.sub(r"\s+(and|&)$", "", u["n"]).strip()
+    # "McMurry War" (de "McMurry War Hawks") → "McMurry": quita del final las palabras del apodo que no están en el nombre oficial.
+    if u["div"] != "D1":
+        norm = lambda t: re.sub(r"[^\w\s()]", " ", re.sub(r"[’']", "", t.lower()))
+        full_w = norm(u["full"]).split()
+        w = u["n"].split()
+        inside = lambda x: any(f == x or (len(x) >= 4 and f.startswith(x)) for f in full_w)
+        cut = len(w)
+        while cut > 1 and not inside(norm(w[cut - 1]).strip()) and not w[cut - 1].isupper() and not w[cut - 1].startswith("(") and w[cut - 1] not in ("College", "University"):
+            cut -= 1
+        if cut < len(w) and inside(norm(w[0]).strip()):
+            extra = u.get("nick") or ""
+            tail = w[cut:]
+            u["nick"] = " ".join(tail + [x for x in extra.split() if x not in tail and x != "Lady"]) if not set(tail) & set(extra.split()) else " ".join(tail)
+            u["n"] = " ".join(w[:cut])
     if u.get("city"):
         u["city"] = re.sub(r"\s+address$", "", u["city"]).strip()
     if not u.get("st") and u.get("city"):
