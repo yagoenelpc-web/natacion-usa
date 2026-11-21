@@ -125,6 +125,8 @@ function parseAltMeet(text) {
 }
 function parsePdfMeet(text, url) {
   // Cabeceras sin espacios al sacar el texto del PDF: "Event1Women400YardMedleyRelay" → "Event 1 Women 400 Yard Medley Relay".
+  // Algunos PDF usan caracteres de control en lugar de espacios.
+  text = text.replace(/[\x01-\x08\x0B\x0E-\x1F\u00A0]/g, " ");
   text = text.replace(/\b(Seed|Finals|Prelims?|Swim-?off)Time\b/g, "$1 Time").replace(/^(\s*\(?)Event\s*(\d+)\s*((?:Women|Men|Girls|Boys|Mixed)\S*.*)$/gm, (m, a, n, rest) => /\s{2,}\S/.test(rest.trim()) && !/^(Women|Men|Girls|Boys|Mixed)\d/.test(rest) ? m : `${a}Event ${n} ${rest.replace(/([a-z])([A-Z0-9])/g, "$1 $2").replace(/(\d)([A-Za-z])/g, "$1 $2").replace(/\s+/g, " ").trim()}`);
   if (/^\s*Event\s*#\s*\d+\s*-\s*\d/m.test(text) && !/^\s*\(?Event\s+\d+\s+(Women|Men|Girls|Boys)/m.test(text)) { const alt = parseAltMeet(text); if (alt.events.length) return alt; }
   // Programas, psych sheets y horarios no son resultados (llevan marcas de inscripción).
