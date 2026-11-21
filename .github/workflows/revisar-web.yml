@@ -5,7 +5,7 @@ on:
     inputs:
       url:
         description: Dirección de la app publicada
-        default: https://usaresultssss.netlify.app/
+        default: https://usaresults.org/
 
 jobs:
   revisar:

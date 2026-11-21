@@ -1,7 +1,7 @@
 // Comprueba la app publicada: campeonatos, pruebas y enlaces de las fichas.
 import { parseCatalog, parseIndex, parseEvent, parseFeed, uniqueEvents, normalizeMeetUrl } from "../web/parser.js";
 import { readFile } from "node:fs/promises";
-const BASE = process.env.BASE || "https://usaresultssss.netlify.app/";
+const BASE = process.env.BASE || "https://usaresults.org/";
 const t0 = Date.now();
 async function get(url) {
   const s = Date.now();
