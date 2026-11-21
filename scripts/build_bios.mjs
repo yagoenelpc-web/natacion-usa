@@ -7,7 +7,7 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 
 const UA = { "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36" };
 const T0 = Date.now();
-const MAX_MIN = +(process.env.MAX_MIN || 40);
+const MAX_MIN = +(process.env.MAX_MIN || 45);
 const timeUp = () => Date.now() - T0 > MAX_MIN * 60e3;
 const readJSON = async (f, d) => { try { return JSON.parse(await readFile(f, "utf8")); } catch { return d; } };
 async function get(url) {
@@ -160,3 +160,23 @@ if (!process.env.URLS) for (const [uni, cur] of files) if (Object.keys(cur.p).le
 console.log("leídas:", ok, "sin biografía:", none, "fallos:", fail, "· minutos:", ((Date.now() - T0) / 60e3).toFixed(1));
 const all = [...files.values()];
 console.log("total con biografía · nadadores:", all.reduce((a, f) => a + Object.values(f.p).filter((x) => x.b).length, 0), "entrenadores:", all.reduce((a, f) => a + Object.values(f.c).filter((x) => x.b).length, 0), "entrenadores con foto:", all.reduce((a, f) => a + Object.values(f.c).filter((x) => x.img).length, 0));
+
+// Fotos que faltan en las plantillas: la de la ficha oficial de cada nadador.
+if (!process.env.URLS) {
+  const pl = await readJSON("web/data/plantillas.json", null);
+  const key = (n) => n.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z]+/g, "");
+  let added = 0;
+  for (const [uni, p] of Object.entries(pl?.plant || {})) {
+    const f = files.get(uni);
+    if (!f) continue;
+    const imgs = new Map(Object.entries(f.p).filter(([, v]) => v.img && !/logo|default|placeholder|silhouette/i.test(v.img)).map(([n, v]) => [key(n), v.img]));
+    for (const list of Object.values(p)) for (let i = 0; i < list.length; i++) {
+      const e = Array.isArray(list[i]) ? list[i] : [list[i]];
+      if (e[1]) continue;
+      const img = imgs.get(key(e[0]));
+      if (img) { list[i] = [e[0], img]; added++; }
+    }
+  }
+  if (pl) await writeFile("web/data/plantillas.json", JSON.stringify(pl));
+  console.log("fotos añadidas a las plantillas:", added);
+}

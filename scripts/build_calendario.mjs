@@ -154,6 +154,16 @@ function coachLinks(html, base) {
   return [...out];
 }
 
+// Escudo de la web oficial: Sidearm (/images/logos/site/), o el logo de la cabecera (svg/png con "logo" en el nombre o la clase).
+function logoIn(html, base) {
+  const abs = (x) => { try { return new URL(x.replace(/&amp;/g, "&"), base).href; } catch { return ""; } };
+  const sa = /"image":\{"url":"(https?:\/\/[^"]+\/images\/logos\/site\/[^"]+)"/.exec(html)?.[1] || /(?:src|href)="([^"]*\/images\/logos\/site\/[^"]+\.(?:png|svg|jpg|webp)[^"]*)"/i.exec(html)?.[1];
+  if (sa) return abs(sa);
+  const img = /<img[^>]+(?:class|alt|id)="[^"]*logo[^"]*"[^>]*>/i.exec(html.slice(0, 200000))?.[0] || "";
+  const src = /\b(?:data-src|src)="([^"]+\.(?:png|svg|webp)[^"]*)"/i.exec(img)?.[1];
+  return src ? abs(src) : "";
+}
+
 const EXTRA = {
   "Grand Canyon": { M: [["Mario Perez Torrado", "https://images.sidearmdev.com/crop?url=https%3A%2F%2Fdxbhsrqyrr690.cloudfront.net%2Fsidearm.nextgen.sites%2Fgculopes.com%2Fimages%2F2025%2F10%2F1%2Fmario.png&width=200&height=200&type=webp"]] },
 };
@@ -180,7 +190,7 @@ await pool(todo, 10, async (u) => {
         const r = schedule(s.html, s.url, u.n);
         for (const g of r.games) if (!games.some((x) => x.d === g.d && x.o === g.o)) games.push(who ? { ...g, g: who } : g);
         r.live.forEach((l) => liveLinks.add(l));
-        siteLogo ||= /"image":\{"url":"(https?:\/\/[^"]+\/images\/logos\/site\/[^"]+)"/.exec(s.html)?.[1] || "";
+        siteLogo ||= logoIn(s.html, s.url);
         got = r.games.length > 0;
         if (got) (srcs[u.n] ||= []).push(who + "|" + s.url);
       }
@@ -233,12 +243,27 @@ await pool(todo, 10, async (u) => {
   for (const [g, list] of Object.entries(EXTRA[u.n] || {})) for (const e of list) if (!names[g].some(([n]) => n.toLowerCase() === e[0].toLowerCase())) names[g].push(e);
   const all = [...names[""], ...names.M, ...names.W];
   if (all.length) plant[u.n] = { ...(names.M.length ? { M: names.M } : {}), ...(names.W.length ? { W: names.W } : {}), ...(names[""].length ? { X: names[""] } : {}) };
-  if (siteLogo && (!u.logo || u._badLogo)) { u.logo = siteLogo; logosAdded++; }
+  // Escudo que falta (o que en Wikipedia es una foto): el de su web oficial.
+  const photoLogo = /\.jpe?g(\?|$)/i.test(u.logo || "");
+  if (!siteLogo && (!u.logo || photoLogo)) { const h = await get(base + "/"); if (h) siteLogo = logoIn(h.html, h.url); }
+  if (siteLogo && (!u.logo || u._badLogo || photoLogo)) { u.logo = siteLogo; logosAdded++; }
 });
 console.log("calendarios:", Object.keys(cal).length, "plantillas:", Object.keys(plant).length, "nadadores en plantillas:", Object.values(plant).reduce((a, p) => a + (p.M?.length || 0) + (p.W?.length || 0) + (p.X?.length || 0), 0), "con foto:", Object.values(plant).flatMap((p) => [...(p.M || []), ...(p.W || []), ...(p.X || [])]).filter((x) => x[1]).length, "D-I con plantilla:", unis.filter((u) => u.div === "D1" && plant[u.n]).length, "de", unis.filter((u) => u.div === "D1").length, "escudos añadidos:", logosAdded, "enlaces directo:", liveLinks.size, "webs de deportes encontradas:", athFound);
 console.log("ejemplo Drury:", JSON.stringify(cal.Drury || []).slice(0, 800));
 console.log("enlaces:", [...liveLinks].slice(0, 30).join(" "));
 await writeFile("web/data/calendario.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), live: [...liveLinks], cal, src: srcs }));
 await writeFile("web/data/enlaces-bio.json", JSON.stringify(bioLinks));
+// Logos de las conferencias (ESPN): los mapas de Wikipedia no sirven como logo.
+try {
+  const { CONF_WORDS } = await import("../web/logos.js");
+  const j = await (await fetch("https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/groups", { headers: UA })).json();
+  const confs = [];
+  const walk = (x) => { if (Array.isArray(x)) return x.forEach(walk); if (!x || typeof x !== "object") return; const g = /~g:(\d+)/.exec(x.uid || "")?.[1]; if (g && x.name && /conference|league|athletic|big |pac|sec\b|acc\b|ivy|summit|sun belt|america east|atlantic|horizon|patriot|mountain west|west coast/i.test(x.name)) confs.push({ name: x.name, abbr: x.abbreviation || "", logo: `https://a.espncdn.com/i/teamlogos/ncaa_conf/500/${g}.png` }); for (const v of Object.values(x)) if (typeof v === "object") walk(v); };
+  walk(j);
+  const marcas = {};
+  for (const c of confs) { const k = CONF_WORDS.find(([re]) => re.test(c.name) || re.test(c.abbr))?.[1]; if (k && !marcas[k]) marcas[k] = c.logo; }
+  await writeFile("web/data/marcas.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), conf: marcas }));
+  console.log("logos de conferencias:", Object.keys(marcas).length, JSON.stringify(marcas).slice(0, 300));
+} catch (e) { console.log("logos de conferencias:", e.message); }
 await writeFile("web/data/plantillas.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), plant }));
 await writeFile("web/data/unis.json", JSON.stringify(data));

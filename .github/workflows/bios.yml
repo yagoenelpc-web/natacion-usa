@@ -2,7 +2,7 @@ name: Biografías
 
 on:
   schedule:
-    - cron: "23 9 * * *"
+    - cron: "35 10 * * *"
   workflow_dispatch:
     inputs:
       minutos:
