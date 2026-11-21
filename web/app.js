@@ -108,7 +108,7 @@ const EN = {
   "universidades": "universities", "Ninguna universidad con estos filtros.": "No universities match these filters.",
   "Marca con ★ las tuyas: aparecerán en la portada y podrás filtrar los resultados.": "Star ★ yours: they'll show on the home screen and you can filter results.",
   "Entrenador": "Head coach", "Entrenador (hombres)": "Men's head coach", "Entrenadora/entrenador (mujeres)": "Women's head coach",
-  "No disponible": "Not available", "Equipo técnico": "Coaching staff", "Ver en la web oficial": "See official site", "Ciudad": "City", "División": "Division", "Récords": "Records", "Récords NCAA": "NCAA records", "Los tiempos más rápidos de la historia de cada división": "The fastest times ever in each division", "Sin récords para esta división.": "No records for this division.", "Récords de cada universidad": "Each school's records", "récords": "records", "Récords sacados de la web oficial de cada universidad. Solo salen los que se han podido leer bien.": "Records taken from each school's official site. Only those read reliably are shown.", "Récords oficiales de la NCAA (NCAA.org), puestos al día con los resultados del último campeonato. Toca un tiempo para convertirlo a metros.": "Official NCAA records (NCAA.org), updated with the latest championship results. Tap a time to convert it to meters.", "Actualizado: {d}.": "Updated: {d}.", "Récords de la universidad": "School records", "Las mejores marcas de su historia": "The best times in its history", "Récords en la web de la universidad": "Records on the school site", "Los récords todavía no están disponibles.": "Records are not available yet.", "Natación de EE. UU.": "US swimming", "NCAA, USA Swimming y universidades": "NCAA, USA Swimming and colleges", "Ver las {n} en directo": "See all {n} live", "larga": "long course", "competiciones": "meets", "en plantilla": "on roster", "Biografía": "Bio", "Su universidad compite ahora": "Their school is competing now", "{n} competiciones": "{n} meets", "Más información": "More info", "División I": "Division I", "División II": "Division II", "División III": "Division III", "Apodo": "Nickname",
+  "No disponible": "Not available", "Equipo técnico": "Coaching staff", "Ver en la web oficial": "See official site", "Ciudad": "City", "División": "Division", "Récords": "Records", "Récords NCAA": "NCAA records", "Los tiempos más rápidos de la historia de cada división": "The fastest times ever in each division", "Sin récords para esta división.": "No records for this division.", "Récords de cada universidad": "Each school's records", "Hoy se compite": "Competing today", "Ver las {n} de hoy": "See all {n} today", "Resultados en directo": "Live results", "equipo": "team", "equipos": "teams", "en {u}": "at {u}", "Buscar nadador con récord…": "Search a record holder…", "Récord de {u}": "{u} record", "Récords de «{q}»": "Records of “{q}”", "Ningún nadador con ese nombre tiene récords guardados.": "No swimmer with that name holds a saved record.", "récords": "records", "Récords sacados de la web oficial de cada universidad. Solo salen los que se han podido leer bien.": "Records taken from each school's official site. Only those read reliably are shown.", "Récords oficiales de la NCAA (NCAA.org), puestos al día con los resultados del último campeonato. Toca un tiempo para convertirlo a metros.": "Official NCAA records (NCAA.org), updated with the latest championship results. Tap a time to convert it to meters.", "Actualizado: {d}.": "Updated: {d}.", "Récords de la universidad": "School records", "Las mejores marcas de su historia": "The best times in its history", "Récords en la web de la universidad": "Records on the school site", "Los récords todavía no están disponibles.": "Records are not available yet.", "Natación de EE. UU.": "US swimming", "NCAA, USA Swimming y universidades": "NCAA, USA Swimming and colleges", "Ver las {n} en directo": "See all {n} live", "larga": "long course", "competiciones": "meets", "en plantilla": "on roster", "Biografía": "Bio", "Su universidad compite ahora": "Their school is competing now", "{n} competiciones": "{n} meets", "Más información": "More info", "División I": "Division I", "División II": "Division II", "División III": "Division III", "Apodo": "Nickname",
   "Ver sus resultados": "See their results", "Wikipedia": "Wikipedia", "Web oficial": "Official site",
   "Datos de Wikipedia (CC BY-SA).": "Data from Wikipedia (CC BY-SA).",
   "Idioma": "Language", "Tema": "Theme", "Automático": "Automatic", "Claro": "Light", "Oscuro": "Dark", "Fondo": "Background",
@@ -714,7 +714,7 @@ function meetCard(s) {
 // Tarjeta de un récord: prueba con el color del estilo, tiempo grande (se toca para convertirlo), quién y cuándo.
 // Nombres de los récords oficiales de la NCAA → nombre de la universidad en la app.
 const REC_SCHOOL = { "Queens (NC)": "Queens", UIndy: "Indianapolis", "Southern Conn. St.": "Southern Connecticut State", "Connecticut Col.": "Connecticut College", UChicago: "Chicago", Wheaton: "Wheaton (IL)", "Henderson St.": "Henderson State", "Arizona St": "Arizona State", "Arizona St.": "Arizona State" };
-function recTile(ev, r, team) {
+function recTile(ev, r, team, tag = "") {
   const [d, c, st, rel] = ev.split(" ");
   const label = rel ? `4×${+d / 4} ${T(st === "Medley" ? "Estilos" : "Libre")}` : `${d} ${T(STROKE_ES[st] || st)}`;
   const sk = rel ? (st === "Medley" ? "im" : "free") : st.toLowerCase();
@@ -725,7 +725,8 @@ function recTile(ev, r, team) {
   return `<div class="rectile s-${esc(sk)}">
     <div class="rectop"><span class="pbev"><b>${esc(label.split(" ")[0])}</b> ${esc(label.split(" ").slice(1).join(" "))}${c === "M" ? ` <em>${T("larga")}</em>` : ""}</span>${yr ? `<span class="recyr">${esc(yr)}</span>` : ""}</div>
     <span class="time rectime" data-conv="${esc(r.t)}" data-ev="${esc(ev)}" role="button">${esc(r.t)}</span>
-    <div class="recwho">${club ? crest(club, 22) : ""}<span><b class="${rel && !club ? "relnames" : ""}">${esc(rel ? who : flipName(who))}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span></div>
+    <div class="recwho">${!rel && r.i ? `<span class="recface"><img src="${esc(r.i)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()">${club ? crest(club, 16) : ""}</span>` : club ? crest(club, 22) : ""}<span><b class="${rel && !club ? "relnames" : ""}">${esc(rel ? who : flipName(who))}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span></div>
+    ${tag ? `<span class="rectag">${esc(tag)}</span>` : ""}
   </div>`;
 }
 async function recordsView(div = "D1", g = "M") {
@@ -740,11 +741,35 @@ async function recordsView(div = "D1", g = "M") {
   const seg = (items, cur, href) => `<div class="seg recseg">${items.map(([k, l]) => `<a class="${k === cur ? "on" : ""}" href="${href(k)}">${l}</a>`).join("")}</div>`;
   const nUni = Object.keys(R.u || {}).length;
   $app.innerHTML = `<section class="rechero"><span class="recico">🏆</span><div><h1>${T("Récords NCAA")}</h1><p>${T("Los tiempos más rápidos de la historia de cada división")}</p></div></section>
+  <input type="search" id="recq" placeholder="${esc(T("Buscar nadador con récord…"))}" autocomplete="off" value="${esc(store.get("recq", ""))}">
+  <div id="recres"></div>
+  <div id="recmain">
   ${seg([["D1", "D-I"], ["D2", "D-II"], ["D3", "D-III"]], div, (k) => `#/rec/${k}/${g}`)}
   ${seg([["M", "♂ " + T("Chicos")], ["W", "♀ " + T("Chicas")]], g, (k) => `#/rec/${div}/${k}`)}
   ${list.length ? `<div class="recgrid">${list.map(([ev, r]) => recTile(ev, r)).join("")}</div>` : `<div class="card muted">${T("Sin récords para esta división.")}</div>`}
   ${nUni ? `<a class="btn wide alt" href="#/rec/unis">🎓 ${T("Récords de cada universidad")} <span class="count">${nUni}</span></a>` : ""}
+  </div>
   <p class="foot">${T("Récords oficiales de la NCAA (NCAA.org), puestos al día con los resultados del último campeonato. Toca un tiempo para convertirlo a metros.")} ${R.updated ? T("Actualizado: {d}.", { d: fmtDate(R.updated) }) : ""}</p>`;
+  // Buscador: todos los récords (NCAA de las tres divisiones y de cada universidad) de un nadador o relevista.
+  const DL = { D1: "D-I", D2: "D-II", D3: "D-III" };
+  const all = [];
+  for (const [dv, gs] of Object.entries(R.ncaa)) for (const [gg, evs] of Object.entries(gs)) for (const [ev, r] of Object.entries(evs)) all.push([ev, r, "", `NCAA ${DL[dv] || dv} · ${gg === "M" ? "♂" : "♀"}`, 0]);
+  for (const [un, x] of Object.entries(R.u || {})) for (const gg of ["M", "W"]) for (const [ev, r] of Object.entries(x[gg] || {})) all.push([ev, r, un, `${T("Récord de {u}", { u: un })} · ${gg === "M" ? "♂" : "♀"}`, 1]);
+  const norm = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const q$ = document.getElementById("recq"), res$ = document.getElementById("recres"), main$ = document.getElementById("recmain");
+  const run = () => {
+    const q = norm(q$.value.trim());
+    store.set("recq", q$.value.trim());
+    if (q.length < 3) { res$.innerHTML = ""; main$.hidden = false; return; }
+    const words = q.split(/\s+/);
+    const hits = all.filter(([, r]) => { const toks = norm(r.n).split(/[\s,.\-]+/); return words.every((w) => toks.some((t) => t.startsWith(w))); }).sort((a, b) => a[4] - b[4] || order.indexOf(a[0]) - order.indexOf(b[0]));
+    main$.hidden = true;
+    res$.innerHTML = hits.length
+      ? `<h2>${T("Récords de «{q}»", { q: q$.value.trim() })} <span class="count">${hits.length}</span></h2><div class="recgrid">${hits.slice(0, 60).map(([ev, r, un, tag]) => recTile(ev, r, un, tag)).join("")}</div>`
+      : `<div class="card muted">${T("Ningún nadador con ese nombre tiene récords guardados.")}</div>`;
+  };
+  q$.addEventListener("input", run);
+  if (q$.value) run();
 }
 // Lista de universidades que tienen sus récords leídos.
 async function recUnisView() {
@@ -801,6 +826,7 @@ async function homeView() {
     <h2>${T("En directo")} ${live.length ? `<span class="count live">${live.length}</span>` : ""}</h2>
     ${live.length ? live.slice(0, 4).map(meetCard).join("") + (live.length > 4 ? `<details class="more"><summary>${T("Ver las {n} en directo", { n: live.length })}</summary>${live.slice(4).map(meetCard).join("")}</details>` : "") : `<div class="card muted">${T("Ahora mismo no hay ningún campeonato en directo.")}${next ? ` ${T("El próximo es")} <a href="#/m/${enc(next.id)}">${esc(next.name)}</a>, ${daysUntil(next.start) === 1 ? T("mañana") : T("dentro de {n} días", { n: daysUntil(next.start) })}.` : ""}</div>`}
   </section>
+  <div id="today"></div>
   <div id="duals"></div>
   ${f.length ? `<section><h2>${T("Mis universidades")}</h2><div class="chips">${f.map((t) => `<a class="chip" href="#/u/${enc(t)}">${crest(t, 22)}${esc(t)}</a>`).join("")}</div></section>` : ""}
   ${upcoming.length ? `<details class="fold"><summary><h2>${T("Próximamente")} <span class="count">${upcoming.length}</span></h2></summary>${upcoming.filter((s) => !s.pending).map(meetCard).join("")}${
@@ -809,6 +835,7 @@ async function homeView() {
   ${Object.keys(ORG).filter((o) => byOrg[o]).map((o) => `<details class="fold"><summary><h2 class="orgh">${o === "conf" ? "" : orgLogo(o, 26)} ${esc(ORG[o].full)} <span class="count">${byOrg[o].length}</span></h2></summary>${byOrg[o].map(meetCard).join("")}</details>`).join("")}
   <p class="foot">${lang() === "en" ? `Dual meets and calendars from each school's official site. Data from public HY-TEK results pages. Live meets also found via the <a href="https://swimswam.com" target="_blank" rel="noopener">SwimSwam</a> RSS feed. Times are unofficial until published as official.` : `Duales y calendarios de la web oficial de cada universidad. Datos de las páginas públicas de resultados HY-TEK. Competiciones en directo encontradas también gracias al canal RSS de <a href="https://swimswam.com" target="_blank" rel="noopener">SwimSwam</a>. Los tiempos son oficiosos hasta su publicación oficial.`}</p>`;
   dualsSection().then((h) => { const el = document.getElementById("duals"); if (el) el.outerHTML = h; }).catch(() => {});
+  todaySection(live).then((h) => { const el = document.getElementById("today"); if (el) el.outerHTML = h; }).catch(() => {});
   setupMeetSearch(list);
 }
 // Buscador de competiciones: campeonatos (archivo y catálogo) y encuentros guardados de las universidades.
@@ -1635,6 +1662,63 @@ function gameRow(team, g, both = false) {
   const inner = `${both ? crest(team, 30) : ""}<span class="vs">${g.at === "at" ? "@" : "vs"}</span>${crest(g.o, 30)}<span class="uinfo"><b>${both ? `${esc(team)} ${g.at === "at" ? "@" : "vs"} ` : ""}${esc(g.o)}</b><small>${esc([when, g.g === "M" ? "♂" : g.g === "W" ? "♀" : "", g.d && g.d >= today && !g.r ? T("próximamente") : ""].filter(Boolean).join(" · "))}</small></span>${g.r ? `<span class="res ${won ? "w" : lost ? "l" : ""}">${esc(g.r)}</span>` : ""}${link ? `<span class="chev">${inApp ? "›" : "↗"}</span>` : ""}`;
   return link ? `<a class="urow game" href="${esc(href)}" ${inApp ? "" : 'target="_blank" rel="noopener"'}>${inner}</a>` : `<div class="urow game">${inner}</div>`;
 }
+// Todas las competiciones de hoy según el calendario de cada universidad (aunque aún no tengan resultados en directo):
+// se juntan las que son la misma (cada equipo la escribe a su manera) y se enseñan con los escudos de quien nada.
+async function todaySection(live = []) {
+  const [calD] = await Promise.all([loadData("calendario"), loadResIndex().catch(() => null)]);
+  const today = todayUS();
+  const liveNames = new Set(live.map((m) => meetKey(m.name)));
+  const bare = (u) => String(u || "").replace(/^https?:\/\/(www\.)?/i, "").replace(/\/(evt)?index\.htm.*$/i, "").toLowerCase();
+  const liveIds = new Set(live.map((m) => bare(m.id)));
+  const groups = new Map();
+  for (const [uni, games] of Object.entries(calD?.cal || {})) for (const g of games) {
+    if (g.d !== today || isMasters(g.o)) continue;
+    const opp = findUni(g.o.replace(/\b(university|college)\b/gi, "").trim());
+    const dual = opp && opp.n !== uni && !/invit|invite|classic|cup|champ|meet\b|open|relays|festival|showdown|challenge/i.test(g.o);
+    const k = dual ? "vs:" + [uni, opp.n].sort().join("|") : meetKey(g.o);
+    if (!k || liveNames.has(k)) continue;
+    const x = groups.get(k) || { name: dual ? `${[uni, opp.n].sort().join(" vs ")}` : cleanMeet(g.o.replace(/\s*[-–(]?\s*\b(day|session)\b.*$/i, "").replace(/\s+#?\d+\)?$/, "")), teams: new Set(), host: "", href: "" };
+    x.teams.add(uni); if (dual) x.teams.add(opp.n);
+    if (g.at === "vs" || g.at === "home") x.host ||= uni;
+    if (dual && g.at === "at") x.host ||= opp.n;
+    const rid = resIdOf(g.res) || resIdOf(g.live);
+    // Solo enlaces de resultados que la app sabe leer (HY-TEK); nunca SwimCloud, Meet Mobile ni enlaces de correo.
+    const okLive = g.live && !/swimcloud|active\.com|meetmobile|outlook\.com|safelinks|divemeets|meetcontrol|swimnerd|teamunify|google\./i.test(g.live);
+    if (!x.href) x.href = rid ? `#/m/${enc(rid)}` : okLive ? `#/m/${enc(normalizeMeetUrl(g.live))}` : "";
+    groups.set(k, x);
+  }
+  // Un triangular sale como varios duales con el mismo enlace de resultados: se juntan.
+  const byHref = new Map();
+  for (const [k, x] of groups) {
+    if (!x.href) continue;
+    if (liveIds.has(bare(decodeURIComponent(x.href.slice(4))))) { groups.delete(k); continue; }
+    const raw = decodeURIComponent(x.href.slice(4));
+    if (/^https?:/.test(raw)) x.href = "#/m/" + enc(normalizeMeetUrl(raw.replace(/\/\/www\./, "//")));
+    const hk = bare(decodeURIComponent(x.href.slice(4)));
+    const o = byHref.get(hk);
+    if (!o) { byHref.set(hk, x); continue; }
+    for (const t of x.teams) o.teams.add(t);
+    if (o.name.includes(" vs ") && !x.name.includes(" vs ")) o.name = x.name;
+    else if (o.name.includes(" vs ")) o.name = [...o.teams].join(" vs ");
+    groups.delete(k);
+  }
+  // Dos "duales" el mismo día en la misma piscina son un triangular.
+  const byHost = new Map();
+  for (const [k, x] of groups) {
+    if (!k.startsWith("vs:") || !x.host) continue;
+    const o = byHost.get(x.host);
+    if (!o) { byHost.set(x.host, x); continue; }
+    for (const t of x.teams) o.teams.add(t);
+    o.name = [o.host, ...[...o.teams].filter((t) => t !== o.host)].join(" vs ");
+    o.href ||= x.href;
+    groups.delete(k);
+  }
+  const list = [...groups.values()].sort((a, b) => (!!b.href - !!a.href) || b.teams.size - a.teams.size || a.name.localeCompare(b.name));
+  if (!list.length) return "";
+  const card = (x) => { const tm = [...x.teams]; const href = x.href || `#/uni/${enc(x.host || tm[0])}`; return `<a class="tcard2" href="${href}"><span class="tcrests">${tm.slice(0, 3).map((t) => crest(t, 26)).join("")}${tm.length > 3 ? `<em>+${tm.length - 3}</em>` : ""}</span><span class="tbody"><b>${esc(x.name)}</b><small>${x.href ? `<span class="tlive">● ${T("Resultados")}</span> · ` : ""}${x.host ? esc(T("en {u}", { u: x.host })) : `${tm.length} ${tm.length === 1 ? T("equipo") : T("equipos")}`}</small></span><span class="chev">›</span></a>`; };
+  return `<details class="fold" open><summary><h2>${T("Hoy se compite")} <span class="count">${list.length}</span></h2></summary>${list.slice(0, 8).map(card).join("")}${list.length > 8 ? `<details class="more"><summary>${T("Ver las {n} de hoy", { n: list.length })}</summary>${list.slice(8).map(card).join("")}</details>` : ""}</details>`;
+}
+const meetKey = (n) => String(n || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\(.*?\)/g, " ").replace(/\b(day|session)\s*(#?\d+|one|two|three|four|five)\b.*$/, "").replace(/\b(prelims?|finals?|diving|swimming|and|&|the|of|university|college|20\d\d|annual|\d+(st|nd|rd|th))\b/g, " ").replace(/\binvitational\b|\binvite\b|\binv\.?\b/g, "inv").replace(/[^a-z ]+/g, " ").replace(/\s+/g, " ").trim();
 async function dualsSection() {
   const [d] = await Promise.all([loadData("calendario"), loadResIndex().catch(() => null)]);
   if (!d?.cal) return "";

@@ -194,6 +194,43 @@ let rosterWho = new Map(), rosterKey = () => "";
       }
     }
   }
+  // Mejores marcas que la propia universidad publica en la biografía ("TOP TIMES: 100 Free: 43.83 …"): completan las
+  // pruebas que no salen en los resultados guardados. Solo yardas y solo para nadadores que ya existen en esa universidad.
+  {
+    const unisL = (await readFile("web/data/unis.json", "utf8").then(JSON.parse).catch(() => ({ unis: [] }))).unis;
+    const slugU = (n) => n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const uniOfSlug = new Map(unisL.map((u) => [slugU(u.n), u.n]));
+    const byFull = new Map();
+    for (const sw of d.swimmers) { const k = nk0(sw.n, ""); if (!byFull.has(k)) byFull.set(k, []); byFull.get(k).push(sw); }
+    const ST = { free: "Free", freestyle: "Free", back: "Back", backstroke: "Back", breast: "Breast", breaststroke: "Breast", fly: "Fly", butterfly: "Fly", im: "IM" };
+    let bioMarks = 0;
+    const { readdir } = await import("node:fs/promises");
+    for (const f of await readdir("web/data/bio").catch(() => [])) {
+      const uni = uniOfSlug.get(f.replace(/\.json$/, ""));
+      if (!uni) continue;
+      let bj; try { bj = JSON.parse(await readFile("web/data/bio/" + f, "utf8")); } catch { continue; }
+      const uk = teamKey(uni);
+      for (const [name, v] of Object.entries(bj.p || {})) {
+        const txt = String(v?.b || "");
+        const hm = /(top|best|personal[- ]best|lifetime[- ]best|career[- ]best)s?\s*(times?|marks?)?\s*:?/i.exec(txt);
+        if (!hm) continue;
+        const sw = (byFull.get(nk0(name, "")) || []).find((x) => teamKey(x.t) === uk || sameTeam(x.t, uni) || alias[x.t] === uni);
+        if (!sw) continue;
+        let seen = 0;
+        for (const line of txt.slice(hm.index).split("\n").slice(0, 25)) {
+          const m = /^\s*(50|100|200|400|500|1000|1650)\s*(?:y(?:ar)?ds?\.?\s*)?(free(?:style)?|back(?:stroke)?|breast(?:stroke)?|fly|butterfly|im)\b[^0-9]{0,6}((?:\d{1,2}:)?\d{2}\.\d{2})\b/i.exec(line);
+          if (!m) { if (seen && !/^\s*$/.test(line)) break; continue; }
+          seen++;
+          if (/\b(lcm|scm|meters?|metres?|long course)\b/i.test(line)) continue;
+          const ev = `${m[1]} Y ${ST[m[2].toLowerCase()]}`;
+          const t = m[3];
+          if (!okMark(ev, t, sw.g)) continue;
+          if (!sw.b[ev] || secs(t) < secs(sw.b[ev][0])) { sw.b[ev] = [t, "Web de la universidad", ""]; bioMarks++; }
+        }
+      }
+    }
+    console.log("mejores marcas sacadas de las biografías:", bioMarks);
+  }
   mergeInitials();
   console.log("nadadores repetidos juntados:", dupes);
   // Sexo por mayoría de las pruebas en que sale (un título mal leído no lo cambia).

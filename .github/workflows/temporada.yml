@@ -22,6 +22,7 @@ jobs:
         with:
           node-version: "20"
       - run: scripts/datos-rama.sh bajar
+      - run: node scripts/fix_keys.mjs
       - run: node scripts/build_temporada.mjs
       - run: node scripts/split_nadadores.mjs
       - name: Guardar
