@@ -60,7 +60,66 @@ function pdfText(buf) {
 
 const NOISE = /HY-TEK'?s MEET MANAGER|Hy-Tek'?s MEET MANAGER|MEET MANAGER \d|Site License|Licensed to|^\s*Page \d+\s*$|\bPage \d+\s*$/i;
 // Convierte el texto de un PDF de resultados HY-TEK en { name, start, end, events: [ev...] } (mismo formato que parseEvent).
+// Otro programa de resultados: "Event #5 - 200 Free Women" / "Name  Team  [Score]  Time" (nombre y luego apellido).
+const STROKE = { free: "Freestyle", back: "Backstroke", breast: "Breaststroke", fly: "Butterfly", im: "Individual Medley", medley: "Medley", freestyle: "Freestyle", backstroke: "Backstroke", breaststroke: "Breaststroke", butterfly: "Butterfly" };
+const MONS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+function parseAltMeet(text) {
+  const lines = text.replace(/\f/g, "\n").split(/\r?\n/);
+  const top = lines.filter((l) => l.trim()).slice(0, 4).map((l) => l.trim());
+  const dm = /^([A-Z][a-z]{2})[a-z]*\.? (\d{1,2}),? (\d{4})(?:\s*[-–]\s*(?:([A-Z][a-z]{2})[a-z]*\.? )?(\d{1,2}),? (\d{4}))?\s*(.*)$/;
+  let name = "", start = "", end = "", unit = "Yard";
+  for (let i = 0; i < top.length; i++) {
+    const m = dm.exec(top[i]);
+    if (!m) continue;
+    name = top[i - 1] || "";
+    const d = (mo, dd, yy) => `${yy}-${String(MONS[mo.toLowerCase()] || 1).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
+    start = d(m[1], m[2], m[3]); end = m[5] ? d(m[4] || m[1], m[5], m[6]) : start;
+    if (/met(er|re)s?\b|\bLCM\b|\bSCM\b/i.test(m[7])) unit = "Meter";
+    break;
+  }
+  const T = /(\d{1,2}:\d{2}\.\d{2}|\d{1,3}\.\d{2}|DQ|DFS|NS|DNF|SCR|X?NT)/;
+  const events = [];
+  let ev = null, last = null;
+  for (const raw of lines) {
+    const l = raw.replace(/\s+$/, "");
+    const h = /^\s*Event\s*#\s*(\d+)\s*-\s*(.+?)\s*$/i.exec(l);
+    if (h) {
+      const t = h[2];
+      const g = /\b(Women|Girls|Female)\b/i.test(t) ? "Women" : /\b(Men|Boys|Male)\b/i.test(t) ? "Men" : "Mixed";
+      const relay = /relay/i.test(t);
+      const dist = /(\d{2,4})/.exec(t)?.[1];
+      const st = /(freestyle|backstroke|breaststroke|butterfly|free|back|breast|fly|medley|\bim\b)/i.exec(t)?.[1]?.toLowerCase();
+      const title = /diving/i.test(t) ? `${g} ${t.replace(/\b(Women|Men|Girls|Boys)\b/gi, "").trim()}` : dist && st ? `${g} ${dist} ${unit} ${relay && st === "medley" ? "Medley" : STROKE[st] || st}${relay ? " Relay" : ""}` : "";
+      ev = title ? { number: +h[1], title, relay, results: [], scores: [] } : null;
+      if (ev) events.push(ev);
+      last = null;
+      continue;
+    }
+    if (!ev || /^\s*Name\s{2,}/.test(l)) continue;
+    const cols = l.trim().split(/\s{2,}/);
+    const pl = /^(\d{1,3}|-{1,3}|\*\d{1,3}|DQ)$/.exec(cols[0])?.[1];
+    if (pl && cols.length >= 3 && T.test(cols[cols.length - 1]) && new RegExp(`^${T.source}$`).test(cols[cols.length - 1])) {
+      const time = cols[cols.length - 1];
+      let pts = "";
+      const mid = cols.slice(1, -1);
+      if (mid.length >= 2 && /^(\d+(\.\d+)?|-)$/.test(mid[mid.length - 1])) pts = mid.pop().replace("-", "");
+      const r = ev.relay ? { p: /^\d+$/.test(pl) ? pl : "", n: mid.join(" "), t: mid.join(" ").replace(/\s+[A-H]$/, ""), y: "", m: time, pv: "", pts, l: "", sw: [] }
+        : { p: /^\d+$/.test(pl) ? pl : "", n: mid[0] || "", t: mid.slice(1).join(" "), y: "", m: time, pv: "", pts, l: "" };
+      if (!ev.relay && (!r.t || /\d[:.]\d\d/.test(r.t))) continue;
+      ev.results.push(r);
+      last = r;
+      continue;
+    }
+    // Relevistas: "Ellie Schrank   25.80 (25.80)".
+    if (ev.relay && last?.sw && last.sw.length < 4) {
+      const m = /^\s{3,}([\p{L}][\p{L}'’. -]+?)\s{2,}\d/u.exec(l);
+      if (m) last.sw.push(m[1].trim());
+    }
+  }
+  return { name, start, end, events: events.filter((e) => e.results.length) };
+}
 function parsePdfMeet(text, url) {
+  if (/^\s*Event\s*#\s*\d+\s*-\s*\d/m.test(text) && !/^\s*\(?Event\s+\d+\s+(Women|Men|Girls|Boys)/m.test(text)) { const alt = parseAltMeet(text); if (alt.events.length) return alt; }
   // Programas, psych sheets y horarios no son resultados (llevan marcas de inscripción).
   const kind = /Meet Program|Psych Sheet|Heat Sheet|Session Report|Entry List|Entries -|Timeline|Order of Events/i.exec(text.slice(0, 3000));
   if (kind) return { name: "", start: "", end: "", events: [], why: kind[0] };
