@@ -667,7 +667,7 @@ const star = (team) => `<button class="star ${favs().has(team) ? "on" : ""}" dat
 const liveTag = () => `<span class="livetag"><i></i>${T("EN DIRECTO")}</span>`;
 
 function setTitle(t) {
-  document.title = t ? `${t} · ${lang() === "en" ? "Swim USA" : "Natación USA"}` : lang() === "en" ? "Swim USA" : "Natación USA";
+  document.title = t ? `${t} · ${"USA Results"}` : "USA Results";
 }
 function loading(msg = "Cargando…") {
   $app.innerHTML = `<div class="loading"><div class="spinner"></div><p>${esc(T(msg))}</p></div>`;
@@ -724,7 +724,7 @@ async function homeView() {
   $app.innerHTML = `
   <section class="hero">
     <div class="brands">${["ncaa", "usas"].map((o) => orgLogo(o, 44)).join("")}</div>
-    <h1>${lang() === "en" ? "Swim USA" : "Natación USA"}</h1>
+    <h1>${"USA Results"}</h1>
     <p>${T("Resultados de NCAA, USA Swimming y campeonatos de EE. UU.")}</p>
   </section>
   <input type="search" id="mq" class="msearch" placeholder="🔎 ${T("Buscar competición por nombre…")}" autocomplete="off" enterkeyhint="search">
@@ -1658,7 +1658,7 @@ function applySettings() {
     if (l) l.textContent = labels[a.dataset.tab];
   });
   const logo = document.querySelector(".logo b");
-  if (logo) logo.textContent = lang() === "en" ? "Swim USA" : "Natación USA";
+  if (logo) logo.textContent = "USA Results";
 }
 
 function settingsView() {
@@ -1673,7 +1673,7 @@ function settingsView() {
     <div class="swatches" data-key="bg">${BGS.map(([v, l]) => `<button class="sw ${v === store.get("bg", "ocean") ? "on" : ""}" data-v="${v}" data-bgs="${v}"><i></i><span>${esc(T(l))}</span></button>`).join("")}</div>
   </div>
   <div class="card settings"><button class="btn ghost" id="clear">${T("Borrar datos guardados")}</button></div>
-  <p class="foot">${lang() === "en" ? "Swim USA · results from public HY-TEK pages, SwimSwam feed, ESPN team logos and Wikipedia." : "Natación USA · resultados de páginas públicas HY-TEK, canal de SwimSwam, escudos de ESPN y Wikipedia."}</p>`;
+  <p class="foot">${lang() === "en" ? "USA Results · results from public HY-TEK pages, SwimSwam feed, ESPN team logos and Wikipedia." : "USA Results · resultados de páginas públicas HY-TEK, canal de SwimSwam, escudos de ESPN y Wikipedia."}</p>`;
   $app.onclick = null;
   $app.querySelectorAll("[data-key]").forEach((g) =>
     g.addEventListener("click", (e) => {
