@@ -33,7 +33,10 @@ const $app = document.getElementById("app");
 
 // ---------- idioma ----------
 const EN = {
-  "piscina larga": "long course", "Atrás": "Back", "Ranking de la temporada": "Season ranking", "{n} equipos": "{n} teams", "Chicos": "Men", "Chicas": "Women", "Aún no hay tiempos de esta temporada para estos equipos.": "No times this season for these teams yet.", "Sin tiempos esta temporada": "No times this season", "Ranking orientativo con todos los resultados guardados de esta temporada: los 3 mejores tiempos de cada equipo en cada prueba individual de yardas y su mejor relevo, puntuando como un campeonato NCAA (20, 17, 16… a los 16 primeros; los relevos, doble).": "Approximate ranking from every saved result this season: each team's top 3 times in every individual yards event plus its best relay, scored like an NCAA championship (20, 17, 16… for the top 16; relays double).", "Actualizado": "Updated", "Natación": "Swimming", "Universidad": "School", "Tiempos del equipo": "Team times", "{p} pts · de {n}": "{p} pts · of {n}", "Sin tiempos aún": "No times yet", "Aún no hay tiempos de esta temporada para este equipo.": "No times this season for this team yet.", "Sí": "Yes", "Ver el campus en vídeo": "Watch a campus video", "Instalaciones de natación": "Swimming facilities", "Instagram del equipo": "Team Instagram", "Instagram de deportes": "Athletics Instagram", "Web de natación": "Swimming website", "Piscina": "Pool", "Piscina de 25 yardas": "25-yard pool", "Piscina de 50 metros": "50-meter pool", "Piscina de 25 metros": "25-meter pool", "Carriles": "Lanes", "Foso de saltos": "Diving well", "Aforo": "Seating", "Inaugurada": "Opened", "Litros de agua": "Water volume", "galones": "gallons", "Más sobre la piscina": "More about the pool", "Equipo de saltos": "Diving team", "La universidad no publica los datos de su piscina en un formato que se pueda leer.": "The school doesn't publish its pool details in a readable format.", "Buscarla": "Search for it", "Datos": "Facts", "Nombre completo": "Full name", "Datos de la web oficial de deportes de la universidad, Wikipedia (CC BY-SA) y Wikidata.": "Data from the school's official athletics site, Wikipedia (CC BY-SA) and Wikidata.", "Conócela": "Get to know it",
+  "Agua": "Water", "{n} millones de litros": "{n} million litres",
+  "Sin puntos en el campeonato nacional · estimación con sus tiempos": "No points at nationals · estimate from their times", "Primero, la clasificación real del campeonato nacional de esa temporada.": "First, the real standings from that season's national championship.", "{p} pts en el nacional · de {n}": "{p} pts at nationals · of {n}",
+  "Ranking": "Ranking", "Temporada {s}.": "{s} season.", "Sin tiempos guardados": "No saved times",
+  "piscina larga": "long course", "Atrás": "Back", "Ranking de la temporada": "Season ranking", "{n} equipos": "{n} teams", "Chicos": "Men", "Chicas": "Women", "Aún no hay tiempos de esta temporada para estos equipos.": "No times this season for these teams yet.", "Sin tiempos esta temporada": "No times this season", "Ranking orientativo con todos los resultados guardados de la temporada: los 3 mejores tiempos de cada equipo en cada prueba individual de yardas y su mejor relevo, puntuando como un campeonato NCAA (20, 17, 16… a los 16 primeros; los relevos, doble).": "Approximate ranking from every saved result of the season: each team's top 3 times in every individual yards event plus its best relay, scored like an NCAA championship (20, 17, 16… for the top 16; relays double).", "Actualizado": "Updated", "Natación": "Swimming", "Universidad": "School", "Tiempos del equipo": "Team times", "{p} pts · de {n}": "{p} pts · of {n}", "Sin tiempos aún": "No times yet", "Aún no hay tiempos de esta temporada para este equipo.": "No times this season for this team yet.", "Sí": "Yes", "Ver el campus en vídeo": "Watch a campus video", "Instalaciones de natación": "Swimming facilities", "Instagram del equipo": "Team Instagram", "Instagram de deportes": "Athletics Instagram", "Web de natación": "Swimming website", "Piscina": "Pool", "Piscina de 25 yardas": "25-yard pool", "Piscina de 50 metros": "50-meter pool", "Piscina de 25 metros": "25-meter pool", "Carriles": "Lanes", "Foso de saltos": "Diving well", "Aforo": "Seating", "Inaugurada": "Opened", "Litros de agua": "Water volume", "galones": "gallons", "Más sobre la piscina": "More about the pool", "Equipo de saltos": "Diving team", "La universidad no publica los datos de su piscina en un formato que se pueda leer.": "The school doesn't publish its pool details in a readable format.", "Buscarla": "Search for it", "Datos": "Facts", "Nombre completo": "Full name", "Datos de la web oficial de deportes de la universidad, Wikipedia (CC BY-SA) y Wikidata.": "Data from the school's official athletics site, Wikipedia (CC BY-SA) and Wikidata.", "Conócela": "Get to know it",
   "Aún no tiene marcas en los resultados guardados de esta temporada.": "No times yet in this season's saved results.", "En la plantilla oficial de su universidad": "On their school's official roster",
   "Calendario y resultados": "Schedule and results", "próximamente": "upcoming", "Y {n} más en la ficha de cada universidad.": "And {n} more on each school's page.",
   "Encuentros entre universidades": "Dual meets", "Ranking NCAA": "NCAA ranking", "Ranking: puesto en los últimos campeonatos NCAA/NAIA (♂ chicos, ♀ chicas).": "Ranking: place at the last NCAA/NAIA championships (♂ men, ♀ women).",
@@ -48,7 +51,7 @@ const EN = {
   "Cargando nadadores…": "Loading swimmers…", "Nadadores de universidades de EE. UU. que aparecen en los resultados de esta temporada y de los últimos NCAA.": "US college swimmers found in this season's results and the last NCAA championships.",
   "Buscar nadador o universidad": "Search swimmer or school", "nadadores": "swimmers", "actualizado": "updated", "Escribe un nombre (por ejemplo «Gemmell») o una universidad.": "Type a name (e.g. “Gemmell”) or a school.",
   "No hay nadadores con ese nombre en los resultados guardados.": "No swimmers with that name in the saved results.", "Nadador no encontrado.": "Swimmer not found.",
-  "Mejores marcas": "Best times", "Competiciones": "Meets", "Ver universidad": "See school", "Marcas oficiosas de los resultados públicos (Y = yardas, M = metros).": "Unofficial times from public results (Y = yards, M = meters).",
+  "Mejores marcas": "Best times", "Competiciones": "Meets", "Ver universidad": "See school", "Marcas oficiosas de los resultados públicos. Sin indicar, en yardas (piscina corta americana).": "Unofficial times from public results. Yards unless noted (short course).",
   "Conferencias e invitationals": "Conferences & invitationals",
   "Buscando campeonatos…": "Finding meets…",
   "Cargando…": "Loading…",
@@ -105,7 +108,7 @@ const EN = {
   "universidades": "universities", "Ninguna universidad con estos filtros.": "No universities match these filters.",
   "Marca con ★ las tuyas: aparecerán en la portada y podrás filtrar los resultados.": "Star ★ yours: they'll show on the home screen and you can filter results.",
   "Entrenador": "Head coach", "Entrenador (hombres)": "Men's head coach", "Entrenadora/entrenador (mujeres)": "Women's head coach",
-  "No disponible": "Not available", "Equipo técnico": "Coaching staff", "Ver en la web oficial": "See official site", "Ciudad": "City", "División": "Division", "Apodo": "Nickname",
+  "No disponible": "Not available", "Equipo técnico": "Coaching staff", "Ver en la web oficial": "See official site", "Ciudad": "City", "División": "Division", "División I": "Division I", "División II": "Division II", "División III": "Division III", "Apodo": "Nickname",
   "Ver sus resultados": "See their results", "Wikipedia": "Wikipedia", "Web oficial": "Official site",
   "Datos de Wikipedia (CC BY-SA).": "Data from Wikipedia (CC BY-SA).",
   "Idioma": "Language", "Tema": "Theme", "Automático": "Automatic", "Claro": "Light", "Oscuro": "Dark", "Fondo": "Background",
@@ -272,10 +275,11 @@ async function loadUnis() {
 }
 const findUni = (name) => {
   if (!uniIndex || !name) return null;
-  const direct = matchTeam(uniIndex, name)?.uni;
-  if (direct) return direct;
+  // Primero el alias sacado de las plantillas (sabe que "UT" es Utah Tech y no Texas).
   const al = teamAlias[name] && unis.find((u) => u.n === teamAlias[name]);
   if (al) return al;
+  const direct = matchTeam(uniIndex, name)?.uni;
+  if (direct) return direct;
   const e = logoIndex ? matchTeam(logoIndex, name) : null;
   const viaLogo = e ? matchTeam(uniIndex, e.display)?.uni || null : null;
   return viaLogo || looseUni(name);
@@ -686,6 +690,8 @@ function setTab(name) {
 }
 
 // ---------- vistas ----------
+const yrLabel = (y) => ({ FR: T("1º año"), SO: T("2º año"), JR: T("3º año"), SR: T("4º año"), GR: T("Posgrado"), "5Y": T("5º año") }[y] || "");
+const cleanMeet = (n) => String(n || "").replace(/[\s\-–|:,]+$/, "").trim();
 function meetCard(s) {
   let when = s.pending ? `${T("Temporada {y} · resultados aún no publicados", { y: s.id.match(/(19|20)\d{2}/)?.[0] || "" })}` : fmtRange(s.start, s.end);
   if (s.status === "upcoming" && s.start) {
@@ -697,7 +703,7 @@ function meetCard(s) {
     ${meetBadge(s)}
     <div class="mbody">
       ${s.status === "live" ? liveTag() : ""}
-      <strong>${esc(s.name)}</strong>
+      <strong>${esc(cleanMeet(s.name))}</strong>
       <span class="sub">${esc(when)}${s.events ? ` · ${s.events} ${T("pruebas")}` : ""}</span>
     </div><span class="chev">›</span></a>`;
 }
@@ -790,15 +796,15 @@ function hostOf(name) {
 }
 function meetBadge(s, size = 36) {
   const sp = SPONSOR_WORDS.find(([re]) => re.test(s.name || ""))?.[1];
-  if (sp && brands?.[sp]) return `<span class="org host" style="width:${size}px;height:${size}px"><img src="${esc(brands[sp])}" alt=""></span>`;
+  if (sp && brands?.[sp]) return `<span class="org host" style="width:${size}px;height:${size}px"><img src="${esc(brands[sp])}" alt="" onerror="this.parentNode.classList.add('nologo');this.remove()"></span>`;
   if (s.org === "conf" || s.org === "dual") {
     const ck0 = CONF_WORDS.find(([re]) => re.test(s.name))?.[1];
-    if (ck0 && brands?.[ck0] && /champ|conference|league/i.test(s.name)) return `<span class="org host" style="width:${size}px;height:${size}px"><img src="${esc(brands[ck0])}" alt=""></span>`;
+    if (ck0 && brands?.[ck0] && /champ|conference|league/i.test(s.name)) return `<span class="org host" style="width:${size}px;height:${size}px"><img src="${esc(brands[ck0])}" alt="" onerror="this.parentNode.classList.add('nologo');this.remove()"></span>`;
     const hi = s.host && logoFor(s.host);
     const h = hi ? { team: s.host, info: hi } : hostOf(s.name);
-    if (h) return `<span class="org host" style="width:${size}px;height:${size}px;--hc:${h.info.color}"><img src="${esc(h.info.logo)}" alt=""></span>`;
+    if (h) return `<span class="org host" style="width:${size}px;height:${size}px;--hc:${h.info.color}"><img src="${esc(h.info.logo)}" alt="" onerror="this.parentNode.classList.add('nologo');this.remove()"></span>`;
     const ck = CONF_WORDS.find(([re]) => re.test(s.name))?.[1];
-    if (ck && brands?.[ck]) return `<span class="org host" style="width:${size}px;height:${size}px"><img src="${esc(brands[ck])}" alt=""></span>`;
+    if (ck && brands?.[ck]) return `<span class="org host" style="width:${size}px;height:${size}px"><img src="${esc(brands[ck])}" alt="" onerror="this.parentNode.classList.add('nologo');this.remove()"></span>`;
   }
   return orgLogo(s.org, size);
 }
@@ -911,7 +917,7 @@ async function meetView(id, tab = "pruebas", silent = false) {
   $app.innerHTML = `
   <a class="back" href="#/">‹ ${T("Inicio")}</a>
   <section class="mhero" style="--tint:${tint}">
-    <div class="mtop">${meetBadge({ org: meet.org, name: meet.name, host: meet.host }, 60)}<div><h1>${esc(meet.name)}</h1><p>${esc(fmtRange(meet.start, meet.end))}${uniqueEvents(meet).length ? ` · ${uniqueEvents(meet).length} ${T("pruebas")}` : ""}</p>${live ? liveTag() : ""}</div></div>
+    <div class="mtop">${meetBadge({ org: meet.org, name: meet.name, host: meet.host }, 60)}<div><h1>${esc(cleanMeet(meet.name))}</h1><p>${esc(fmtRange(meet.start, meet.end))}${uniqueEvents(meet).length ? ` · ${uniqueEvents(meet).length} ${T("pruebas")}` : ""}</p>${live ? liveTag() : ""}</div></div>
     ${teams.length ? `<div class="strip">${teams.map((t) => `<a href="#/m/${enc(id)}/t/${enc(t)}" title="${esc(t)}">${crest(t, 40)}</a>`).join("")}</div>` : ""}
     ${standings && tab === "pruebas" && standings.scores[0] ? `<a class="leader" href="#/m/${enc(id)}/clasificacion">${crest(standings.scores[0].t, 28)}<span>${T("Lidera {t} con {p} pts", { t: `<b>${esc(standings.scores[0].t)}</b>`, p: esc(standings.scores[0].pts) })}</span><span class="chev">›</span></a>` : ""}
   </section>
@@ -1010,7 +1016,7 @@ async function eventView(id, key, silent = false) {
     })
     .join("");
   $app.innerHTML = `
-  <a class="back" href="#/m/${enc(id)}">‹ ${esc(meet.name)}</a>
+  <a class="back" href="#/m/${enc(id)}">‹ ${esc(cleanMeet(meet.name))}</a>
   <section class="ehead"><span class="num big">${ev.number ?? ""}</span><div><h1>${esc(englishToSpanish(ev.title))}</h1><p class="sub">${meet.status === "live" ? liveTag() : esc(fmtRange(meet.start, meet.end))}</p></div></section>
   ${ev.psych ? `<div class="card muted">📋 ${T("Aún no hay resultados de esta prueba. Esta es la lista de inscritos con su marca de inscripción; se actualizará sola cuando la publiquen.")}</div>` : ""}
   ${f.size ? `<label class="toggle"><input type="checkbox" id="onlyFav" ${onlyFav ? "checked" : ""}> ${T("Solo mis universidades")}</label>` : ""}
@@ -1056,9 +1062,9 @@ async function teamView(id, team, silent = false) {
   if (live) scheduleRefresh((s) => teamView(id, team, s));
 }
 
-const DIVS = [["D1", "Division I"], ["D2", "Division II"], ["D3", "Division III"], ["NAIA", "NAIA"]];
+const DIVS = [["D1", "División I"], ["D2", "División II"], ["D3", "División III"], ["NAIA", "NAIA"]];
 const place = (u) => (u.city && u.city.includes(",") ? u.city : [u.city, u.st].filter(Boolean).join(", "));
-const divLabel = (d) => (DIVS.find(([k]) => k === d) || [, d])[1];
+const divLabel = (d) => T((DIVS.find(([k]) => k === d) || [, d])[1]);
 
 async function universitiesView() {
   setTab("unis");
@@ -1098,7 +1104,7 @@ async function universitiesView() {
       return [m, (r.M?.p ?? 99) + (r.W?.p ?? 99)];
     };
     const sorted = flt.sort === "az" ? list : list.slice().sort((a, b) => { const x = key(a), y = key(b); return x[0] - y[0] || x[1] - y[1] || a.n.localeCompare(b.n); });
-    const groups = DIVS.map(([k, label]) => [label, sorted.filter((u) => u.div === k)]).filter(([, l]) => l.length);
+    const groups = DIVS.map(([k, label]) => [T(label), sorted.filter((u) => u.div === k)]).filter(([, l]) => l.length);
     const rk = (u) => {
       const r = ranks.get(u);
       if (!r) return "";
@@ -1139,23 +1145,32 @@ const teamSlug = (t) => norm(t).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""
 const STROKE_ES = { Free: "Libre", Back: "Espalda", Breast: "Braza", Fly: "Mariposa", IM: "Estilos" };
 const evLabel = (ev) => { const [d, c, s, r] = ev.split(" "); return r ? `${d} ${T(s === "Medley" ? "Relevo estilos" : "Relevo libre")}${c === "M" ? " · " + T("piscina larga") : ""}` : `${d} ${T(STROKE_ES[s] || s)}${c === "M" ? " · " + T("piscina larga") : ""}`; };
 let seasonData = null;
+// Dos temporadas (actual y anterior). Se muestra la anterior hasta que la actual tenga al menos la mitad de competiciones.
 async function loadSeason() {
   if (seasonData) return seasonData;
   await loadUnis();
   const d = await loadData("equipos-rank");
-  const byUni = new Map();
-  for (const [slug, [raw, best]] of Object.entries(d?.t || {})) {
-    const u = findUni(raw);
-    if (!u) continue;
-    const x = byUni.get(u) || { slugs: [], M: {}, W: {} };
-    x.slugs.push(slug);
-    for (const g of ["M", "W"]) for (const [ev, ts] of Object.entries(best[g] || {})) x[g][ev] = [...(x[g][ev] || []), ...ts.map(tSecs)].sort((a, b) => a - b).slice(0, /Relay/.test(ev) ? 1 : 3);
-    byUni.set(u, x);
-  }
-  return (seasonData = { byUni, updated: d?.updated || "", season: d?.season || "" });
+  const build = (part) => {
+    const byUni = new Map();
+    for (const [slug, [raw, best]] of Object.entries(part?.t || {})) {
+      const u = findUni(raw);
+      if (!u) continue;
+      const x = byUni.get(u) || { slugs: [], M: {}, W: {} };
+      x.slugs.push(slug);
+      for (const g of ["M", "W"]) for (const [ev, ts] of Object.entries(best[g] || {})) x[g][ev] = [...(x[g][ev] || []), ...ts.map((t) => (typeof t === "number" ? t / 100 : tSecs(t)))].sort((a, b) => a - b).slice(0, /Relay/.test(ev) ? 1 : 3);
+      byUni.set(u, x);
+    }
+    return { byUni, label: part?.season || "", meets: part?.meets || 0 };
+  };
+  const seasons = d?.v === 2 ? { cur: build(d.cur), prev: build(d.prev) } : { cur: build(d), prev: { byUni: new Map(), label: "", meets: 0 } };
+  const def = seasons.cur.meets >= seasons.prev.meets * 0.5 || !seasons.prev.meets ? "cur" : "prev";
+  return (seasonData = { seasons, def, updated: d?.updated || "" });
 }
+// Puestos reales del último campeonato nacional (NCAA/NAIA) si corresponden a esa temporada ("2025-26" → 2026).
+const officialFor = (ranks, label, g) => { const y = label ? String(+label.slice(0, 4) + 1) : ""; return (u) => { const r = ranks?.get(u)?.[g]; return r && String(r.year) === y && r.div === u.div ? r : null; }; };
+const seasonPick = (S, want) => (want === "cur" || want === "prev" ? want : store.get("rankSeason", "") || S.def);
 // Puntuación como un campeonato: los 3 mejores de cada equipo en cada prueba, 20-17-16…1 a los 16 primeros.
-function rankTeams(list, g, byUni) {
+function rankTeams(list, g, byUni, official = null) {
   const pts = new Map();
   for (const u of list) if (byUni.get(u) && Object.keys(byUni.get(u)[g]).length) pts.set(u, 0);
   for (const ev of NCAA_EVS) {
@@ -1169,6 +1184,12 @@ function rankTeams(list, g, byUni) {
     for (const u of pts.keys()) { const s = byUni.get(u)[g][ev]?.[0]; if (s < Infinity) swims.push([s, u]); }
     swims.sort((a, b) => a[0] - b[0]).slice(0, 16).forEach(([, u], i) => pts.set(u, pts.get(u) + 2 * CH_PTS[i]));
   }
+  // Temporada terminada: primero la clasificación real del campeonato nacional y después el resto, por sus tiempos.
+  if (official) {
+    const off = list.filter((u) => official(u)).sort((a, b) => official(a).p - official(b).p).map((u) => ({ u, p: +official(u).pts || 0, real: 1 }));
+    const rest = [...pts].filter(([u]) => !official(u)).sort((a, b) => b[1] - a[1] || a[0].n.localeCompare(b[0].n)).map(([u, p]) => ({ u, p }));
+    return [...off, ...rest].map((x, i) => ({ ...x, pos: i + 1 }));
+  }
   return [...pts].sort((a, b) => b[1] - a[1] || a[0].n.localeCompare(b[0].n)).map(([u, p], i) => ({ u, p, pos: i + 1 }));
 }
 const CONF_NAMES = { MVC: "Missouri Valley", ASUN: "ASUN", MPSF: "Mountain Pacific", CAA: "Coastal Athletic", NEC: "Northeast", A10: "Atlantic 10", MW: "Mountain West", RMAC: "Rocky Mountain", NE10: "Northeast-10", GLIAC: "Great Lakes (GLIAC)", NSIC: "Northern Sun", PCSC: "Pacific Collegiate", PSAC: "Pennsylvania (PSAC)", NSISC: "Northern Sun", GLVC: "Great Lakes Valley", SSC: "Sunshine State", GNAC: "Great Northwest", NESCAC: "NESCAC", CCIW: "CCIW", SCAC: "Southern Collegiate", SCIAC: "SCIAC", NEWMAC: "NEWMAC", ODAC: "Old Dominion", SAA: "Southern Athletic", UAA: "University Athletic", CUNYAC: "CUNY", SUNYAC: "SUNY", AEC: "America East", ARC: "American Rivers", NJAC: "New Jersey (NJAC)", NCAC: "North Coast", NAC: "North Atlantic", PAC: "Presidents' (PAC)", ISC: "Independent Swimming", E8: "Empire 8", MSC: "Mid-South", SCSC: "Sooner (SCSC)", KCAC: "Kansas (KCAC)" };
@@ -1178,29 +1199,36 @@ const inGroup = (kind, key, g) => (u) => (g === "M" ? u.men : u.women) && (kind 
 const confLogo = (c, size = 18) => { const k = CONF_WORDS.find(([re]) => re.test(c || ""))?.[1]; const img = k && brands?.[k]; return img ? `<img class="conflogo" src="${esc(img)}" alt="" width="${size}" height="${size}" onerror="this.remove()">` : ""; };
 const uniTint = (u) => { const info = logoIndex ? matchTeam(logoIndex, u.n) || matchTeam(logoIndex, u.full) : null; return info && info.color && info.color !== "#0b63ce" ? info.color : "#0b3d91"; };
 
-async function rankView(kind, key, g) {
+async function rankView(kind, key, g, sk) {
   setTab("unis");
   loading();
   await Promise.all([loadLogos().catch(() => {}), loadBrands().catch(() => {})]);
-  const { byUni, updated } = await loadSeason();
+  const [S, ranksN] = await Promise.all([loadSeason(), loadRanks().catch(() => null)]);
+  sk = seasonPick(S, sk);
+  const { byUni, label } = S.seasons[sk];
+  const updated = S.updated;
   g = g === "W" ? "W" : "M";
   const title = kind === "div" ? divLabel(key) : confName(key);
   setTitle(title);
   const all = unis.filter(inGroup(kind, key, g));
-  const ranked = rankTeams(all, g, byUni);
-  const top = ranked[0]?.p || 1;
+  const ranked = rankTeams(all, g, byUni, sk === "prev" ? officialFor(ranksN, label, g) : null);
+  const top = Math.max(1, ...ranked.filter((r) => r.real).map((r) => r.p)), topE = Math.max(1, ...ranked.filter((r) => !r.real).map((r) => r.p));
   const missing = all.filter((u) => !ranked.some((r) => r.u === u));
   const base = `#/rank/${kind}/${enc(key)}`;
-  const row = (r) => `<a class="rkrow" href="#/uni/${enc(r.u.n)}"><span class="rkpos ${r.pos <= 3 ? "p" + r.pos : ""}">${r.pos}</span>${crest(r.u.n, 34)}<span class="uinfo"><b>${esc(r.u.n)}</b><span class="rkbar"><i style="width:${Math.max(4, (r.p / top) * 100).toFixed(1)}%"></i></span></span><span class="rkpts"><b>${r.p}</b><small>pts</small></span></a>`;
+  const seasonSeg = S.seasons.prev.meets ? `<div class="mini-seg seasonseg">${["prev", "cur"].map((k) => `<a href="${base}/${g}/${k}" class="${k === sk ? "on" : ""}" data-season="${k}">${esc(S.seasons[k].label)}</a>`).join("")}</div>` : "";
+  const row = (r) => `<a class="rkrow" href="#/uni/${enc(r.u.n)}"><span class="rkpos ${r.pos <= 3 ? "p" + r.pos : ""}">${r.pos}</span>${crest(r.u.n, 34)}<span class="uinfo"><b>${esc(r.u.n)}</b><span class="rkbar ${r.real ? "real" : ""}"><i style="width:${Math.max(4, (r.p / (r.real ? top : topE)) * 100).toFixed(1)}%"></i></span></span><span class="rkpts"><b>${r.p}</b><small>${r.real ? (r.u.div === "NAIA" ? "NAIA" : "NCAA") : "pts"}</small></span></a>`;
+  const firstEst = ranked.findIndex((r) => !r.real);
+  const rows = ranked.map((r, i) => (i === firstEst && i > 0 ? `<div class="rksep">${T("Sin puntos en el campeonato nacional · estimación con sus tiempos")}</div>` : "") + row(r)).join("");
   $app.innerHTML = `
   <a class="back" href="javascript:history.back()">‹ ${T("Atrás")}</a>
   <section class="ghero">
-    <div class="ghead">${kind === "conf" ? `<span class="gico">${confLogo(key, 44) || "🏆"}</span>` : `<span class="gico txt">${esc(key === "NAIA" ? "NAIA" : key.replace("D", "D-"))}</span>`}<div><small>${T("Ranking de la temporada")}</small><h1>${esc(title)}</h1><p>${T("{n} equipos", { n: all.length })}</p></div></div>
+    <div class="ghead">${kind === "conf" ? `<span class="gico">${confLogo(key, 44) || "🏆"}</span>` : `<span class="gico txt">${esc(key === "NAIA" ? "NAIA" : key.replace("D", "D-"))}</span>`}<div><small>${T("Ranking")} ${esc(label)}</small><h1>${esc(title)}</h1><p>${T("{n} equipos", { n: all.length })}</p></div></div>
+    ${seasonSeg}
   </section>
-  <nav class="seg"><a href="${base}/M" class="${g === "M" ? "on" : ""}">♂ ${T("Chicos")}</a><a href="${base}/W" class="${g === "W" ? "on" : ""}">♀ ${T("Chicas")}</a></nav>
-  ${ranked.length ? `<div class="glist">${ranked.map(row).join("")}</div>` : `<div class="card muted">${T("Aún no hay tiempos de esta temporada para estos equipos.")}</div>`}
-  ${missing.length ? `<h2>${T("Sin tiempos esta temporada")} <span class="count">${missing.length}</span></h2><div class="glist">${missing.map((u) => `<a class="rkrow dim" href="#/uni/${enc(u.n)}"><span class="rkpos">–</span>${crest(u.n, 30)}<span class="uinfo"><b>${esc(u.n)}</b></span><span class="chev">›</span></a>`).join("")}</div>` : ""}
-  <p class="foot">${T("Ranking orientativo con todos los resultados guardados de esta temporada: los 3 mejores tiempos de cada equipo en cada prueba individual de yardas y su mejor relevo, puntuando como un campeonato NCAA (20, 17, 16… a los 16 primeros; los relevos, doble).")}${updated ? ` ${T("Actualizado")}: ${esc(updated)}.` : ""}</p>`;
+  <nav class="seg"><a href="${base}/M/${sk}" class="${g === "M" ? "on" : ""}">♂ ${T("Chicos")}</a><a href="${base}/W/${sk}" class="${g === "W" ? "on" : ""}">♀ ${T("Chicas")}</a></nav>
+  ${ranked.length ? `<div class="glist">${rows}</div>` : `<div class="card muted">${T("Aún no hay tiempos de esta temporada para estos equipos.")}</div>`}
+  ${missing.length ? `<h2>${T("Sin tiempos guardados")} <span class="count">${missing.length}</span></h2><div class="glist">${missing.map((u) => `<a class="rkrow dim" href="#/uni/${enc(u.n)}"><span class="rkpos">–</span>${crest(u.n, 30)}<span class="uinfo"><b>${esc(u.n)}</b></span><span class="chev">›</span></a>`).join("")}</div>` : ""}
+  <p class="foot">${T("Temporada {s}.", { s: label })} ${sk === "prev" ? T("Primero, la clasificación real del campeonato nacional de esa temporada.") + " " : ""}${T("Ranking orientativo con todos los resultados guardados de la temporada: los 3 mejores tiempos de cada equipo en cada prueba individual de yardas y su mejor relevo, puntuando como un campeonato NCAA (20, 17, 16… a los 16 primeros; los relevos, doble).")}${updated ? ` ${T("Actualizado")}: ${esc(updated)}.` : ""}</p>`;
 }
 
 async function uniView(name, tab = "") {
@@ -1240,7 +1268,7 @@ async function uniView(name, tab = "") {
   for (const n of Object.keys(bios?.c || {})) if (!staff.some((p) => nameKey(p.n) === nameKey(n))) staff.push({ n, t: (bios.c[n].f || []).find(([l]) => l === "Cargo")?.[1] || T("Entrenador") });
   const staffHtml = staff.length
     ? `<div class="list staff">${staff
-        .map((p) => { const b = findBio(bios?.c, p.n); return `<a class="srow" href="#/coach/${enc(u.n)}/${enc(p.n)}">${b?.img ? `<img class="face" src="${esc(b.img)}" alt="" width="44" height="44" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'">` : `<span class="avatar">${esc(initials(p.n))}</span>`}<span class="uinfo"><b>${esc(p.n)} ${flagHtml(b)}</b><small>${esc(p.t)}${p.g ? ` · ${p.g === "M" ? T("Hombres") : T("Mujeres")}` : ""}</small>${b?.b ? `<small class="biolink">Bio ›</small>` : ""}</span><span class="chev">›</span></a>`; })
+        .map((p) => { const b = findBio(bios?.c, p.n); return `<a class="srow" href="#/coach/${enc(u.n)}/${enc(p.n)}">${b?.img ? `<img class="face" src="${esc(b.img)}" alt="" width="44" height="44" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'avatar',textContent:'${esc(initials(p.n))}'}))">` : `<span class="avatar">${esc(initials(p.n))}</span>`}<span class="uinfo"><b>${esc(p.n)} ${flagHtml(b)}</b><small>${esc(p.t)}${p.g ? ` · ${p.g === "M" ? T("Hombres") : T("Mujeres")}` : ""}</small>${b?.b ? `<small class="biolink">Bio ›</small>` : ""}</span><span class="chev">›</span></a>`; })
         .join("")}</div>`
     : `<div class="card muted">${T("Esta universidad no publica su equipo técnico en un formato que se pueda leer.")}${u.staffUrl || web ? ` <a href="${esc(u.staffUrl || web)}" target="_blank" rel="noopener">${T("Ver en su web")} ↗</a>` : ""}</div>`;
   const yr = (y) => ({ FR: T("1º año"), SO: T("2º año"), JR: T("3º año"), SR: T("4º año"), GR: T("Posgrado"), "5Y": T("5º año") }[y] || "");
@@ -1261,7 +1289,8 @@ async function uniView(name, tab = "") {
   if (!sexes.includes(g)) g = sexes[0] || "W";
   $app.innerHTML = `${hero}
   ${nowSection(u, games, meets)}
-  <div class="ghead2"><h2>${T("Ranking de la temporada")}</h2>${sexes.length > 1 ? `<div class="mini-seg" id="sexsel">${sexes.map((s) => `<button data-g="${s}">${s === "M" ? T("Chicos") : T("Chicas")}</button>`).join("")}</div>` : ""}</div>
+  <div class="ctrlbar">${season?.seasons.prev.meets ? `<div class="mini-seg" id="seasonsel">${["prev", "cur"].map((k) => `<button data-s="${k}">${esc(season.seasons[k].label)}</button>`).join("")}</div>` : ""}${sexes.length > 1 ? `<div class="mini-seg" id="sexsel">${sexes.map((s) => `<button data-g="${s}">${s === "M" ? "♂ " + T("Chicos") : "♀ " + T("Chicas")}</button>`).join("")}</div>` : ""}</div>
+  <div class="ghead2"><h2>${T("Ranking")}</h2></div>
   <div class="rkcards" id="rkcards"></div>
   <div class="ghead2"><h2>${T("Tiempos del equipo")}</h2><select id="evsel" class="gselect"></select></div>
   <div id="ttimes"></div>
@@ -1278,28 +1307,39 @@ async function uniView(name, tab = "") {
   ${extButtons([[SC_TEAM(u.full || u.n), "SwimCloud", "sc"], [USAS_SWIMMER(u.full || u.n), "USA Swimming", "usas"]])}
   <p class="foot">${T("Nadadores sacados de los resultados públicos de esta temporada y de los últimos NCAA. Datos de Wikipedia (CC BY-SA), Wikidata y la web oficial de la universidad.")}</p>`;
   // Tiempos del equipo: une los nombres con que sale la universidad en los resultados.
-  const mine = season?.byUni.get(u);
-  const files = await Promise.all((mine?.slugs || []).map((s) => loadData("equipos/" + s).catch(() => null)));
-  const times = { M: {}, W: {} };
-  for (const f of files) if (f) for (const s of ["M", "W"]) {
-    for (const [ev, list] of Object.entries(f[s] || {})) times[s][ev] = [...(times[s][ev] || []), ...list];
-    for (const [ev, list] of Object.entries(f.R?.[s] || {})) times[s][ev] = [...(times[s][ev] || []), ...list.map(([t, sw]) => [t, sw.join(" · "), 1])];
-  }
-  for (const s of ["M", "W"]) for (const ev of Object.keys(times[s])) {
-    const seen = new Set();
-    times[s][ev] = times[s][ev].sort((a, b) => tSecs(a[0]) - tSecs(b[0])).filter(([, n]) => !seen.has(n) && seen.add(n)).slice(0, /Relay/.test(ev) ? 3 : 10);
-  }
+  let sk = season ? seasonPick(season) : "cur";
+  const slugs = [...new Set(["cur", "prev"].flatMap((k) => season?.seasons[k].byUni.get(u)?.slugs || []))];
+  const files = await Promise.all(slugs.map((s) => loadData("equipos/" + s).catch(() => null)));
+  const timesOf = (k) => {
+    const times = { M: {}, W: {} };
+    for (const f0 of files) {
+      const f = f0 && (f0.cur || f0.prev ? f0[k] : k === "cur" ? f0 : null);
+      if (!f) continue;
+      for (const s of ["M", "W"]) {
+        for (const [ev, list] of Object.entries(f[s] || {})) times[s][ev] = [...(times[s][ev] || []), ...list];
+        for (const [ev, list] of Object.entries(f.R?.[s] || {})) times[s][ev] = [...(times[s][ev] || []), ...list.map(([t, sw]) => [t, sw.join(" · "), 1])];
+      }
+    }
+    for (const s of ["M", "W"]) for (const ev of Object.keys(times[s])) {
+      const seen = new Set();
+      times[s][ev] = times[s][ev].sort((a, b) => tSecs(a[0]) - tSecs(b[0])).filter(([, n]) => !seen.has(n) && seen.add(n)).slice(0, /Relay/.test(ev) ? 3 : 10);
+    }
+    return times;
+  };
+  const allTimes = { cur: timesOf("cur"), prev: timesOf("prev") };
   const swByName = new Map(team.map((x) => [nameKey(x.n), x]));
   const findSw = (n) => swByName.get(nameKey(n.replace(/\s+[A-Z]\.?(?=\s)/g, "")));
   const paint = () => {
     for (const b of document.querySelectorAll("#sexsel button")) b.classList.toggle("on", b.dataset.g === g);
+    for (const b of document.querySelectorAll("#seasonsel button")) b.classList.toggle("on", b.dataset.s === sk);
+    const times = allTimes[sk];
     const cards = [];
     if (season) {
       const one = (kind, key, label, ico) => {
         const list = unis.filter(inGroup(kind, key, g));
-        const rk = rankTeams(list, g, season.byUni);
+        const rk = rankTeams(list, g, season.seasons[sk].byUni, sk === "prev" ? officialFor(ranks, season.seasons[sk].label, g) : null);
         const me = rk.find((x) => x.u === u);
-        return `<a class="rkcard" href="#/rank/${kind}/${enc(key)}/${g}"><span class="rkico">${ico}</span><b>${me ? "#" + me.pos : "–"}</b><span>${esc(label)} ›</span><small>${me ? T("{p} pts · de {n}", { p: me.p, n: rk.length }) : T("Sin tiempos aún")}</small></a>`;
+        return `<a class="rkcard" href="#/rank/${kind}/${enc(key)}/${g}/${sk}"><span class="rkico">${ico}</span><b>${me ? "#" + me.pos : "–"}</b><span>${esc(label)} ›</span><small>${me ? (me.real ? T("{p} pts en el nacional · de {n}", { p: me.p, n: rk.length }) : T("{p} pts · de {n}", { p: me.p, n: rk.length })) : T("Sin tiempos aún")}</small></a>`;
       };
       cards.push(one("div", u.div, divLabel(u.div), `<span class="gico txt sm">${esc(u.div === "NAIA" ? "NAIA" : u.div.replace("D", "D-"))}</span>`));
       const c = confOf(u, g);
@@ -1313,14 +1353,17 @@ async function uniView(name, tab = "") {
     sel.style.display = evs.length ? "" : "none";
     const list = times[g][ev] || [];
     document.getElementById("ttimes").innerHTML = list.length
-      ? `<div class="glist">${list.map(([t, n, rel], i) => { if (rel) return `<div class="rkrow"><span class="rkpos ${i < 3 ? "p" + (i + 1) : ""}">${i + 1}</span><span class="uinfo"><b>${esc(evLabel(ev))}</b><small class="wrap">${esc(n)}</small></span><span class="ttime">${esc(t)}</span></div>`; const x = findSw(n); const inner = `<span class="rkpos ${i < 3 ? "p" + (i + 1) : ""}">${i + 1}</span>${x ? face(x) : `<span class="avatar">${esc(initials(n))}</span>`}<span class="uinfo"><b>${esc(x?.n || n)}</b><small>${esc(evLabel(ev))}</small></span><span class="ttime">${esc(t)}</span>`; return x ? `<a class="rkrow" href="#/n/${x.i}">${inner}</a>` : `<div class="rkrow">${inner}</div>`; }).join("")}</div>`
+      ? `<div class="glist">${list.map(([t, n, rel], i) => { if (rel) return `<div class="rkrow"><span class="rkpos ${i < 3 ? "p" + (i + 1) : ""}">${i + 1}</span><span class="uinfo"><b>${esc(evLabel(ev))}</b><small class="wrap">${esc(n)}</small></span><span class="ttime">${esc(t)}</span></div>`; const x0 = findSw(n); const x = x0 && (!x0.g || x0.g === g) ? x0 : null; const inner = `<span class="rkpos ${i < 3 ? "p" + (i + 1) : ""}">${i + 1}</span>${x ? face(x) : `<span class="avatar ${g === "W" ? "w" : "m"}">${g === "W" ? "♀" : "♂"}</span>`}<span class="uinfo"><b>${esc(x?.n || n)}</b><small>${esc(evLabel(ev))}</small></span><span class="ttime">${esc(t)}</span>`; return x ? `<a class="rkrow" href="#/n/${x.i}">${inner}</a>` : `<div class="rkrow">${inner}</div>`; }).join("")}</div>`
       : `<div class="card muted">${T("Aún no hay tiempos de esta temporada para este equipo.")}</div>`;
   };
   document.getElementById("sexsel")?.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; g = b.dataset.g; store.set("uniSex", g); paint(); });
   document.getElementById("evsel").onchange = (e) => { store.set("uniEv", e.target.value); paint(); };
+  document.getElementById("seasonsel")?.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; sk = b.dataset.s; store.set("rankSeason", sk); paint(); });
   paint();
 }
 
+// "880,000" o "1.2M" galones → "3,3 millones de litros".
+const litres = (g) => { const n = /M$/.test(g) ? parseFloat(g) * 1e6 : +String(g).replace(/,/g, ""); const l = n * 3.785; return l >= 1e6 ? T("{n} millones de litros", { n: (l / 1e6).toLocaleString(lang() === "en" ? "en-US" : "es-ES", { maximumFractionDigits: 1 }) }) : `${Math.round(l).toLocaleString(lang() === "en" ? "en-US" : "es-ES")} l`; };
 async function uniInfoView(u, hero) {
   const inst = (await loadData("instalaciones").catch(() => null))?.u?.[u.n] || {};
   const f = inst.fac;
@@ -1348,14 +1391,14 @@ async function uniInfoView(u, hero) {
   </div>
   <h2>${T("Piscina")}</h2>
   ${f ? `<div class="pcard">${f.img ? `<img class="pimg" src="${esc(f.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<div class="pbody"><b class="pname">${esc(f.n)}</b>
-    ${prow(T("Piscina de 25 yardas"), yes(f.y25))}
-    ${prow(T("Piscina de 50 metros"), yes(f.m50))}
+    ${f.y25 ? prow(T("Piscina de 25 yardas"), yes(1)) : ""}
+    ${f.m50 ? prow(T("Piscina de 50 metros"), yes(1)) : ""}
     ${f.m25 ? prow(T("Piscina de 25 metros"), yes(1)) : ""}
     ${f.lanes ? prow(T("Carriles"), `<b>${f.lanes}</b>`) : ""}
     ${prow(T("Foso de saltos"), yes(f.dive || u.diving))}
     ${f.seats ? prow(T("Aforo"), `<b>${f.seats.toLocaleString(lang() === "en" ? "en-US" : "es-ES")}</b>`) : ""}
     ${f.year ? prow(T("Inaugurada"), `<b>${f.year}</b>`) : ""}
-    ${f.gal ? prow(T("Litros de agua"), `<b>${esc(f.gal)} ${T("galones")}</b>`) : ""}
+    ${f.gal ? prow(T("Agua"), `<b>${esc(litres(f.gal))}</b>`) : ""}
     <a class="plink" href="${esc(f.url)}" target="_blank" rel="noopener">${T("Más sobre la piscina")} ↗</a></div></div>${poolVideo}`
     : `<div class="pcard"><div class="pbody">${prow(T("Equipo de saltos"), yes(u.diving))}<p class="muted small">${T("La universidad no publica los datos de su piscina en un formato que se pueda leer.")} <a href="${esc(ddg(`${u.full || u.n} aquatic center`))}" target="_blank" rel="noopener">${T("Buscarla")} ↗</a></p></div></div>`}
   <h2>${T("Datos")}</h2>
@@ -1467,7 +1510,7 @@ function nowSection(u, games, meets, sx = null) {
   if (next) parts.push(card(next, T("Próxima competición") + (daysUntil(next.d) > 0 ? ` · ${daysUntil(next.d) === 1 ? T("mañana") : T("en {n} días", { n: daysUntil(next.d) })}` : ""), "next"));
   return `<h2>📍 ${T("¿Dónde compite?")}</h2>${parts.join("")}`;
 }
-const face = (x, size = 38) => x.img ? `<img class="face" src="${esc(x.img)}" alt="" width="${size}" height="${size}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.visibility='hidden'">` : `<span class="avatar ${x.g === "W" ? "w" : "m"}">${x.g === "W" ? "♀" : "♂"}</span>`;
+const face = (x, size = 38) => x.img ? `<img class="face" src="${esc(x.img)}" alt="" width="${size}" height="${size}" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'avatar ${x.g === "W" ? "w" : "m"}',textContent:'${x.g === "W" ? "♀" : "♂"}'}))">` : `<span class="avatar ${x.g === "W" ? "w" : "m"}">${x.g === "W" ? "♀" : "♂"}</span>`;
 // Encuentros guardados de la universidad (esta temporada y anteriores), agrupados por temporada.
 function storedSection(u) {
   const list = (resIdx?.meets || []).filter((m) => m.u.includes(u.n));
@@ -1522,7 +1565,7 @@ async function swimmersView() {
     store.set("swq", q);
     const words = q.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(/\s+/).filter(Boolean);
     const box = document.getElementById("slist");
-    const row = (x) => `<a class="urow" href="#/n/${x.i}">${x.img ? face(x, 34) : crest(x.u ? x.u.n : x.t, 34)}<span class="uinfo"><b>${esc(x.n)} ${flagHtml(null, x)}</b><small>${esc([x.u ? x.u.n : x.t, x.g === "W" ? "♀" : x.g === "M" ? "♂" : "", x.y].filter(Boolean).join(" · "))}</small></span>${swStar(x)}</a>`;
+    const row = (x) => `<a class="urow" href="#/n/${x.i}">${x.img ? face(x, 34) : crest(x.u ? x.u.n : x.t, 34)}<span class="uinfo"><b>${esc(x.n)} ${flagHtml(null, x)}</b><small>${esc([x.u ? x.u.n : x.t, x.g === "W" ? "♀" : x.g === "M" ? "♂" : "", yrLabel(x.y)].filter(Boolean).join(" · "))}</small></span>${swStar(x)}</a>`;
     const fs = favSw();
     const mine = fs.size ? sw.filter((x) => fs.has(swKey(x))) : [];
     const favHtml = mine.length ? `<h2>★ ${T("Mis nadadores")} <span class="count">${mine.length}</span></h2><div class="list">${mine.map(row).join("")}</div>` : "";
@@ -1635,12 +1678,12 @@ async function swimmerView(i) {
   ${bioBlock(bio)}
   ${nowHtml}
   <h2>⏱️ ${T("Mejores marcas")}</h2>
-  ${Object.keys(x.b).length ? `<div class="list">${Object.entries(x.b).sort((a, b) => evOrder(a[0]) - evOrder(b[0])).map(([ev, [t, m0, mid]]) => { const m = m0 || sw.mi[mid]?.[0] || ""; const id = mid || arch.find((s) => s.name.toLowerCase() === (m || "").toLowerCase())?.id; const dt = mid && sw.mi[mid] ? sw.mi[mid][1] : ""; return `<div class="srow"><span class="uinfo"><b>${esc(ev)}</b>${id ? `<a class="mlink" href="#/m/${enc(id)}">${esc(m)}${dt ? " · " + esc(fmtDate(dt)) : ""} ›</a>` : `<small>${esc(m)}</small>`}</span><span class="time" data-conv="${esc(t)}" data-ev="${esc(ev)}" role="button"><strong>${esc(t)}</strong></span></div>`; }).join("")}</div>` : `<div class="card muted">${T("Aún no tiene marcas en los resultados guardados.")}</div>`}
+  ${Object.keys(x.b).length ? `<div class="list">${Object.entries(x.b).sort((a, b) => evOrder(a[0]) - evOrder(b[0])).map(([ev, [t, m0, mid]]) => { const m = m0 || sw.mi[mid]?.[0] || ""; const id = mid || arch.find((s) => s.name.toLowerCase() === (m || "").toLowerCase())?.id; const dt = mid && sw.mi[mid] ? sw.mi[mid][1] : ""; return `<div class="srow"><span class="uinfo"><b>${esc(evLabel(ev))}</b>${id ? `<a class="mlink" href="#/m/${enc(id)}">${esc(m)}${dt ? " · " + esc(fmtDate(dt)) : ""} ›</a>` : `<small>${esc(m)}</small>`}</span><span class="time" data-conv="${esc(t)}" data-ev="${esc(ev)}" role="button"><strong>${esc(t)}</strong></span></div>`; }).join("")}</div>` : `<div class="card muted">${T("Aún no tiene marcas en los resultados guardados.")}</div>`}
   ${x.m.length ? `<h2>📅 ${T("Últimas competiciones")}</h2><div class="list">${x.m.map((m) => { const st = sw.mi[m]; if (st) { const r = resIdx?.byId.get(m); return { id: m, name: st[0], start: st[1], end: r?.e || st[1], org: isDual(st[0]) || !/champ|conference|league|invit/i.test(st[0]) ? "dual" : organization(st[0]), host: r?.u?.[0] || "" }; } return arch.find((s) => s.name.toLowerCase() === m.toLowerCase()) || { name: m, org: organization(m) }; }).sort((a, b) => (b.start || "").localeCompare(a.start || "")).map((a) => { const m = a.name; const y = m.match(/\b(19|20)\d{2}\b/)?.[0] || (a.start || "").slice(0, 4); return `<div class="urow mrow">${meetBadge(a, 34)}<span class="uinfo">${a.id ? `<a href="#/m/${enc(a.id)}"><b>${esc(m)}</b></a>` : `<b>${esc(m)}</b>`}<small>${a.start ? esc(fmtRange(a.start, a.end)) : ""}</small></span><a class="minisc" href="${esc(SC_MEET(m.replace(/\b(19|20)\d{2}\b/g, "").trim(), y))}" target="_blank" rel="noopener">SwimCloud ↗</a></div>`; }).join("")}</div>` : ""}
   ${x.ro ? `<p class="sub center">✅ ${T("En la plantilla oficial de su universidad")}</p>` : ""}
   ${extButtons([[SC_SWIMMER(x.n, x.u ? x.u.n : x.t), "SwimCloud", "sc"], [USAS_SWIMMER(x.n), "USA Swimming", "usas"]])}
   ${x.u ? `<a class="btn wide" href="#/uni/${enc(x.u.n)}">🎓 ${T("Ver universidad")}</a>` : ""}
-  <p class="foot">${T("Marcas oficiosas de los resultados públicos (Y = yardas, M = metros).")}</p>`;
+  <p class="foot">${T("Marcas oficiosas de los resultados públicos. Sin indicar, en yardas (piscina corta americana).")}</p>`;
 }
 
 const THEMES = [["auto", "Automático"], ["light", "Claro"], ["dark", "Oscuro"]];
@@ -1719,7 +1762,7 @@ function route() {
   }
   if (parts[0] === "u" && parts[1]) return favTeamView(parts[1]);
   if (parts[0] === "uni" && parts[1]) return uniView(parts[1], parts[2] || "");
-  if (parts[0] === "rank" && parts[1] && parts[2]) return rankView(parts[1], parts[2], parts[3]);
+  if (parts[0] === "rank" && parts[1] && parts[2]) return rankView(parts[1], parts[2], parts[3], parts[4]);
   if (parts[0] === "coach" && parts[1] && parts[2]) return coachView(parts[1], parts[2]);
   if (parts[0] === "ajustes") return settingsView();
   if (parts[0] === "n" && parts[1]) return swimmerView(parts[1]);
