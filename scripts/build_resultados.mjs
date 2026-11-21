@@ -289,7 +289,7 @@ await pool(cand, 6, async (c) => {
     if (!meet) { fail++; return; }
   }
   const swims = meet.events.reduce((a, e) => a + e.results.length, 0);
-  if (!meet.events.length || swims < 4) { whyC[meet.why || (meet.events.length ? "pocas filas" : "sin pruebas")] = (whyC[meet.why || (meet.events.length ? "pocas filas" : "sin pruebas")] || 0) + 1; if (DEBUG && dbg.pe++ < 6) console.log("SIN-PRUEBAS", c.url, meet.events.length, swims, "\n" + (meet.text || "").split("\n").slice(0, process.env.URLS ? 90 : 25).join("\n")); done[c.url] = 0; empty++; return; }
+  if (!meet.events.length || swims < 4) { whyC[meet.why || (meet.events.length ? "pocas filas" : "sin pruebas")] = (whyC[meet.why || (meet.events.length ? "pocas filas" : "sin pruebas")] || 0) + 1; if (DEBUG && dbg.pe++ < 6) console.log("SIN-PRUEBAS", c.url, meet.events.length, swims, "\n" + (meet.text || "").split("\n").slice(0, process.env.URLS ? (cand.length === 1 ? 260 : 90) : 25).join("\n")); done[c.url] = 0; empty++; return; }
   meet.start ||= c.d || "";
   meet.end ||= meet.start;
   meet.name = (meet.name || "").replace(/(\s+-\s+copied)+$/i, "").trim();
