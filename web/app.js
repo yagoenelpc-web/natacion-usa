@@ -271,8 +271,27 @@ const findUni = (name) => {
   const direct = matchTeam(uniIndex, name)?.uni;
   if (direct) return direct;
   const e = logoIndex ? matchTeam(logoIndex, name) : null;
-  return e ? matchTeam(uniIndex, e.display)?.uni || null : null;
+  const viaLogo = e ? matchTeam(uniIndex, e.display)?.uni || null : null;
+  return viaLogo || looseUni(name);
 };
+// Nombres cortados de los resultados ("Florida Institute of Technolog-FL", "GS Illinois Tech-IL", "FIT-FL").
+const UNI_ALIAS = { fit: "Florida Institute Technology", floridatech: "Florida Institute Technology", floridainstituteoftech: "Florida Institute Technology" };
+const looseMemo = new Map();
+function looseUni(name) {
+  if (looseMemo.has(name)) return looseMemo.get(name);
+  const clean = name.replace(/^(GS|PG|UN|UNAT)\s+/, "").replace(/-[A-Z]{2}$/, "").replace(/\s+\d[\d:.]*$/, "").replace(/\b(University|College|Univ)\b/gi, "").trim();
+  const key = (t) => norm(t).replace(/\bof\b|\bthe\b/g, "").replace(/[^a-z]+/g, "");
+  const k = key(clean);
+  let r = null;
+  if (UNI_ALIAS[k]) r = unis.find((u) => u.n === UNI_ALIAS[k]) || null;
+  else if (clean !== name) r = matchTeam(uniIndex, clean)?.uni || null;
+  if (!r && k.length >= 12) {
+    const hits = unis.filter((u) => [u.n, u.full].some((t) => t && key(t.replace(/\b(University|College)\b/gi, "")).startsWith(k)));
+    if (hits.length === 1) r = hits[0];
+  }
+  looseMemo.set(name, r);
+  return r;
+}
 
 // Datos que GitHub actualiza solos: archivo de competiciones, ranking NCAA y nadadores.
 // Los datos viven en la rama "datos" de GitHub (se actualizan sin volver a publicar la web); si falla, copia local.
