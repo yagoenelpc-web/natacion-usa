@@ -98,11 +98,16 @@ function parseAltMeet(text) {
     if (!ev || /^\s*Name\s{2,}/.test(l)) continue;
     const cols = l.trim().split(/\s{2,}/);
     const pl = /^(\d{1,3}|-{1,3}|\*\d{1,3}|DQ)$/.exec(cols[0])?.[1];
-    if (pl && cols.length >= 3 && T.test(cols[cols.length - 1]) && new RegExp(`^${T.source}$`).test(cols[cols.length - 1])) {
-      const time = cols[cols.length - 1];
-      let pts = "";
-      const mid = cols.slice(1, -1);
-      if (mid.length >= 2 && /^(\d+(\.\d+)?|-)$/.test(mid[mid.length - 1])) pts = mid.pop().replace("-", "");
+    const TT = new RegExp(`^${T.source}$`);
+    // Columna del tiempo: la última, o la penúltima si detrás va la puntuación ("1:51.94   11").
+    let ti = -1;
+    if (cols.length >= 3 && TT.test(cols[cols.length - 1])) ti = cols.length - 1;
+    else if (cols.length >= 4 && TT.test(cols[cols.length - 2]) && /^(\d+(\.\d+)?|-)$/.test(cols[cols.length - 1])) ti = cols.length - 2;
+    if (pl && ti > 0) {
+      const time = cols[ti];
+      let pts = ti < cols.length - 1 ? cols[cols.length - 1].replace("-", "") : "";
+      const mid = cols.slice(1, ti);
+      if (!pts && mid.length >= 2 && /^(\d+(\.\d+)?|-)$/.test(mid[mid.length - 1])) pts = mid.pop().replace("-", "");
       const r = ev.relay ? { p: /^\d+$/.test(pl) ? pl : "", n: mid.join(" "), t: mid.join(" ").replace(/\s+[A-H]$/, ""), y: "", m: time, pv: "", pts, l: "", sw: [] }
         : { p: /^\d+$/.test(pl) ? pl : "", n: mid[0] || "", t: mid.slice(1).join(" "), y: "", m: time, pv: "", pts, l: "" };
       if (!ev.relay && (!r.t || /\d[:.]\d\d/.test(r.t))) continue;
