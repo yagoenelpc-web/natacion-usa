@@ -120,7 +120,7 @@ function fromHtml(html) {
   const f = [];
   const LABELS = { Hometown: "Ciudad", "High School": "Instituto", "Previous School": "Universidad anterior", Major: "Carrera", Position: "Especialidad", Class: "Curso", "Academic Year": "Curso", Year: "Curso", Height: "Altura", "Alma Mater": "Universidad donde estudió", Title: "Cargo", Experience: "Experiencia" };
   for (const [en, es] of Object.entries(LABELS)) {
-    const m = new RegExp(`>\\s*${en}:?\\s*<\\/(?:dt|span|strong|b|th|div|label)>\\s*(?:<[^>]+>\\s*)*([^<]{2,100})<`, "i").exec(html);
+    const m = new RegExp(`>\\s*${en}:?\\s*<\\/(?:dt|span|strong|b|th|div|label|small)>\\s*(?:<[^>]+>\\s*)*([^<]{2,100})<`, "i").exec(html);
     if (m && !f.some(([l]) => l === es)) f.push([es, decode(m[1].trim())]);
   }
   const blocks = [
@@ -144,7 +144,7 @@ for (const [uni, { p = {}, c = {} }] of Object.entries(links)) {
   files.set(uni, cur);
   for (const [k, list] of [["p", p], ["c", c]]) for (const [n, u] of Object.entries(list)) {
     const old = cur[k][n];
-    if (old && old.u === u && Date.now() - (old.d || 0) < 30 * 864e5) continue;
+    if (old && old.u === u && (old.b || old.f || old.img) && Date.now() - (old.d || 0) < 30 * 864e5) continue;
     todo.push({ uni, k, n, u });
   }
 }
@@ -177,7 +177,10 @@ if (!process.env.URLS) {
   for (const [uni, p] of Object.entries(pl?.plant || {})) {
     const f = files.get(uni);
     if (!f) continue;
-    const imgs = new Map(Object.entries(f.p).filter(([, v]) => v.img && !/logo|default|placeholder|silhouette/i.test(v.img)).map(([n, v]) => [key(n), v.img]));
+    // La misma imagen en varias fichas es la de la web (logo, cartel), no la del nadador.
+    const freq = {};
+    for (const v of Object.values(f.p)) if (v.img) freq[v.img] = (freq[v.img] || 0) + 1;
+    const imgs = new Map(Object.entries(f.p).filter(([, v]) => v.img && freq[v.img] < 3 && !/logo|default|placeholder|silhouette|share|social/i.test(v.img)).map(([n, v]) => [key(n), v.img]));
     for (const list of Object.values(p)) for (let i = 0; i < list.length; i++) {
       const e = Array.isArray(list[i]) ? list[i] : [list[i]];
       if (e[1]) continue;

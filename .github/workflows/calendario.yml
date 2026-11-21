@@ -3,6 +3,7 @@ name: Calendarios y plantillas
 on:
   schedule:
     - cron: "40 9 * * *"
+    - cron: "10 21 * * *"
   workflow_dispatch:
 
 permissions:

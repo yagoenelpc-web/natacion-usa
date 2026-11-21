@@ -2,7 +2,7 @@ name: Competiciones y nadadores
 
 on:
   schedule:
-    - cron: "17 */3 * * *"
+    - cron: "23 * * * *"
   workflow_dispatch:
 
 permissions:
