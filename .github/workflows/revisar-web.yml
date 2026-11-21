@@ -19,6 +19,16 @@ jobs:
         run: |
           curl -sS -o /dev/null -w "portada %{http_code}\n" "${{ inputs.url }}"
           curl -sS -w "\nproxy %{http_code}\n" "${{ inputs.url }}api/fuente?url=https%3A%2F%2Fswimmeetresults.tech%2F" | tail -c 200
+      - name: Acceso privado
+        run: |
+          U="${{ inputs.url }}"
+          echo "portada sin sesión (debe ser 302 a /entrar):"; curl -sS -o /dev/null -w "%{http_code} %{redirect_url}\n" -H "Sec-Fetch-Mode: navigate" -H "Accept: text/html" "$U"
+          echo "app.js sin sesión (debe ser 401):"; curl -sS -o /dev/null -w "%{http_code}\n" "${U}app.js"
+          echo "pantalla de entrar (200):"; curl -sS -o /tmp/e.html -w "%{http_code}\n" "${U}entrar"; grep -o "<title>[^<]*" /tmp/e.html; grep -c "Crear cuenta" /tmp/e.html || true
+          echo "icono sin sesión (200):"; curl -sS -o /dev/null -w "%{http_code}\n" "${U}icons/icon-192.png"
+          echo "registro con código falso:"; curl -sS -X POST -H "content-type: application/json" -d '{"usuario":"prueba","clave":"123456","codigo":"ZZZZ-ZZZZ-ZZZZ"}' -w " %{http_code}\n" "${U}api/acceso/registro"
+          echo "entrar con usuario que no existe:"; curl -sS -X POST -H "content-type: application/json" -d '{"usuario":"nadie-prueba","clave":"123456"}' -w " %{http_code}\n" "${U}api/acceso/entrar"
+          echo "sesión falsa:"; curl -sS -H "Cookie: ur_s=a.9999999999.1.abc" -w " %{http_code}\n" "${U}api/acceso/yo"
       - name: Capturas
         env:
           BASE: ${{ inputs.url }}

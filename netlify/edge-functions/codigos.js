@@ -1,12 +1,8 @@
 // Huellas SHA-256 de los códigos de invitación iniciales (los códigos en sí no están en GitHub).
-// Cada código sirve una sola vez. Los dos primeros dan permisos de administrador.
+// Cada código sirve una sola vez. El primero da permisos de administrador.
 export const CODIGOS = [
 {
 "h": "253e949347e47d01bbf7ced8329cbb079f9eed123e7cfeb98bcf0418d5b1205a",
-"admin": true
-},
-{
-"h": "669c3d6b164644b8a9e65e1bfc1e39676b194b66b411f7a29694d67b0de61175",
 "admin": true
 },
 {
