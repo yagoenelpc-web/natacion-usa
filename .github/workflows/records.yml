@@ -1,0 +1,36 @@
+name: Récords
+
+on:
+  schedule:
+    - cron: "40 5 * * 2"
+  workflow_dispatch:
+    inputs:
+      solo:
+        description: "Probar solo con estas universidades (separadas por comas), sin guardar"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ inputs.solo && 'records-prueba' || 'datos-app' }}
+  cancel-in-progress: false
+
+jobs:
+  records:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: sudo apt-get install -y -q poppler-utils >/dev/null
+      - run: scripts/datos-rama.sh bajar
+      - run: node scripts/build_records.mjs
+        env:
+          SOLO: ${{ inputs.solo }}
+      - name: Guardar
+        if: ${{ !inputs.solo }}
+        run: scripts/datos-rama.sh subir
