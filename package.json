@@ -5,5 +5,8 @@
   "scripts": {
     "test": "node --test tests/js/*.test.js",
     "dev": "node scripts/dev.mjs"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
   }
 }

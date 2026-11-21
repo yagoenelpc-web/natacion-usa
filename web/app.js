@@ -108,7 +108,7 @@ const EN = {
   "universidades": "universities", "Ninguna universidad con estos filtros.": "No universities match these filters.",
   "Marca con ★ las tuyas: aparecerán en la portada y podrás filtrar los resultados.": "Star ★ yours: they'll show on the home screen and you can filter results.",
   "Entrenador": "Head coach", "Entrenador (hombres)": "Men's head coach", "Entrenadora/entrenador (mujeres)": "Women's head coach",
-  "No disponible": "Not available", "Equipo técnico": "Coaching staff", "Ver en la web oficial": "See official site", "Ciudad": "City", "División": "Division", "Récords": "Records", "Récords NCAA": "NCAA records", "Los tiempos más rápidos de la historia de cada división": "The fastest times ever in each division", "Sin récords para esta división.": "No records for this division.", "Récords de cada universidad": "Each school's records", "Hoy se compite": "Competing today", "Récords de {u}": "{u} records", "Esta universidad no tiene récords guardados.": "This school has no saved records.", "Récords de la web oficial de la universidad.": "Records from the school's official site.", "Ver la fuente": "See source", "Toca un tiempo para convertirlo.": "Tap a time to convert it.", "Resultados": "Results", "Ver las {n} de hoy": "See all {n} today", "Resultados en directo": "Live results", "equipo": "team", "equipos": "teams", "en {u}": "at {u}", "Buscar nadador con récord…": "Search a record holder…", "Récord de {u}": "{u} record", "Récords de «{q}»": "Records of “{q}”", "Ningún nadador con ese nombre tiene récords guardados.": "No swimmer with that name holds a saved record.", "récords": "records", "Récords sacados de la web oficial de cada universidad. Solo salen los que se han podido leer bien.": "Records taken from each school's official site. Only those read reliably are shown.", "Récords oficiales de la NCAA (NCAA.org), puestos al día con los resultados del último campeonato. Toca un tiempo para convertirlo a metros.": "Official NCAA records (NCAA.org), updated with the latest championship results. Tap a time to convert it to meters.", "Actualizado: {d}.": "Updated: {d}.", "Récords de la universidad": "School records", "Las mejores marcas de su historia": "The best times in its history", "Récords en la web de la universidad": "Records on the school site", "Los récords todavía no están disponibles.": "Records are not available yet.", "Natación de EE. UU.": "US swimming", "NCAA, USA Swimming y universidades": "NCAA, USA Swimming and colleges", "Ver las {n} en directo": "See all {n} live", "larga": "long course", "competiciones": "meets", "en plantilla": "on roster", "Biografía": "Bio", "Su universidad compite ahora": "Their school is competing now", "{n} competiciones": "{n} meets", "Más información": "More info", "División I": "Division I", "División II": "Division II", "División III": "Division III", "Apodo": "Nickname",
+  "No disponible": "Not available", "Equipo técnico": "Coaching staff", "Ver en la web oficial": "See official site", "Ciudad": "City", "División": "Division", "Récords": "Records", "Récords NCAA": "NCAA records", "Los tiempos más rápidos de la historia de cada división": "The fastest times ever in each division", "Sin récords para esta división.": "No records for this division.", "Récords de cada universidad": "Each school's records", "Hoy se compite": "Competing today", "Récords de {u}": "{u} records", "Esta universidad no tiene récords guardados.": "This school has no saved records.", "Récords de la web oficial de la universidad.": "Records from the school's official site.", "Ver la fuente": "See source", "Toca un tiempo para convertirlo.": "Tap a time to convert it.", "Resultados": "Results", "Ver las {n} de hoy": "See all {n} today", "Resultados en directo": "Live results", "equipo": "team", "equipos": "teams", "en {u}": "at {u}", "Buscar nadador con récord…": "Search a record holder…", "Buscar universidad o nadador…": "Search a school or swimmer…", "Cuenta": "Account", "Administrador": "Admin", "Cambiar contraseña": "Change password", "Contraseña actual": "Current password", "Contraseña nueva": "New password", "Guardar": "Save", "Contraseña cambiada.": "Password changed.", "Invitaciones": "Invitations", "Cada código sirve para una sola persona y una sola vez.": "Each code works for one person, once.", "Crear código de invitación": "Create invitation code", "Personas con acceso": "People with access", "Cerrar sesión": "Sign out", "Quitar acceso": "Remove access", "¿Seguro? Toca otra vez": "Sure? Tap again", "Códigos creados sin usar: {n}": "Unused codes created: {n}", "Copiar invitación": "Copy invitation", "Copiado ✓": "Copied ✓", "Te invito a USA Results. Entra aquí y crea tu cuenta con este código: {c} {l}": "Join me on USA Results. Open this link and create your account with this code: {c} {l}", "La contraseña actual no es correcta.": "Current password is wrong.", "La contraseña debe tener al menos 6 caracteres.": "Password must be at least 6 characters.", "No hay récords de universidades que coincidan.": "No school records match.", "Récord de {u}": "{u} record", "Récords de «{q}»": "Records of “{q}”", "Ningún nadador con ese nombre tiene récords guardados.": "No swimmer with that name holds a saved record.", "récords": "records", "Récords sacados de la web oficial de cada universidad. Solo salen los que se han podido leer bien.": "Records taken from each school's official site. Only those read reliably are shown.", "Récords oficiales de la NCAA (NCAA.org), puestos al día con los resultados del último campeonato. Toca un tiempo para convertirlo a metros.": "Official NCAA records (NCAA.org), updated with the latest championship results. Tap a time to convert it to meters.", "Actualizado: {d}.": "Updated: {d}.", "Récords de la universidad": "School records", "Las mejores marcas de su historia": "The best times in its history", "Récords en la web de la universidad": "Records on the school site", "Los récords todavía no están disponibles.": "Records are not available yet.", "Natación de EE. UU.": "US swimming", "NCAA, USA Swimming y universidades": "NCAA, USA Swimming and colleges", "Ver las {n} en directo": "See all {n} live", "larga": "long course", "competiciones": "meets", "en plantilla": "on roster", "Biografía": "Bio", "Su universidad compite ahora": "Their school is competing now", "{n} competiciones": "{n} meets", "Más información": "More info", "División I": "Division I", "División II": "Division II", "División III": "Division III", "Apodo": "Nickname",
   "Ver sus resultados": "See their results", "Wikipedia": "Wikipedia", "Web oficial": "Official site",
   "Datos de Wikipedia (CC BY-SA).": "Data from Wikipedia (CC BY-SA).",
   "Idioma": "Language", "Tema": "Theme", "Automático": "Automatic", "Claro": "Light", "Oscuro": "Dark", "Fondo": "Background",
@@ -827,10 +827,34 @@ async function recUnisView() {
   const R = await loadData("records").catch(() => null);
   const list = unis.filter((u) => R?.u?.[u.n]).sort((a, b) => a.n.localeCompare(b.n));
   const divs = ["D1", "D2", "D3", "NAIA"].map((d) => [d, list.filter((u) => u.div === d)]).filter(([, l]) => l.length);
+  const tileU = (u) => `<a href="#/rec/uni/${enc(u.n)}">${crest(u.n, 44)}<b>${esc(u.n)}</b><small>${Object.keys(R.u[u.n].M || {}).length + Object.keys(R.u[u.n].W || {}).length} ${T("récords")}</small></a>`;
   $app.innerHTML = `<a class="back" href="#/rec">‹ ${T("Récords NCAA")}</a>
   <h1>🎓 ${T("Récords de cada universidad")}</h1>
-  ${divs.map(([d, l]) => `<h2>${esc(divLabel(d))} <span class="count">${l.length}</span></h2><div class="recunis">${l.map((u) => `<a href="#/rec/uni/${enc(u.n)}">${crest(u.n, 44)}<b>${esc(u.n)}</b><small>${Object.keys(R.u[u.n].M || {}).length + Object.keys(R.u[u.n].W || {}).length} ${T("récords")}</small></a>`).join("")}</div>`).join("")}
+  <input type="search" id="recuq" placeholder="${esc(T("Buscar universidad o nadador…"))}" autocomplete="off" value="${esc(store.get("recuq", ""))}">
+  <div id="recures"></div>
+  <div id="recumain">${divs.map(([d, l]) => `<h2>${esc(divLabel(d))} <span class="count">${l.length}</span></h2><div class="recunis">${l.map(tileU).join("")}</div>`).join("")}</div>
   <p class="foot">${T("Récords sacados de la web oficial de cada universidad. Solo salen los que se han podido leer bien.")}</p>`;
+  // Buscador: universidades por nombre, apodo, ciudad o estado, y nadadores con algún récord de universidad.
+  const norm = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const order = R.order || [];
+  const q$ = document.getElementById("recuq"), res$ = document.getElementById("recures"), main$ = document.getElementById("recumain");
+  const run = () => {
+    const raw = q$.value.trim(), q = norm(raw);
+    store.set("recuq", raw);
+    if (q.length < 2) { res$.innerHTML = ""; main$.hidden = false; return; }
+    const words = q.split(/\s+/);
+    const hay = (u) => norm([u.n, u.full, u.nick, u.city, u.st].filter(Boolean).join(" "));
+    const us = list.filter((u) => { const h = hay(u); return words.every((w) => h.includes(w)); });
+    const sw = [];
+    if (q.length >= 3) for (const u of list) for (const gg of ["M", "W"]) for (const [ev, r] of Object.entries(R.u[u.n][gg] || {})) { const toks = norm(r.n).split(/[\s,.\-]+/); if (words.every((w) => toks.some((t) => t.startsWith(w)))) sw.push([ev, r, u.n, `${T("Récord de {u}", { u: u.n })} · ${gg === "M" ? "♂" : "♀"}`]); }
+    sw.sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
+    main$.hidden = true;
+    res$.innerHTML = (us.length ? `<h2>${T("Universidades")} <span class="count">${us.length}</span></h2><div class="recunis">${us.map(tileU).join("")}</div>` : "")
+      + (sw.length ? `<h2>${T("Nadadores")} <span class="count">${sw.length}</span></h2><div class="recgrid">${sw.slice(0, 60).map(([ev, r, un, tag]) => recTile(ev, r, un, tag)).join("")}</div>` : "")
+      || `<div class="card muted">${T("No hay récords de universidades que coincidan.")}</div>`;
+  };
+  q$.addEventListener("input", run);
+  if (q$.value) run();
 }
 // Récords de una sola universidad, a pantalla completa (desde la lista de universidades con récords).
 async function recUniView(name, g = "") {
@@ -1988,6 +2012,7 @@ function settingsView() {
     <h3>${T("Fondo")}</h3>
     <div class="swatches" data-key="bg">${BGS.map(([v, l]) => `<button class="sw ${v === store.get("bg", "ocean") ? "on" : ""}" data-v="${v}" data-bgs="${v}"><i></i><span>${esc(T(l))}</span></button>`).join("")}</div>
   </div>
+  <div class="card settings" id="cuenta" hidden></div>
   <div class="card settings"><button class="btn ghost" id="clear">${T("Borrar datos guardados")}</button></div>
   <p class="foot">${lang() === "en" ? "USA Results · results from public HY-TEK pages, SwimSwam feed, ESPN team logos and Wikipedia." : "USA Results · resultados de páginas públicas HY-TEK, canal de SwimSwam, escudos de ESPN y Wikipedia."}</p>`;
   $app.onclick = null;
@@ -2009,6 +2034,72 @@ function settingsView() {
     mem.clear();
     logoIndex = null;
     document.getElementById("clear").textContent = T("Datos guardados borrados.");
+  };
+  accountCard();
+}
+
+// Cuenta (la app es privada): usuario, cambiar contraseña, salir y, para el administrador, invitaciones.
+const acc = async (path, body) => {
+  const r = await fetch("/api/acceso/" + path, body ? { method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin", body: JSON.stringify(body) } : { credentials: "same-origin" });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || "Error");
+  return j;
+};
+async function accountCard() {
+  const box = document.getElementById("cuenta");
+  if (!box) return;
+  let me;
+  try { me = await acc("yo"); } catch { return; }
+  if (!document.body.contains(box)) return;
+  box.hidden = false;
+  box.innerHTML = `<h3>${T("Cuenta")}</h3>
+    <p class="acc-me">👤 <b>${esc(me.usuario)}</b>${me.admin ? ` <span class="pill">${T("Administrador")}</span>` : ""}</p>
+    <details class="acc-pass"><summary>${T("Cambiar contraseña")}</summary>
+      <input type="password" id="pa" placeholder="${esc(T("Contraseña actual"))}" autocomplete="current-password">
+      <input type="password" id="pn" placeholder="${esc(T("Contraseña nueva"))}" autocomplete="new-password">
+      <button class="btn" id="pgo">${T("Guardar")}</button> <span class="muted" id="pmsg"></span>
+    </details>
+    ${me.admin ? `<h3>${T("Invitaciones")}</h3>
+    <p class="muted small">${T("Cada código sirve para una sola persona y una sola vez.")}</p>
+    <button class="btn" id="newcode">＋ ${T("Crear código de invitación")}</button>
+    <div id="codes"></div>
+    <h3>${T("Personas con acceso")}</h3><div id="users" class="muted small">…</div>` : ""}
+    <button class="btn ghost" id="logout">${T("Cerrar sesión")}</button>`;
+  document.getElementById("logout").onclick = async () => { await acc("salir", {}).catch(() => {}); location.replace("/entrar"); };
+  document.getElementById("pgo").onclick = async () => {
+    const m = document.getElementById("pmsg");
+    try { await acc("clave", { actual: document.getElementById("pa").value, nueva: document.getElementById("pn").value }); m.textContent = T("Contraseña cambiada."); }
+    catch (e) { m.textContent = T(e.message); }
+  };
+  if (!me.admin) return;
+  const users = async () => {
+    const el = document.getElementById("users");
+    try {
+      const j = await acc("usuarios");
+      el.innerHTML = `${j.usuarios.map((u) => `<div class="acc-user"><span>👤 <b>${esc(u.usuario)}</b>${u.admin ? ` <span class="pill">${T("Administrador")}</span>` : ""} <small>${esc(u.creado)}</small></span>${u.usuario === me.usuario ? "" : `<button class="btn ghost small" data-quitar="${esc(u.usuario)}">${T("Quitar acceso")}</button>`}</div>`).join("")}
+        <p class="small">${T("Códigos creados sin usar: {n}", { n: j.codigosSinUsar })}</p>`;
+      el.querySelectorAll("[data-quitar]").forEach((b) => (b.onclick = async () => {
+        if (b.dataset.ok !== "1") { b.dataset.ok = "1"; b.textContent = T("¿Seguro? Toca otra vez"); return; }
+        await acc("quitar", { usuario: b.dataset.quitar }).catch(() => {});
+        users();
+      }));
+    } catch { el.textContent = ""; }
+  };
+  users();
+  document.getElementById("newcode").onclick = async () => {
+    try {
+      const { codigo } = await acc("codigo", {});
+      const link = `${location.origin}/entrar?codigo=${codigo}`;
+      const div = document.createElement("div");
+      div.className = "acc-code";
+      div.innerHTML = `<code>${esc(codigo)}</code><button class="btn small">${T("Copiar invitación")}</button>`;
+      div.querySelector("button").onclick = async () => {
+        const txt = T("Te invito a USA Results. Entra aquí y crea tu cuenta con este código: {c} {l}", { c: codigo, l: link });
+        try { if (navigator.share) await navigator.share({ text: txt }); else { await navigator.clipboard.writeText(txt); div.querySelector("button").textContent = T("Copiado ✓"); } } catch {}
+      };
+      document.getElementById("codes").prepend(div);
+      users();
+    } catch (e) { alert(T(e.message)); }
   };
 }
 

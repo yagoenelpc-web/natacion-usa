@@ -1,5 +1,5 @@
 // Guarda la app para que abra al instante y funcione sin conexión con lo último visto.
-const CACHE = "natacion-v30";
+const CACHE = "natacion-v31";
 const SHELL = ["/", "/index.html", "/style.css", "/app.js", "/parser.js", "/logos.js", "/data/unis.json", "/manifest.webmanifest", "/icons/icon-192.png"];
 
 self.addEventListener("install", (e) => {
@@ -10,12 +10,13 @@ self.addEventListener("activate", (e) => {
 });
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
-  if (e.request.method !== "GET" || url.origin !== location.origin || url.pathname === "/api/sc") return;
+  if (e.request.method !== "GET" || url.origin !== location.origin || url.pathname === "/api/sc" || url.pathname.startsWith("/api/acceso/") || url.pathname === "/entrar") return;
   // Datos y la propia app: primero la red, si falla lo guardado.
   e.respondWith(
     fetch(e.request)
       .then((res) => {
-        if (res.ok) {
+        // Nunca guardar la pantalla de entrar en lugar de la app (respuestas redirigidas).
+        if (res.ok && !res.redirected) {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(e.request, copy));
         }
