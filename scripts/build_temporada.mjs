@@ -60,6 +60,20 @@ for (const g of Object.values(calJ.cal || {}).flat()) for (const l of [g.res, g.
   const url = normalizeMeetUrl(l);
   if (!seenRes.has(url)) { seenRes.add(url); found.push({ url, src: "web" }); }
 }
+// Catálogo de swimmeetresults.tech: competiciones universitarias de esta temporada (invitationals de los grandes equipos).
+{
+  const cat0 = await get(SOURCE);
+  const items = cat0 ? parseCatalog(cat0, SOURCE) : [];
+  let n = 0;
+  for (const m of items) {
+    const nm = m.name || "";
+    if (/usa swimming|sectional|junior|futures|pro swim|speedo|tyr pro|masters|usms|age group|\bLSC\b|zone|ymca|high school|\bHS\b/i.test(nm)) continue;
+    if (!/univ|college|invit|invite|ncaa|naia|conference|classic|dual|\bvs\b|\bcup\b|championship|athletic/i.test(nm)) continue;
+    const url = normalizeMeetUrl(m.url);
+    if (!seenRes.has(url)) { seenRes.add(url); found.push({ url, src: "catalogo" }); n++; }
+  }
+  console.log("catálogo universitario:", n, "de", items.length);
+}
 for (const u of unis.filter((u) => u.hytek)) found.push({ url: `https://www.sidearmstats.com/${u.hytek}/swim/evtindex.htm`, host: u.n, src: "hytek" });
 console.log("candidatas:", found.length);
 let added = 0, updated = 0;

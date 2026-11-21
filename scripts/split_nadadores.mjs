@@ -44,13 +44,13 @@ let rosterWho = new Map(), rosterKey = () => "";
   const fixN = (n) => (n.includes(",") ? n.split(",").map((x) => x.trim()).filter(Boolean).reverse().join(" ") : n).replace(/\s+/g, " ").trim();
   const evOf = (title) => title.replace(/^(Women|Men|Girls|Boys|Mixed)\s+/i, "").replace(/\s+Yard\s+/i, " Y ").replace(/\s+LC\s+Meter\s+|\s+SC\s+Meter\s+|\s+Meter\s+/i, " M ").replace(/Freestyle/i, "Free").replace(/Backstroke/i, "Back").replace(/Breaststroke/i, "Breast").replace(/Butterfly/i, "Fly").replace(/Individual Medley/i, "IM").replace(/\s+(Time Trial|Swim-?off|Prelims|Finals|Consolation|Bonus)\b.*$/i, "").trim();
   // Equipo con un tiempo pegado ("CU 1:09.63", del tiempo de inscripción mal leído) → solo el equipo.
-  const cleanTeam = (t) => String(t || "").replace(/[\s(]*[xX*]?(\d{1,2}:)?\d{1,2}\.\d{2}\b.*$/, "").replace(/^\d{2}-\d{2}\s+/, "").replace(/^GS\s+/, "").replace(/\s*\((W|M|Men|Women)\)$/i, "").replace(/\s*\([^)]*$/, "").trim();
+  const cleanTeam = (t) => String(t || "").replace(/[\s(]*[xX*]?(\d{1,2}:)?\d{1,2}\.\d{2}\b.*$/, "").replace(/^\d{2}-\d{2}\s+/, "").replace(/^GS?\s+/, "").replace(/\s*\((W|M|Men|Women)\)$/i, "").replace(/\s*\([^)]*$/, "").trim();
   // Llave del equipo: alias de plantillas, o el nombre sin región ("-NE") ni palabras de relleno ("University", "Swimming").
-  const teamKey = (t0) => {
+  const teamKey = (t0, raw = false) => {
     const t = cleanTeam(t0), t2 = t.replace(/-[A-Z]{1,3}$/, "").trim();
-    const a = alias[t] || alias[t2];
+    const a = raw ? "" : alias[t] || alias[t2];
     const base = (a || t2).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/univeristy/g, "university");
-    return base.replace(/^(the )?university of /, "").replace(/, university of,?/, "").replace(/\bsaint\b/g, "st").replace(/\bst\.?$/, "state").replace(/\bsuny /, "").replace(/\b(university|college|swimming|swim|diving|team|athletics|aquatics|club)\b/g, " ").replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim() || base;
+    return base.replace(/^(the )?university of /, "").replace(/, university of,?/, "").replace(/\bsaint\b/g, "st").replace(/\bmount\b/g, "mt").replace(/\bumass\b/g, "massachusetts").replace(/\buniv\b/g, "university").replace(/\bst\.?$/, "state").replace(/\bsuny /, "").replace(/\b(university|college|swimming|swim|diving|team|athletics|aquatics|club)\b/g, " ").replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim() || base;
   };
   const nk = (n, t0) => nk0(n, teamKey(t0));
   const nk0 = (n, t) => n.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+[a-z]\.?(?=\s)/g, "").replace(/[^a-z ]+/g, "").replace(/\s+/g, " ").trim() + "|" + t;
@@ -88,7 +88,10 @@ let rosterWho = new Map(), rosterKey = () => "";
   // ¿Es el mismo equipo escrito de otra forma? Siglas ("BSU"), principio del nombre ("ROCK" → Rockhurst) o nombre cortado ("Long" → Long Island).
   const sameTeam = (a, b) => {
     const ka = teamKey(a), kb = teamKey(b);
-    if (ka && kb && (kb.startsWith(ka + " ") || ka.startsWith(kb + " "))) return true;
+    // Nombre cortado: solo si el corto es una sola palabra y no es un estado ("Massachusetts" ≠ "Massachusetts Dartmouth").
+    const STATE = /^(alabama|alaska|arizona|arkansas|california|colorado|connecticut|delaware|florida|georgia|hawaii|idaho|illinois|indiana|iowa|kansas|kentucky|louisiana|maine|maryland|massachusetts|michigan|minnesota|mississippi|missouri|montana|nebraska|nevada|new|north|south|ohio|oklahoma|oregon|pennsylvania|rhode|tennessee|texas|utah|vermont|virginia|washington|west|wisconsin|wyoming|cal|penn|western|eastern|northern|southern|central)$/;
+    const short = ka.length < kb.length ? ka : kb, long = ka.length < kb.length ? kb : ka;
+    if (short && !short.includes(" ") && !STATE.test(short) && long.startsWith(short + " ")) return true;
     const code = cleanTeam(a).replace(/-[A-Z]{1,3}$/, "");
     if (!/^[A-Z]{2,6}$/.test(code)) return false;
     if (initials(b).includes(code)) return true;
@@ -105,7 +108,7 @@ let rosterWho = new Map(), rosterKey = () => "";
       if (list.length < 2) continue;
       for (const a of list) {
         if (dropped.has(a)) continue;
-        const full = list.filter((b) => b !== a && !dropped.has(b) && firstOk(a, b) && (teamKey(a.t) === teamKey(b.t) || sameTeam(a.t, b.t)));
+        const full = list.filter((b) => b !== a && !dropped.has(b) && firstOk(a, b) && (teamKey(a.t) === teamKey(b.t) || teamKey(a.t, true) === teamKey(b.t, true) || teamKey(a.t) === teamKey(b.t, true) || teamKey(a.t, true) === teamKey(b.t) || sameTeam(a.t, b.t)));
         if (full.length === 1) { mergeInto(full[0], a); dropped.add(a); }
       }
     }
@@ -232,6 +235,33 @@ let rosterWho = new Map(), rosterKey = () => "";
     console.log("mejores marcas sacadas de las biografías:", bioMarks);
   }
   mergeInitials();
+  // Mismo nombre completo con otro equipo: si el equipo es basura ("20", "New", "University", siglas sueltas) y solo hay
+  // un candidato, es él; si los dos tienen la misma prueba con tiempos casi iguales (±3,5 %), es la misma persona
+  // (cambio de universidad o equipo escrito de otra forma). Se queda el que tiene más competiciones.
+  {
+    const groups = new Map();
+    for (const sw of d.swimmers) { const k = nk0(sw.n, ""); if (k.split(" ").length < 2) continue; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(sw); }
+    const weak = (t) => { const c = cleanTeam(t).replace(/-[A-Z]{1,3}$/, "").trim(); return !c || /^\d/.test(c) || /^(new|university|college|univ|team|the|simon|north|south|east|west|saint|st)$/i.test(c) || (/^[A-Z]{1,3}$/.test(c) && !alias[c] && !alias[cleanTeam(t)]); };
+    const similar = (a, b) => { let n = 0, ok = 0; for (const [ev, v] of Object.entries(a.b || {})) { const w = b.b?.[ev]; if (!w) continue; const r = secs(v[0]) / secs(w[0]); n++; if (r > 0.965 && r < 1.035) ok++; } return ok >= 1 && ok * 2 >= n; };
+    const dropped = new Set();
+    let sim = 0;
+    for (const list of groups.values()) {
+      if (list.length < 2 || list.length > 4) continue;
+      for (const a of list) {
+        if (dropped.has(a)) continue;
+        const rest = list.filter((b) => b !== a && !dropped.has(b));
+        const strong = rest.filter((b) => !weak(b.t));
+        let into = null;
+        if (weak(a.t) && strong.length === 1) into = strong[0];
+        else { const c = rest.filter((b) => similar(a, b)); if (c.length === 1) into = c[0]; }
+        if (!into) continue;
+        const [keep, gone] = (into.m?.length || 0) >= (a.m?.length || 0) || weak(a.t) ? [into, a] : [a, into];
+        mergeInto(keep, gone); dropped.add(gone); sim++;
+      }
+    }
+    if (dropped.size) d.swimmers = d.swimmers.filter((s) => !dropped.has(s));
+    console.log("mismo nadador con otro equipo, juntados:", sim);
+  }
   console.log("nadadores repetidos juntados:", dupes);
   // Sexo por mayoría de las pruebas en que sale (un título mal leído no lo cambia).
   let gFix = 0;
@@ -291,8 +321,14 @@ const NCAA_EV = new Set(["50 Y Free", "100 Y Free", "200 Y Free", "500 Y Free", 
 const seasons = { cur: { teams: {}, meets: 0 }, prev: { teams: {}, meets: 0 } };
 const which = (dt) => (!dt ? "" : dt >= seasonStart ? "cur" : dt >= prevStart ? "prev" : "");
 const T0 = (S, raw) => (S.teams[slugT(raw)] ||= { n: raw, M: {}, W: {}, RM: {}, RW: {} });
-const put = (bag, ev, t, who) => {
-  const k = typeof who === "string" ? who.toLowerCase() : who.join("|").toLowerCase();
+// Llave del nadador en el ranking: apellido + 4 primeras letras del nombre (une "Michaeldim"/"Michaeldimi", "Alvar"/"Alvaro").
+const whoKey = (n) => { const w = n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z ]+/g, " ").trim().split(/\s+/); return w.length < 2 ? w.join(" ") : w[0].slice(0, 4) + " " + w.slice(1).join(" "); };
+// Ningún tiempo puede ser más rápido que el récord NCAA de la División I (relevos incluidos): si lo es, está mal leído.
+const REC_D1 = ((await readFile("web/data/records.json", "utf8").then(JSON.parse).catch(() => null))?.ncaa?.D1) || { M: {}, W: {} };
+const possible = (ev, t, g) => { const top = REC_D1[g]?.[ev] || REC_D1.M?.[ev]; return !top || secs(t) >= secs(top.t) - 0.01; };
+const put = (bag, ev, t, who, g) => {
+  if (g && !possible(ev, t, g)) return;
+  const k = typeof who === "string" ? whoKey(who) : who.map(whoKey).sort().join("|");
   const l = (bag[ev] ||= new Map());
   const prev = l.get(k);
   if (!prev || secs(t) < secs(prev[0])) l.set(k, [t, who]);
@@ -315,18 +351,23 @@ for (const f of await readdir("web/data/m").catch(() => [])) {
       const pc = secs(t) / +evn.split(" ")[0];
       const st = /Back|Fly|IM/.test(evn) ? 1.0 : /Breast/.test(evn) ? 1.1 : 0.9;
       if (pc < (rel ? 0.33 : 0.36) || pc > st * (/ M /.test(evn) ? 1.12 : 1)) continue;
-      if (rel) { const sw = (r[8] || []).map(fixName); put(T0(S, x.ta?.[team] || team)["R" + g], evn, t, sw.length ? sw : [r[7] || "A"]); }
-      else if (n && /^[\p{L}][\p{L}'’.,\- ]+$/u.test(n.trim())) put(T0(S, x.ta?.[team] || team)[g], evn, t, fixName(n));
+      if (rel) { const sw = (r[8] || []).map(fixName); put(T0(S, x.ta?.[team] || team)["R" + g], evn, t, sw.length ? sw : [r[7] || "A"], g); }
+      else if (n && /^[\p{L}][\p{L}'’.,\- ]+$/u.test(n.trim())) put(T0(S, x.ta?.[team] || team)[g], evn, t, fixName(n), g);
     }
   }
 }
+// Fecha de las marcas que vienen de competiciones HY-TEK del archivo (v[2] es su dirección, no un id guardado):
+// antes se perdían y equipos como Texas o Florida no salían en el ranking de esta temporada.
+const archDate = new Map();
+for (const m of (await readFile("web/data/archivo.json", "utf8").then(JSON.parse).catch(() => ({ meets: [] }))).meets || []) { const u = m.url.split("#")[0]; if (m.start) { archDate.set(u, m.start); archDate.set(m.name, m.start); } }
+const dateOfMark = (v) => (v[2] && mi[v[2]] ? mi[v[2]][1] : archDate.get(String(v[2] || "").split("#")[0]) || archDate.get(v[1]) || "");
 for (const sw of d.swimmers) {
   const g = sw.g === "M" || sw.g === "W" ? sw.g : "";
   if (!g || !sw.t) continue;
   for (const [ev, v] of Object.entries(sw.b || {})) {
     if (!IND.test(ev)) continue;
-    const S = seasons[which(v[2] && mi[v[2]] ? mi[v[2]][1] : "")];
-    if (S) put(T0(S, sw.t)[g], ev, v[0], sw.n);
+    const S = seasons[which(dateOfMark(v))];
+    if (S) put(T0(S, sw.t)[g], ev, v[0], sw.n, g);
   }
 }
 await rm("web/data/equipos", { recursive: true, force: true });
