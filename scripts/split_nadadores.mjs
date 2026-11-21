@@ -96,13 +96,16 @@ let rosterWho = new Map(), rosterKey = () => "";
   };
   const mergeInitials = () => {
     const byName = new Map();
-    for (const s of d.swimmers) { const k = nk0(s.n, ""); if (!byName.has(k)) byName.set(k, []); byName.get(k).push(s); }
+    // Agrupa por apellido; dentro, mismo nombre o nombre cortado ("Michaeldim" / "Michaeldimi", "Matt" / "Matthew").
+    const nm = (s) => nk0(s.n, "").replace(/\|$/, "").split(" ");
+    for (const s of d.swimmers) { const w = nm(s); const k = w[w.length - 1]; if (!byName.has(k)) byName.set(k, []); byName.get(k).push(s); }
+    const firstOk = (a, b) => { const fa = nm(a)[0], fb = nm(b)[0]; return nm(a).length >= 2 && nm(b).length >= 2 && (fa === fb || (fa.length >= 4 && fb.length >= 4 && (fa.startsWith(fb) || fb.startsWith(fa)))); };
     const dropped = new Set();
     for (const list of byName.values()) {
       if (list.length < 2) continue;
       for (const a of list) {
         if (dropped.has(a)) continue;
-        const full = list.filter((b) => b !== a && !dropped.has(b) && sameTeam(a.t, b.t));
+        const full = list.filter((b) => b !== a && !dropped.has(b) && firstOk(a, b) && (teamKey(a.t) === teamKey(b.t) || sameTeam(a.t, b.t)));
         if (full.length === 1) { mergeInto(full[0], a); dropped.add(a); }
       }
     }
@@ -110,6 +113,20 @@ let rosterWho = new Map(), rosterKey = () => "";
   };
   mergeInitials();
   d.mi ||= {};
+  // Marca imposible: más rápida que el récord NCAA de la División I (de su sexo; sin sexo, el masculino) o con un ritmo
+  // demasiado lento para la prueba. Suelen ser tiempos de otra prueba mal leídos. Se borran y se vuelven a buscar.
+  const REC = ((await readFile("web/data/records.json", "utf8").then(JSON.parse).catch(() => null))?.ncaa?.D1) || { M: {}, W: {} };
+  const capOf = (ev) => { const em = /^(\d+) ([YM]) (Free|Back|Breast|Fly|IM)$/.exec(ev); return em ? [+em[1], { Free: 0.9, Back: 1.0, Fly: 1.0, Breast: 1.1, IM: 1.0 }[em[3]] * (em[2] === "M" ? 1.12 : 1)] : null; };
+  const okMark = (ev, t, g) => {
+    const c = capOf(ev); if (!c) return false;
+    const sec = secs(t), pc = sec / c[0];
+    if (!(pc >= 0.36 && pc <= c[1])) return false;
+    const top = REC[g || "M"]?.[ev] || REC.M?.[ev];
+    return !top || sec >= secs(top.t) - 0.01;
+  };
+  let purged = 0;
+  for (const s of d.swimmers) for (const [ev, v] of Object.entries(s.b || {})) if (/^(\d+) ([YM]) (Free|Back|Breast|Fly|IM)$/.test(ev) && !okMark(ev, v[0], s.g)) { delete s.b[ev]; purged++; }
+  console.log("marcas imposibles borradas:", purged);
   let added = 0, better = 0, files = 0, taFiles = 0;
   const taAll = {};
   const aliasOf = {};
@@ -158,7 +175,7 @@ let rosterWho = new Map(), rosterKey = () => "";
         const pc = sec / +em[1];
         // Ritmo imposible para un universitario (p. ej. un 100 libre en 1:44 suele ser otra prueba mal leída).
         const cap = { Free: 0.9, Back: 1.0, Fly: 1.0, Breast: 1.1, IM: 1.0 }[em[3]] * (em[2] === "M" ? 1.12 : 1);
-        if (pc < 0.36 || pc > cap) continue;
+        if (pc < 0.36 || pc > cap || !okMark(evn, t, g)) continue;
         const name = fixN(n0);
         if (name.split(" ").length < 2) continue;
         const k = nk(name, x.ta?.[team] || team);

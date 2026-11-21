@@ -225,9 +225,43 @@ function tidyRec(ev, r) {
   }
   return { t: r.t.replace(/^0:/, ""), n, y };
 }
+// Mejores marcas de los nadadores de cada universidad en los resultados guardados (esta temporada y la anterior):
+// sirven para comprobar que la tabla leída es de verdad la de récords y del sexo correcto.
+const bests = {};
+{
+  const sw = (await readJSON("web/data/nadadores.json", {})).swimmers || [];
+  const al = (await readJSON("web/data/alias-equipos.json", {})).a || {};
+  const byName = new Map();
+  for (const u of unis) for (const k of [u.n, u.full]) if (k) byName.set(k.toLowerCase(), u.n);
+  for (const x of sw) {
+    if (!x.g || !x.b) continue;
+    const t = String(x.t || ""), t2 = t.replace(/-[A-Z]{2}$/, "");
+    const uni = al[t] || al[t2] || byName.get(t.toLowerCase()) || byName.get(t2.toLowerCase());
+    if (!uni) continue;
+    const b = ((bests[uni] ||= { M: {}, W: {} })[x.g] ||= {});
+    const dv = { D2: "D2", D3: "D3" }[unis.find((u) => u.n === uni)?.div];
+    for (const [ev, v] of Object.entries(x.b)) { const sc = secs(v[0]); if (ORDER.includes(ev) && okPace(ev, v[0]) && sc >= secs(ncaa.D1[x.g]?.[ev]?.t) - 0.01 && !(dv && sc < secs(ncaa[dv]?.[x.g]?.[ev]?.t) * 0.99) && sc < (b[ev] ?? Infinity)) b[ev] = sc; }
+  }
+}
+// Cuántas pruebas tienen a algún nadador actual claramente más rápido que el "récord".
+const beaten = (uni, g, set) => Object.entries(set).filter(([ev, r]) => !/Relay/.test(ev) && (bests[uni]?.[g]?.[ev] ?? Infinity) < secs(r.t) - 0.25).length;
+// Sexo de una tabla por cómo de cerca están sus tiempos del récord NCAA masculino (mediana del cociente).
+const ratioM = (set) => { const q = Object.entries(set).filter(([ev]) => !/Relay/.test(ev) && ncaa.D1.M[ev]).map(([ev, r]) => secs(r.t) / secs(ncaa.D1.M[ev].t)).sort((a, b) => a - b); return q.length >= 4 ? q[q.length >> 1] : 0; };
 const divOf = Object.fromEntries(unis.map((u) => [u.n, u.div]));
 const nickOf = Object.fromEntries(unis.map((u) => [u.n, (u.nick || "").toLowerCase()]));
-function cleanUni(x, name) {
+function cleanUni(x0, name) {
+  // Primero, ¿cada tabla es del sexo que dice? Una tabla de chicas leída como de chicos (o al revés) se cambia o se quita.
+  const x = { src: x0.src, M: { ...(x0.M || {}) }, W: { ...(x0.W || {}) } };
+  for (const g of ["M", "W"]) {
+    const o = g === "M" ? "W" : "M";
+    const set = x[g];
+    if (!Object.keys(set).length) continue;
+    const r = ratioM(set);
+    const looks = r ? (r < 1.115 ? "M" : r > 1.19 ? "W" : "") : "";
+    const wrong = looks === o || (beaten(name, g, set) >= 3 && beaten(name, o, set) <= 1 && looks !== g);
+    if (wrong) { if (!Object.keys(x[o]).length || JSON.stringify(x[o]) === JSON.stringify(set)) x[o] = set; x[g] = {}; }
+  }
+  if (JSON.stringify(x.M) === JSON.stringify(x.W)) x.W = {};
   const res = { src: x.src, M: {}, W: {} };
   const dv = { D2: "D2", D3: "D3" }[divOf[name]];
   for (const g of ["M", "W"]) {
@@ -249,6 +283,12 @@ function cleanUni(x, name) {
     }
     // Si fallan muchos, la tabla entera está mal leída (o es la del otro sexo).
     if (ent.length && bad / ent.length > 0.3) res[g] = {};
+    // Si varios nadadores actuales ya son más rápidos, no es la tabla de récords (o está muy vieja).
+    if (beaten(name, g, res[g]) >= 3) res[g] = {};
+    // Un récord concreto superado por un nadador actual: no se enseña un dato viejo.
+    for (const [ev, r] of Object.entries(res[g])) if (!/Relay/.test(ev) && (bests[name]?.[g]?.[ev] ?? Infinity) < secs(r.t) - 0.25) delete res[g][ev];
+    // Pocas pruebas individuales con nombre: tabla incompleta, mejor no enseñarla.
+    if (Object.keys(res[g]).filter((ev) => !/Relay/.test(ev)).length < 8) res[g] = {};
   }
   const n = Object.keys(res.M).length + Object.keys(res.W).length;
   return n >= 6 ? res : null;
@@ -256,5 +296,42 @@ function cleanUni(x, name) {
 if (SOLO.length) { for (const k of Object.keys(out)) console.log(k, JSON.stringify(cleanUni(out[k], k)).slice(0, 1200)); console.log(JSON.stringify(ncaa).slice(0, 3000)); process.exit(0); }
 for (const [k, v] of Object.entries(old.u || {})) if (!out[k]) out[k] = v;
 for (const k of Object.keys(out)) { const c = cleanUni(out[k], k); if (c) out[k] = c; else delete out[k]; }
+// ---------- Fotos de los nadadores con récord ----------
+// Solo fotos claramente suyas: de la plantilla de su universidad (este año o anteriores) con el mismo nombre,
+// o de Wikipedia cuando la página dice que es nadador.
+{
+  const pl = (await readJSON("web/data/plantillas.json", {})).plant || {};
+  const fp = (await readJSON("web/data/fotos-pasadas.json", {})).u || {};
+  const fx = (await readJSON("web/data/fotos-extra.json", {})).f || {};
+  const low = (n) => n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z ]+/g, " ").replace(/\s+/g, " ").trim();
+  const roster = (uni) => {
+    const m = new Map();
+    for (const l of Object.values(pl[uni] || {})) for (const e of l) if (Array.isArray(e) && e[1]) m.set(low(e[0]), e[1]);
+    for (const [n, img] of Object.entries(fp[uni] || {})) if (img && !m.has(low(n))) m.set(low(n), img);
+    return m;
+  };
+  const uniOfSchool = (sch) => { const k = low(sch.replace(/\(.*?\)/g, "").replace(/\bSt\.?$/, "State")); return unis.find((u) => low(u.n) === k || low(u.full || "") === k || low(u.n.replace(/\(.*?\)/g, "")) === k)?.n; };
+  let found = 0, wiki = 0;
+  const wikiImg = async (n) => {
+    for (const t of [n, n + " (swimmer)"]) {
+      const r = await get("https://en.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(t.replace(/ /g, "_")));
+      if (!r) continue;
+      try { const j = JSON.parse(r.body); if (/swimmer/i.test((j.description || "") + " " + (j.extract || "").slice(0, 200)) && j.thumbnail?.source) return j.thumbnail.source; } catch {}
+    }
+    return "";
+  };
+  const ncaaList = [];
+  for (const d of Object.values(ncaa)) for (const g of Object.values(d)) for (const [ev, r] of Object.entries(g)) if (!/Relay/.test(ev) && r.n) ncaaList.push(r);
+  await pool(ncaaList, 4, async (r) => {
+    const uni = r.s && uniOfSchool(r.s);
+    const img = (uni && roster(uni).get(low(r.n))) || fx[low(r.n)] || (await wikiImg(r.n));
+    if (img) { r.i = img; found++; if (/wiki/.test(img)) wiki++; }
+  });
+  for (const [uni, x] of Object.entries(out)) {
+    const m = roster(uni);
+    for (const g of ["M", "W"]) for (const [ev, r] of Object.entries(x[g])) if (!/Relay/.test(ev) && r.n) { const img = m.get(low(r.n)); if (img) { r.i = img; found++; } }
+  }
+  console.log("fotos de nadadores con récord:", found, "· de Wikipedia:", wiki);
+}
 await writeFile("web/data/records.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), order: ORDER, ncaa, u: out }));
 console.log("récords de universidades:", Object.keys(out).length, "de", todo.length);
