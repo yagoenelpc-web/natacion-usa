@@ -255,15 +255,11 @@ await writeFile("web/data/calendario.json", JSON.stringify({ updated: new Date()
 await writeFile("web/data/enlaces-bio.json", JSON.stringify(bioLinks));
 // Logos de las conferencias (ESPN): los mapas de Wikipedia no sirven como logo.
 try {
-  const { CONF_WORDS } = await import("../web/logos.js");
-  const j = await (await fetch("https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/groups", { headers: UA })).json();
-  const confs = [];
-  const walk = (x) => { if (Array.isArray(x)) return x.forEach(walk); if (!x || typeof x !== "object") return; const g = /~g:(\d+)/.exec(x.uid || "")?.[1]; if (g && x.name && /conference|league|athletic|big |pac|sec\b|acc\b|ivy|summit|sun belt|america east|atlantic|horizon|patriot|mountain west|west coast/i.test(x.name)) confs.push({ name: x.name, abbr: x.abbreviation || "", logo: `https://a.espncdn.com/i/teamlogos/ncaa_conf/500/${g}.png` }); for (const v of Object.values(x)) if (typeof v === "object") walk(v); };
-  walk(j);
-  const marcas = {};
-  for (const c of confs) { const k = CONF_WORDS.find(([re]) => re.test(c.name) || re.test(c.abbr))?.[1]; if (k && !marcas[k]) marcas[k] = c.logo; }
+  // Ids de ESPN comprobados viendo la imagen (ncaa_conf/500/<id>.png).
+  const ids = { acc: 1, big12: 4, bigten: 5, sec: 8, pac12: 9, cusa: 12, mac: 15, mw: 17, sunbelt: 37, aac: 151 };
+  const marcas = Object.fromEntries(Object.entries(ids).map(([k, g]) => [k, `https://a.espncdn.com/i/teamlogos/ncaa_conf/500/${g}.png`]));
   await writeFile("web/data/marcas.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), conf: marcas }));
-  console.log("logos de conferencias:", Object.keys(marcas).length, JSON.stringify(marcas).slice(0, 300));
+  console.log("logos de conferencias:", Object.keys(marcas).length);
 } catch (e) { console.log("logos de conferencias:", e.message); }
 await writeFile("web/data/plantillas.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), plant }));
 await writeFile("web/data/unis.json", JSON.stringify(data));

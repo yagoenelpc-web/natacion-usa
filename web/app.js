@@ -97,7 +97,7 @@ const EN = {
   "puntos": "points",
   "No hay campeonatos con resultados ahora mismo.": "No meets with results right now.",
   "Buscar universidad": "Search university",
-  "Convertir tiempo": "Convert time", "Buscar competición por nombre…": "Search meets by name…", "Resultados de la búsqueda": "Search results", "No hay ninguna competición con ese nombre.": "No meets with that name.", "Ficha en la web de la universidad": "Profile on the school website", "Su universidad no publica una biografía que se pueda leer.": "The school doesn't publish a readable bio.", "Entrenador": "Coach", "Resultados originales en la web de la universidad": "Original results on the school website", "Resultados completos guardados": "Saved full results", "Temporada": "Season", "Aún no tiene marcas en los resultados guardados.": "No times in the saved results yet.", "Mis favoritas": "My favorites", "Mis nadadores": "My swimmers", "Marca con ☆ a tus nadadores y saldrán aquí.": "Tap ☆ on your swimmers and they'll show up here.", "Aún no tienes universidades favoritas. Toca ☆ en cualquiera para guardarla.": "No favorite schools yet. Tap ☆ on any school to save it.", "Últimas competiciones": "Latest meets", "Cerrar": "Close", "Libre": "Free", "Espalda": "Back", "Braza": "Breast", "Mariposa": "Fly", "Estilos": "IM", "Yardas (25 yd)": "Yards (25 yd)", "Piscina corta (25 m)": "Short course (25 m)", "Piscina larga (50 m)": "Long course (50 m)", "Conversión aproximada con los factores habituales (yardas ×1,11 y virajes de 25 m). Úsala como orientación.": "Approximate conversion using the usual factors (yards ×1.11 and 25 m turns). Use it as a guide.",
+  "Convertir tiempo": "Convert time", "Equipo masculino": "Men's team", "Equipo femenino": "Women's team", "Otros nadadores": "Other swimmers", "nadadores": "swimmers", "Buscar competición por nombre…": "Search meets by name…", "Resultados de la búsqueda": "Search results", "No hay ninguna competición con ese nombre.": "No meets with that name.", "Ficha en la web de la universidad": "Profile on the school website", "Su universidad no publica una biografía que se pueda leer.": "The school doesn't publish a readable bio.", "Entrenador": "Coach", "Resultados originales en la web de la universidad": "Original results on the school website", "Resultados completos guardados": "Saved full results", "Temporada": "Season", "Aún no tiene marcas en los resultados guardados.": "No times in the saved results yet.", "Mis favoritas": "My favorites", "Mis nadadores": "My swimmers", "Marca con ☆ a tus nadadores y saldrán aquí.": "Tap ☆ on your swimmers and they'll show up here.", "Aún no tienes universidades favoritas. Toca ☆ en cualquiera para guardarla.": "No favorite schools yet. Tap ☆ on any school to save it.", "Últimas competiciones": "Latest meets", "Cerrar": "Close", "Libre": "Free", "Espalda": "Back", "Braza": "Breast", "Mariposa": "Fly", "Estilos": "IM", "Yardas (25 yd)": "Yards (25 yd)", "Piscina corta (25 m)": "Short course (25 m)", "Piscina larga (50 m)": "Long course (50 m)", "Conversión aproximada con los factores habituales (yardas ×1,11 y virajes de 25 m). Úsala como orientación.": "Approximate conversion using the usual factors (yards ×1.11 and 25 m turns). Use it as a guide.",
   "Compitiendo ahora": "Competing now", "Última competición": "Last meet", "Próxima competición": "Next meet", "¿Dónde compite?": "Where are they competing?", "Ahora mismo no está compitiendo.": "Not competing right now.", "Ver resultados aquí": "See results here", "Ver en la web de la universidad": "See on the school's site", "en casa": "at home",
   "Todas": "All", "Hombres": "Men", "Mujeres": "Women", "Saltos": "Diving", "Todos": "All",
   "Conferencia": "Conference", "Estado": "State", "Equipos": "Teams", "Filtros": "Filters",
@@ -225,7 +225,7 @@ async function loadLogos() {
 }
 
 async function loadBrands() {
-  const cached = store.get("brands3");
+  const cached = store.get("brands5");
   if (cached && Date.now() - cached.t < 30 * 864e5 && Object.keys(cached.v).length) return (brands = cached.v);
   const entries = await Promise.all(
     Object.entries(BRAND_PAGES).map(async ([k, page]) => {
@@ -239,7 +239,12 @@ async function loadBrands() {
     })
   );
   brands = Object.fromEntries(entries.filter(([, v]) => v));
-  store.set("brands3", { t: Date.now(), v: brands });
+  // Logos oficiales de las conferencias (ESPN), mejores que la imagen de Wikipedia (a menudo un mapa).
+  const mk = await loadData("marcas").catch(() => null);
+  const espn = { acc: 1, big12: 4, bigten: 5, sec: 8, pac12: 9, cusa: 12, mac: 15, mw: 17, sunbelt: 37, aac: 151 };
+  for (const [k, g] of Object.entries(espn)) brands[k] = `https://a.espncdn.com/i/teamlogos/ncaa_conf/500/${g}.png`;
+  Object.assign(brands, mk?.conf || {});
+  store.set("brands5", { t: Date.now(), v: brands });
   return brands;
 }
 
@@ -1065,12 +1070,16 @@ async function uniView(name) {
     : `<div class="card muted">${T("Esta universidad no publica su equipo técnico en un formato que se pueda leer.")}${u.staffUrl || web ? ` <a href="${esc(u.staffUrl || web)}" target="_blank" rel="noopener">${T("Ver en su web")} ↗</a>` : ""}</div>`;
   const yr = (y) => ({ FR: T("1º año"), SO: T("2º año"), JR: T("3º año"), SR: T("4º año"), GR: T("Posgrado"), "5Y": T("5º año") }[y] || "");
   const top = (x) => (x.top ? [x.top[0], [x.top[1]]] : Object.entries(x.b)[0]);
+  const row = (x) => { const bi = findBio(bios?.p, x.n); return `<a class="urow" href="#/n/${x.i}">${face(x.img || !bi?.img ? x : { ...x, img: bi.img })}<span class="uinfo"><b>${esc(x.n)} ${flagHtml(bi)}</b><small>${esc([yr(x.y), top(x) ? `${top(x)[0]} ${top(x)[1][0]}` : ""].filter(Boolean).join(" · "))}</small></span><span class="chev">›</span></a>`; };
+  // Equipo masculino y femenino, plegados: se despliegan con la flecha.
+  const squad = (g, label) => {
+    const list = team.filter((x) => (x.g || "") === g).sort((a, b) => a.n.localeCompare(b.n));
+    if (!list.length) return "";
+    const faces = list.filter((x) => x.img).slice(0, 5).map((x) => `<img src="${esc(x.img)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`).join("");
+    return `<details class="squad ${g === "W" ? "w" : g === "M" ? "m" : ""}"><summary><span class="sqicon">${g === "W" ? "♀" : g === "M" ? "♂" : "🏊"}</span><span class="sqname"><b>${label}</b><small>${list.length} ${T("nadadores")}</small></span><span class="sqfaces">${faces}</span><span class="sqarrow">›</span></summary><div class="list">${list.map(row).join("")}</div></details>`;
+  };
   const teamHtml = team.length
-    ? `<div class="list">${team
-        .sort((a, b) => (a.g || "").localeCompare(b.g || "") || a.n.localeCompare(b.n))
-        .slice(0, 150)
-        .map((x) => { const bi = findBio(bios?.p, x.n); return `<a class="urow" href="#/n/${x.i}">${face(x.img || !bi?.img ? x : { ...x, img: bi.img })}<span class="uinfo"><b>${esc(x.n)} ${flagHtml(bi)}</b><small>${esc([yr(x.y), top(x) ? `${top(x)[0]} ${top(x)[1][0]}` : ""].filter(Boolean).join(" · "))}</small></span><span class="chev">›</span></a>`; })
-        .join("")}</div>`
+    ? squad("M", T("Equipo masculino")) + squad("W", T("Equipo femenino")) + squad("", T("Otros nadadores"))
     : `<div class="card muted">${T("Aún no hay nadadores de esta universidad en los resultados guardados de esta temporada.")}</div>`;
   const link = (h, label) => (h ? `<a href="${esc(h)}" target="_blank" rel="noopener">${label} ↗</a>` : "");
   $app.innerHTML = `
@@ -1279,7 +1288,8 @@ function findBio(list, name) {
   return Object.entries(list).find(([n]) => { const t = n.toLowerCase().split(/\s+/); return t[t.length - 1] === last && (t[0].startsWith(tk[0]) || tk[0].startsWith(t[0])); })?.[1] || null;
 }
 const FACT_EN = { Ciudad: "Hometown", Instituto: "High school", "Universidad anterior": "Previous school", Carrera: "Major", Especialidad: "Position", Curso: "Class", Cargo: "Title", "Universidad donde estudió": "Alma mater", Experiencia: "Experience", Altura: "Height" };
-const flagHtml = (bio) => { const f = flagOf((bio?.f || []).find(([l]) => l === "Ciudad")?.[1]); return f ? `<span class="flag" title="${esc(f.name)}">${f.emoji}</span>` : ""; };
+// Bandera como imagen (los emojis de bandera no salen en todos los móviles/ordenadores).
+const flagHtml = (bio) => { const f = flagOf((bio?.f || []).find(([l]) => l === "Ciudad")?.[1]); return f ? `<img class="flag" src="https://flagcdn.com/w40/${f.cc.toLowerCase()}.png" alt="${esc(f.name)}" title="${esc(f.name)}" width="20" height="15" loading="lazy" onerror="this.remove()">` : ""; };
 function bioBlock(bio) {
   if (!bio || (!bio.b && !(bio.f || []).length)) return "";
   const facts = (bio.f || []).filter(([l]) => l !== "Cargo" && FACT_EN[l]).map(([l, v]) => `<div class="nrow"><span>${esc(lang() === "en" ? FACT_EN[l] || l : l)}</span><b>${l === "Ciudad" ? flagHtml(bio) + " " : ""}${esc(v)}</b></div>`).join("");
