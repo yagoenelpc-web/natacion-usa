@@ -18,7 +18,7 @@ const ORG = {
   usas: { label: "USA Swimming", short: "USA", full: "USA Swimming" },
   usms: { label: "US Masters", short: "USMS", full: "US Masters Swimming" },
   conf: { label: "Conferencias", short: "🏊", get full() { return T("Conferencias e invitationals"); } },
-  dual: { label: "Duales", short: "VS", get full() { return T("Encuentros entre universidades"); } },
+  dual: { label: "Duales", short: "VS", get full() { return T("Más encuentros con resultados"); } },
 };
 const SECTION_ES = {
   "Championship Final": "Final A",
@@ -97,7 +97,7 @@ const EN = {
   "puntos": "points",
   "No hay campeonatos con resultados ahora mismo.": "No meets with results right now.",
   "Buscar universidad": "Search university",
-  "Convertir tiempo": "Convert time", "Buscar prueba: espalda, 200 estilos…": "Search event: back, 200 IM…", "Ninguna prueba coincide.": "No events match.", "Su universidad está compitiendo ahora: es probable que {n} esté nadando aquí.": "Their school is competing now, so {n} is probably swimming here.", "Próxima competición de su universidad": "Their school's next meet", "¿Dónde compite su universidad?": "Where is their school competing?", "Equipo masculino": "Men's team", "Equipo femenino": "Women's team", "Otros nadadores": "Other swimmers", "nadadores": "swimmers", "Buscar competición por nombre…": "Search meets by name…", "Resultados de la búsqueda": "Search results", "No hay ninguna competición con ese nombre.": "No meets with that name.", "Ficha en la web de la universidad": "Profile on the school website", "Su universidad no publica una biografía que se pueda leer.": "The school doesn't publish a readable bio.", "Entrenador": "Coach", "Resultados originales en la web de la universidad": "Original results on the school website", "Resultados completos guardados": "Saved full results", "Temporada": "Season", "Aún no tiene marcas en los resultados guardados.": "No times in the saved results yet.", "Mis favoritas": "My favorites", "Mis nadadores": "My swimmers", "Marca con ☆ a tus nadadores y saldrán aquí.": "Tap ☆ on your swimmers and they'll show up here.", "Aún no tienes universidades favoritas. Toca ☆ en cualquiera para guardarla.": "No favorite schools yet. Tap ☆ on any school to save it.", "Últimas competiciones": "Latest meets", "Cerrar": "Close", "Libre": "Free", "Espalda": "Back", "Braza": "Breast", "Mariposa": "Fly", "Estilos": "IM", "Yardas (25 yd)": "Yards (25 yd)", "Piscina corta (25 m)": "Short course (25 m)", "Piscina larga (50 m)": "Long course (50 m)", "Conversión aproximada con los factores habituales (yardas ×1,11 y virajes de 25 m). Úsala como orientación.": "Approximate conversion using the usual factors (yards ×1.11 and 25 m turns). Use it as a guide.",
+  "Convertir tiempo": "Convert time", "Buscar prueba: espalda, 200 estilos…": "Search event: back, 200 IM…", "Ninguna prueba coincide.": "No events match.", "Más encuentros con resultados": "More dual meets with results", "Su universidad está compitiendo ahora: es probable que {n} esté nadando aquí.": "Their school is competing now, so {n} is probably swimming here.", "Próxima competición de su universidad": "Their school's next meet", "¿Dónde compite su universidad?": "Where is their school competing?", "Equipo masculino": "Men's team", "Equipo femenino": "Women's team", "Otros nadadores": "Other swimmers", "nadadores": "swimmers", "Buscar competición por nombre…": "Search meets by name…", "Resultados de la búsqueda": "Search results", "No hay ninguna competición con ese nombre.": "No meets with that name.", "Ficha en la web de la universidad": "Profile on the school website", "Su universidad no publica una biografía que se pueda leer.": "The school doesn't publish a readable bio.", "Entrenador": "Coach", "Resultados originales en la web de la universidad": "Original results on the school website", "Resultados completos guardados": "Saved full results", "Temporada": "Season", "Aún no tiene marcas en los resultados guardados.": "No times in the saved results yet.", "Mis favoritas": "My favorites", "Mis nadadores": "My swimmers", "Marca con ☆ a tus nadadores y saldrán aquí.": "Tap ☆ on your swimmers and they'll show up here.", "Aún no tienes universidades favoritas. Toca ☆ en cualquiera para guardarla.": "No favorite schools yet. Tap ☆ on any school to save it.", "Últimas competiciones": "Latest meets", "Cerrar": "Close", "Libre": "Free", "Espalda": "Back", "Braza": "Breast", "Mariposa": "Fly", "Estilos": "IM", "Yardas (25 yd)": "Yards (25 yd)", "Piscina corta (25 m)": "Short course (25 m)", "Piscina larga (50 m)": "Long course (50 m)", "Conversión aproximada con los factores habituales (yardas ×1,11 y virajes de 25 m). Úsala como orientación.": "Approximate conversion using the usual factors (yards ×1.11 and 25 m turns). Use it as a guide.",
   "Compitiendo ahora": "Competing now", "Última competición": "Last meet", "Próxima competición": "Next meet", "¿Dónde compite?": "Where are they competing?", "Ahora mismo no está compitiendo.": "Not competing right now.", "Ver resultados aquí": "See results here", "Ver en la web de la universidad": "See on the school's site", "en casa": "at home",
   "Todas": "All", "Hombres": "Men", "Mujeres": "Women", "Saltos": "Diving", "Todos": "All",
   "Conferencia": "Conference", "Estado": "State", "Equipos": "Teams", "Filtros": "Filters",
@@ -365,6 +365,7 @@ async function loadSwimmers() {
     x.n = `${fn} ${ln}`;
     x.g ||= r.g;
     x.ro = true;
+    x.rf = r.full;
     if (r.img) x.img = r.img;
   }
   for (const [u, ro] of byUni) for (const r of ro) if (!r.used) merged.set("ro|" + u.n + "|" + r.full, { n: r.full, t: u.n, u, g: r.g, b: {}, m: [], ro: true, ...(r.img ? { img: r.img } : {}) });
@@ -679,10 +680,10 @@ async function homeView() {
   </section>
   <div id="duals"></div>
   ${f.length ? `<section><h2>${T("Mis universidades")}</h2><div class="chips">${f.map((t) => `<a class="chip" href="#/u/${enc(t)}">${crest(t, 22)}${esc(t)}</a>`).join("")}</div></section>` : ""}
-  ${upcoming.length ? `<section><h2>${T("Próximamente")}</h2>${upcoming.filter((s) => !s.pending).map(meetCard).join("")}${
+  ${upcoming.length ? `<details class="fold"><summary><h2>${T("Próximamente")} <span class="count">${upcoming.length}</span></h2></summary>${upcoming.filter((s) => !s.pending).map(meetCard).join("")}${
     upcoming.some((s) => s.pending) ? `<details class="announced"><summary>${T("Anunciados, aún sin resultados")} (${upcoming.filter((s) => s.pending).length})</summary>${upcoming.filter((s) => s.pending).map(meetCard).join("")}</details>` : ""
-  }</section>` : ""}
-  ${Object.keys(ORG).filter((o) => byOrg[o]).map((o) => `<section><h2 class="orgh">${o === "conf" ? "" : orgLogo(o, 26)} ${esc(ORG[o].full)}</h2>${byOrg[o].map(meetCard).join("")}</section>`).join("")}
+  }</details>` : ""}
+  ${Object.keys(ORG).filter((o) => byOrg[o]).map((o) => `<details class="fold"><summary><h2 class="orgh">${o === "conf" ? "" : orgLogo(o, 26)} ${esc(ORG[o].full)} <span class="count">${byOrg[o].length}</span></h2></summary>${byOrg[o].map(meetCard).join("")}</details>`).join("")}
   <p class="foot">${lang() === "en" ? `Dual meets and calendars from each school's official site. Data from public HY-TEK results pages. Live meets also found via the <a href="https://swimswam.com" target="_blank" rel="noopener">SwimSwam</a> RSS feed. Times are unofficial until published as official.` : `Duales y calendarios de la web oficial de cada universidad. Datos de las páginas públicas de resultados HY-TEK. Competiciones en directo encontradas también gracias al canal RSS de <a href="https://swimswam.com" target="_blank" rel="noopener">SwimSwam</a>. Los tiempos son oficiosos hasta su publicación oficial.`}</p>`;
   dualsSection().then((h) => { const el = document.getElementById("duals"); if (el) el.outerHTML = h; }).catch(() => {});
   setupMeetSearch(list);
@@ -1107,7 +1108,7 @@ async function uniView(name) {
     : `<div class="card muted">${T("Esta universidad no publica su equipo técnico en un formato que se pueda leer.")}${u.staffUrl || web ? ` <a href="${esc(u.staffUrl || web)}" target="_blank" rel="noopener">${T("Ver en su web")} ↗</a>` : ""}</div>`;
   const yr = (y) => ({ FR: T("1º año"), SO: T("2º año"), JR: T("3º año"), SR: T("4º año"), GR: T("Posgrado"), "5Y": T("5º año") }[y] || "");
   const top = (x) => (x.top ? [x.top[0], [x.top[1]]] : Object.entries(x.b)[0]);
-  const row = (x) => { const bi = findBio(bios?.p, x.n); return `<a class="urow" href="#/n/${x.i}">${face(x.img || !bi?.img ? x : { ...x, img: bi.img })}<span class="uinfo"><b>${esc(x.n)} ${flagHtml(bi)}</b><small>${esc([yr(x.y), top(x) ? `${top(x)[0]} ${top(x)[1][0]}` : ""].filter(Boolean).join(" · "))}</small></span><span class="chev">›</span></a>`; };
+  const row = (x) => { const bi = findBio(bios?.p, x.rf || x.n); return `<a class="urow" href="#/n/${x.i}">${face(x.img || !bi?.img ? x : { ...x, img: bi.img })}<span class="uinfo"><b>${esc(x.n)} ${flagHtml(bi)}</b><small>${esc([yr(x.y), top(x) ? `${top(x)[0]} ${top(x)[1][0]}` : ""].filter(Boolean).join(" · "))}</small></span><span class="chev">›</span></a>`; };
   // Equipo masculino y femenino, plegados: se despliegan con la flecha.
   const squad = (g, label) => {
     const list = team.filter((x) => (x.g || "") === g).sort((a, b) => a.n.localeCompare(b.n));
@@ -1283,7 +1284,7 @@ async function dualsSection() {
     }
   if (!list.length) return "";
   list.sort((a, b) => b.fav - a.fav || (a.g.d >= today) - (b.g.d >= today) || (a.g.d >= today ? a.g.d.localeCompare(b.g.d) : b.g.d.localeCompare(a.g.d)));
-  return `<section><h2>⚔️ ${T("Encuentros entre universidades")} <span class="count">${list.length}</span></h2><div class="list">${list.slice(0, 25).map((x) => gameRow(x.team, x.g, true)).join("")}</div>${list.length > 25 ? `<p class="sub">${T("Y {n} más en la ficha de cada universidad.", { n: list.length - 25 })}</p>` : ""}</section>`;
+  return `<details class="fold"><summary><h2>⚔️ ${T("Encuentros entre universidades")} <span class="count">${list.length}</span></h2></summary><div class="list">${list.slice(0, 200).map((x) => gameRow(x.team, x.g, true)).join("")}</div>${list.length > 200 ? `<p class="sub">${T("Y {n} más en la ficha de cada universidad.", { n: list.length - 200 })}</p>` : ""}</details>`;
 }
 
 async function swimmersView() {
@@ -1330,7 +1331,9 @@ function findBio(list, name) {
   if (hit) return hit[1];
   // Mismo apellido y nombre que empieza igual ("Alex" / "Alexander").
   const tk = name.toLowerCase().split(/\s+/), last = tk[tk.length - 1];
-  return Object.entries(list).find(([n]) => { const t = n.toLowerCase().split(/\s+/); return t[t.length - 1] === last && (t[0].startsWith(tk[0]) || tk[0].startsWith(t[0])); })?.[1] || null;
+  const f0 = (x) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const same = ([n]) => { const t = f0(n.toLowerCase()).split(/\s+/); const a = f0(tk[0]), b = t[0]; return a && b && (b.startsWith(a) || a.startsWith(b)) && (t[t.length - 1] === f0(last) || tk.slice(1).map(f0).includes(t[t.length - 1]) || t.slice(1).includes(f0(tk[1] || ""))); };
+  return Object.entries(list).find(same)?.[1] || null;
 }
 const FACT_EN = { Ciudad: "Hometown", Instituto: "High school", "Universidad anterior": "Previous school", Carrera: "Major", Especialidad: "Position", Curso: "Class", Cargo: "Title", "Universidad donde estudió": "Alma mater", Experiencia: "Experience", Altura: "Height" };
 // Bandera como imagen (los emojis de bandera no salen en todos los móviles/ordenadores).
@@ -1398,7 +1401,7 @@ async function swimmerView(i) {
   const info = logoIndex ? matchTeam(logoIndex, uname) : null;
   const tint = info && info.color && info.color !== "#0b63ce" ? info.color : "#0b3d91";
   const yr = { FR: T("1º año"), SO: T("2º año"), JR: T("3º año"), SR: T("4º año"), GR: T("Posgrado"), "5Y": T("5º año") }[x.y] || "";
-  const bio = x.u ? findBio((await loadBio(x.u.n))?.p, x.n) : null;
+  const bio = x.u ? findBio((await loadBio(x.u.n))?.p, x.rf || x.n) : null;
   if (!x.img && bio?.img) x.img = bio.img;
   // Si su universidad compite ahora (o pronto), se muestra aquí: lo normal es que nade en esa competición.
   let nowHtml = "";

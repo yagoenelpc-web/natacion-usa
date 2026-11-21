@@ -516,3 +516,11 @@ img.face, .face img { object-fit: cover; }
 .evsearch .chip.on { background: var(--brand); color: #fff; border-color: transparent; }
 .evsearch #evnone { margin-top: 10px; }
 .erow[hidden], .session[hidden] { display: none !important; }
+/* Secciones plegables de la portada (En directo siempre abierta). */
+details.fold { margin: 6px 0 4px; }
+details.fold > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; border-radius: var(--r-md); padding: 2px 4px; -webkit-tap-highlight-color: transparent; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary h2 { margin: 14px 0; display: flex; align-items: center; gap: 8px; flex: 1; }
+details.fold > summary::after { content: "›"; font-size: 26px; font-weight: 700; color: var(--muted); transform: rotate(90deg); transition: transform 0.2s; padding: 0 8px; }
+details.fold[open] > summary::after { transform: rotate(-90deg); }
+details.fold:not([open]) { border-bottom: 1px solid rgba(15, 40, 90, 0.07); }
