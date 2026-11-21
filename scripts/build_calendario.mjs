@@ -97,13 +97,25 @@ function schedule(html, base, uname) {
 // Ciudad de origen junto al nombre en la plantilla (tarjeta, tabla o datos de la página).
 function hometowns(html, names) {
   const out = {};
+  // Curso ("Sr.", "Freshman", "2nd Yr.") y otros campos que no son una ciudad.
+  const bad = /^(r-|rs-)?(fr|so|jr|sr|gr|fy|f\.y|rf|rs|soph|fresh|junior|senior|sophomore|freshman|graduate|grad|5th|4th|3rd|2nd|1st)\b|\byr\.?$|^(nursing|undeclared|biology|business|major)$|^\d/i;
+  const pats = [
+    /person-hometown"[^>]*>(?:\s*<svg[\s\S]*?<\/svg>)?\s*(?:<span class="sr-only">[^<]*<\/span>)?\s*([^<]{3,80})</i,
+    /class="[^"]*(?:player-hometown|value--hometown|__hometown)[^"]*"[^>]*>\s*(?:<[^>]+>\s*)*([^<]{3,80})</i,
+    />\s*Hometown:?\s*<\/(?:strong|span|dt|th|label|b)>\s*(?:<[^>]+>\s*)*([^<]{3,80})</i,
+    /"hometown"\s*:\s*"([^"]{3,80})"/i,
+  ];
   for (const n of names) {
     let i = html.indexOf(">" + n + "<");
     if (i < 0) i = html.indexOf(n);
     if (i < 0) continue;
-    const seg = html.slice(i, i + 5000);
-    const m = /class="[^"]*hometown[^"]*"[^>]*>\s*(?:<[^>]+>\s*)*(?:Hometown:?\s*(?:<[^>]+>\s*)*)?([^<]{3,80})</i.exec(seg) || /"hometown"\s*:\s*"([^"]{3,80})"/i.exec(seg);
-    if (m) { const v = dec(m[1]).replace(/\s*\/.*$/, "").trim(); if (v && !/hometown/i.test(v)) out[n] = v; }
+    const seg = html.slice(i, i + 4000);
+    for (const re of pats) {
+      const m = re.exec(seg);
+      if (!m) continue;
+      const v = dec(m[1]).replace(/\s*\/.*$/, "").trim();
+      if (v && !/hometown/i.test(v) && !bad.test(v) && /[a-z]/i.test(v)) { out[n] = v; break; }
+    }
   }
   return out;
 }
