@@ -739,3 +739,5 @@ details.unirec .fbody .recgrid { margin-bottom: 8px; }
 .tlive { color: #e5484d; font-weight: 700; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tcard2 { background: rgba(22, 32, 54, 0.72); border-color: rgba(255, 255, 255, 0.08); } }
 :root[data-theme="dark"] .tcard2 { background: rgba(22, 32, 54, 0.72); border-color: rgba(255, 255, 255, 0.08); }
+.rechero.uni { background: linear-gradient(135deg, #0b3d91, #1667d9); }
+.rechero.uni > .crest, .rechero.uni > img { width: 54px; height: 54px; flex: none; border-radius: 16px; background: #fff; padding: 4px; }
