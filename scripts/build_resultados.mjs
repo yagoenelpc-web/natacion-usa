@@ -64,6 +64,8 @@ const NOISE = /HY-TEK'?s MEET MANAGER|Hy-Tek'?s MEET MANAGER|MEET MANAGER \d|Sit
 const STROKE = { free: "Freestyle", back: "Backstroke", breast: "Breaststroke", fly: "Butterfly", im: "Individual Medley", medley: "Medley", freestyle: "Freestyle", backstroke: "Backstroke", breaststroke: "Breaststroke", butterfly: "Butterfly" };
 const MONS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
 function parseAltMeet(text) {
+  // Algunos PDF pierden el punto de los tiempos ("4:53 48" = 4:53.48).
+  if ((text.match(/\d:\d\d \d\d\b/g) || []).length > 20 && (text.match(/\d:\d\d\.\d\d/g) || []).length < 5) text = text.replace(/(\b\d{1,2}:\d{2}|\b\d{2}) (\d{2})(?=\s|$|\))/gm, "$1.$2");
   const lines = text.replace(/\f/g, "\n").split(/\r?\n/);
   const top = lines.filter((l) => l.trim()).slice(0, 4).map((l) => l.trim());
   const dm = /^([A-Z][a-z]{2})[a-z]*\.? (\d{1,2}),? (\d{4})(?:\s*[-–]\s*(?:([A-Z][a-z]{2})[a-z]*\.? )?(\d{1,2}),? (\d{4}))?\s*(.*)$/;
@@ -131,7 +133,7 @@ function parsePdfMeet(text, url) {
   if (/^\s*Event\s*#\s*\d+\s*-\s*\d/m.test(text) && !/^\s*\(?Event\s+\d+\s+(Women|Men|Girls|Boys)/m.test(text)) { const alt = parseAltMeet(text); if (alt.events.length) return alt; }
   // Programas, psych sheets y horarios no son resultados (llevan marcas de inscripción).
   const kind = /Meet Program|Psych Sheet|Heat Sheet|Session Report|Entry List|Entries -|Timeline|Order of Events/i.exec(text.slice(0, 3000));
-  if (kind) return { name: "", start: "", end: "", events: [], why: kind[0] };
+  if (kind && !/^\s*(Results|Final Results|Meet Results)(\s*-.*)?\s*$/m.test(text.slice(0, 3000))) return { name: "", start: "", end: "", events: [], why: kind[0] };
   // Dos columnas de pruebas en la misma línea: no se puede leer bien.
   // PDF a dos columnas: se corta cada página por la columna donde empieza la segunda prueba y se lee primero la izquierda.
   const TWO = /^(.*?(?:(?:Event|#)\s*\d+\s+)?(?:Women|Men|Girls|Boys|Mixed)\s+\d+\s+(?:Yard|Meter|LC|SC)\b.{5,}?\s{3,})\(?(?:(?:Event|#)\s*\d+\s+)?(?:Women|Men|Girls|Boys|Mixed)\s+\d+\s+(?:Yard|Meter|LC|SC)\b/i;
