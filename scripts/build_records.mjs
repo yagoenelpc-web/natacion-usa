@@ -154,8 +154,11 @@ function parseRecords(text, g0) {
   for (let li = 0; li < lines.length; li++) {
     const line = lines[li];
     if (!line) continue;
-    if (/^(men|men's|mens)\b/i.test(line) && line.length < 40) g = "M";
-    if (/^(women|women's|womens)\b/i.test(line) && line.length < 40) g = "W";
+    // Títulos de sección ("MEN'S RECORDS", "Niagara Women's Swimming Records"), sin tiempos.
+    if (line.length < 60 && !TIME.test(line)) {
+      if (/\b(women|women's|womens|ladies)\b/i.test(line)) g = "W";
+      else if (/\b(men|men's|mens)\b/i.test(line)) g = "M";
+    }
     const e = evName(line.slice(0, 40));
     const t = TIME.exec(line);
     if (e && !t) { ev = e; continue; }
@@ -292,6 +295,8 @@ const bests = {};
 const beaten = (uni, g, set) => Object.entries(set).filter(([ev, r]) => !/Relay/.test(ev) && (bests[uni]?.[g]?.[ev] ?? Infinity) < secs(r.t) - 0.25).length;
 // Sexo de una tabla por cómo de cerca están sus tiempos del récord NCAA masculino (mediana del cociente).
 const ratioM = (set) => { const q = Object.entries(set).filter(([ev]) => !/Relay/.test(ev) && ncaa.D1.M[ev]).map(([ev, r]) => secs(r.t) / secs(ncaa.D1.M[ev].t)).sort((a, b) => a - b); return q.length >= 4 ? q[q.length >> 1] : 0; };
+// Mediana de récord / mejor marca actual del equipo en ese sexo (la tabla buena da algo menos de 1).
+const fitBests = (uni, g, set) => { const q = Object.entries(set).filter(([ev]) => !/Relay/.test(ev) && bests[uni]?.[g]?.[ev]).map(([ev, r]) => secs(r.t) / bests[uni][g][ev]).sort((a, b) => a - b); return q.length >= 4 ? q[q.length >> 1] : 0; };
 const divOf = Object.fromEntries(unis.map((u) => [u.n, u.div]));
 const nickOf = Object.fromEntries(unis.map((u) => [u.n, (u.nick || "").toLowerCase()]));
 function cleanUni(x0, name) {
@@ -302,7 +307,9 @@ function cleanUni(x0, name) {
     const set = x[g];
     if (!Object.keys(set).length) continue;
     const r = ratioM(set);
-    const looks = r ? (r < 1.115 ? "M" : r > 1.19 ? "W" : "") : "";
+    let looks = r ? (r < 1.115 ? "M" : r > 1.19 ? "W" : "") : "";
+    // Zona dudosa (chicos de D-III o chicas de D-I): se compara con las mejores marcas actuales de cada sexo del equipo.
+    if (!looks) { const bm = fitBests(name, "M", set), bw = fitBests(name, "W", set); if (bm && bw) looks = Math.abs(bm - 0.96) + 0.02 < Math.abs(bw - 0.96) ? "M" : Math.abs(bw - 0.96) + 0.02 < Math.abs(bm - 0.96) ? "W" : ""; }
     const wrong = looks === o || (beaten(name, g, set) >= 3 && beaten(name, o, set) <= 1 && looks !== g);
     if (wrong) { if (!Object.keys(x[o]).length || JSON.stringify(x[o]) === JSON.stringify(set)) x[o] = set; x[g] = {}; }
   }
