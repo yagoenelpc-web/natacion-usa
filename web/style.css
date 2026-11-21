@@ -687,3 +687,39 @@ details.more[open] > summary { display: none; }
 section > .mcard.live .livetag { display: none; }
 .hero.slim p b { font-size: 16px; }
 details.more > .mcard.live .livetag { display: none; }
+
+/* Récords */
+.top { display: flex; align-items: center; justify-content: space-between; }
+.gear { font-size: 19px; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; opacity: .75; }
+.gear:active { background: var(--glass-line); }
+.rechero { display: flex; align-items: center; gap: 14px; padding: 18px 16px; margin-bottom: 14px; border-radius: var(--r-lg, 18px); color: #fff; background: linear-gradient(135deg, #0b3d91 0%, #1667d9 55%, #f2b705 140%); box-shadow: 0 8px 24px rgba(11, 61, 145, .25); }
+.rechero h1 { margin: 0; font-size: 22px; letter-spacing: -.01em; }
+.rechero p { margin: 2px 0 0; font-size: 13px; opacity: .85; }
+.recico { font-size: 34px; width: 54px; height: 54px; flex: none; display: grid; place-items: center; border-radius: 16px; background: rgba(255, 255, 255, .16); }
+.seg.recseg { position: static; margin-bottom: 10px; }
+.recgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 6px 0 16px; }
+@media (min-width: 560px) { .recgrid { grid-template-columns: 1fr 1fr 1fr; } }
+.rectile { --sc: var(--brand); position: relative; display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 11px 11px 11px 14px; border-radius: var(--r-md); background: var(--card, rgba(255,255,255,.72)); border: 1px solid var(--glass-line); overflow: hidden; }
+.rectile::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 4px; border-radius: 0 4px 4px 0; background: var(--sc); }
+.rectile.s-free { --sc: #0b63ce; } .rectile.s-back { --sc: #0f9d8a; } .rectile.s-breast { --sc: #e07a1f; } .rectile.s-fly { --sc: #8e44ad; } .rectile.s-im { --sc: #d6336c; }
+.rectop { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-size: 12px; color: var(--muted); }
+.rectop .pbev b { color: var(--sc); font-size: 13px; }
+.rectop em { font-style: normal; font-size: 10px; }
+.recyr { font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: color-mix(in srgb, var(--sc) 12%, transparent); color: var(--sc); flex: none; }
+.rectime { font-size: 24px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; cursor: pointer; line-height: 1.1; }
+.recwho { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.recwho > span { display: flex; flex-direction: column; min-width: 0; }
+.recwho b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recwho b.relnames { white-space: normal; font-size: 11.5px; font-weight: 600; line-height: 1.3; }
+.recwho small { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recwho img, .recwho .crest { flex: none; }
+details.unirec { margin: 10px 0 16px; }
+details.unirec .fbody .recgrid { margin-bottom: 8px; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .rectile { background: rgba(22, 32, 54, 0.72); border-color: rgba(255, 255, 255, 0.08); } }
+:root[data-theme="dark"] .rectile { background: rgba(22, 32, 54, 0.72); border-color: rgba(255, 255, 255, 0.08); }
+.recunis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.recunis a { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 6px 10px; text-align: center; border-radius: var(--r-md); background: var(--card, rgba(255,255,255,.72)); border: 1px solid var(--glass-line); min-width: 0; }
+.recunis b { font-size: 12px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.recunis small { font-size: 10.5px; color: var(--muted); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .recunis a { background: rgba(22, 32, 54, 0.72); border-color: rgba(255, 255, 255, 0.08); } }
+:root[data-theme="dark"] .recunis a { background: rgba(22, 32, 54, 0.72); border-color: rgba(255, 255, 255, 0.08); }

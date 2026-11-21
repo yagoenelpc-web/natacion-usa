@@ -108,7 +108,7 @@ const EN = {
   "universidades": "universities", "Ninguna universidad con estos filtros.": "No universities match these filters.",
   "Marca con ★ las tuyas: aparecerán en la portada y podrás filtrar los resultados.": "Star ★ yours: they'll show on the home screen and you can filter results.",
   "Entrenador": "Head coach", "Entrenador (hombres)": "Men's head coach", "Entrenadora/entrenador (mujeres)": "Women's head coach",
-  "No disponible": "Not available", "Equipo técnico": "Coaching staff", "Ver en la web oficial": "See official site", "Ciudad": "City", "División": "Division", "Natación de EE. UU.": "US swimming", "NCAA, USA Swimming y universidades": "NCAA, USA Swimming and colleges", "Ver las {n} en directo": "See all {n} live", "larga": "long course", "competiciones": "meets", "en plantilla": "on roster", "Biografía": "Bio", "Su universidad compite ahora": "Their school is competing now", "{n} competiciones": "{n} meets", "Más información": "More info", "División I": "Division I", "División II": "Division II", "División III": "Division III", "Apodo": "Nickname",
+  "No disponible": "Not available", "Equipo técnico": "Coaching staff", "Ver en la web oficial": "See official site", "Ciudad": "City", "División": "Division", "Récords": "Records", "Récords NCAA": "NCAA records", "Los tiempos más rápidos de la historia de cada división": "The fastest times ever in each division", "Sin récords para esta división.": "No records for this division.", "Récords de cada universidad": "Each school's records", "récords": "records", "Récords sacados de la web oficial de cada universidad. Solo salen los que se han podido leer bien.": "Records taken from each school's official site. Only those read reliably are shown.", "Récords oficiales de la NCAA (NCAA.org), puestos al día con los resultados del último campeonato. Toca un tiempo para convertirlo a metros.": "Official NCAA records (NCAA.org), updated with the latest championship results. Tap a time to convert it to meters.", "Actualizado: {d}.": "Updated: {d}.", "Récords de la universidad": "School records", "Las mejores marcas de su historia": "The best times in its history", "Récords en la web de la universidad": "Records on the school site", "Los récords todavía no están disponibles.": "Records are not available yet.", "Natación de EE. UU.": "US swimming", "NCAA, USA Swimming y universidades": "NCAA, USA Swimming and colleges", "Ver las {n} en directo": "See all {n} live", "larga": "long course", "competiciones": "meets", "en plantilla": "on roster", "Biografía": "Bio", "Su universidad compite ahora": "Their school is competing now", "{n} competiciones": "{n} meets", "Más información": "More info", "División I": "Division I", "División II": "Division II", "División III": "Division III", "Apodo": "Nickname",
   "Ver sus resultados": "See their results", "Wikipedia": "Wikipedia", "Web oficial": "Official site",
   "Datos de Wikipedia (CC BY-SA).": "Data from Wikipedia (CC BY-SA).",
   "Idioma": "Language", "Tema": "Theme", "Automático": "Automatic", "Claro": "Light", "Oscuro": "Dark", "Fondo": "Background",
@@ -477,7 +477,9 @@ const resIdOf = (url) => (url && resIdx && resIdx.done[url]) || "";
 // Códigos de equipo de la competición abierta ("NS" → Nova Southeastern), sacados de sus nadadores.
 let meetTeamAlias = {};
 async function loadStored(id) {
-  const d = await loadData("m/" + id.slice(2));
+  let d = await loadData("m/" + id.slice(2));
+  // Pieza de una competición unida (Day 1, Day 2…): se abre la competición completa.
+  if (d?.alias) d = await loadData("m/" + d.alias.slice(2));
   if (!d) throw new Error("no encontrado");
   meetTeamAlias = d.ta || {};
   return d;
@@ -690,6 +692,7 @@ function setTab(name) {
 
 // ---------- vistas ----------
 const yrLabel = (y) => ({ FR: T("1º año"), SO: T("2º año"), JR: T("3º año"), SR: T("4º año"), GR: T("Posgrado"), "5Y": T("5º año") }[y] || "");
+const flipName = (n) => (/^[^,]+, [^,]+$/.test(n || "") ? n.split(", ").reverse().join(" ") : n || "");
 const cleanMeet = (n) => String(n || "").replace(/[\s\-–|:,]+$/, "").trim();
 function meetCard(s) {
   let when = s.pending ? `${T("Temporada {y} · resultados aún no publicados", { y: s.id.match(/(19|20)\d{2}/)?.[0] || "" })}` : fmtRange(s.start, s.end);
@@ -705,6 +708,67 @@ function meetCard(s) {
       <strong>${esc(cleanMeet(s.name))}</strong>
       <span class="sub">${esc(when)}${s.events ? ` · ${s.events} ${T("pruebas")}` : ""}</span>
     </div><span class="chev">›</span></a>`;
+}
+
+// ---------- Récords ----------
+// Tarjeta de un récord: prueba con el color del estilo, tiempo grande (se toca para convertirlo), quién y cuándo.
+// Nombres de los récords oficiales de la NCAA → nombre de la universidad en la app.
+const REC_SCHOOL = { "Queens (NC)": "Queens", UIndy: "Indianapolis", "Southern Conn. St.": "Southern Connecticut State", "Connecticut Col.": "Connecticut College", UChicago: "Chicago", Wheaton: "Wheaton (IL)", "Henderson St.": "Henderson State", "Arizona St": "Arizona State", "Arizona St.": "Arizona State" };
+function recTile(ev, r, team) {
+  const [d, c, st, rel] = ev.split(" ");
+  const label = rel ? `4×${+d / 4} ${T(st === "Medley" ? "Estilos" : "Libre")}` : `${d} ${T(STROKE_ES[st] || st)}`;
+  const sk = rel ? (st === "Medley" ? "im" : "free") : st.toLowerCase();
+  const club = team || (r.s ? REC_SCHOOL[r.s] || teamDisp(r.s) : "");
+  const who = rel ? (club || r.n || "") : (r.n || "");
+  const sub = rel ? (club ? r.n || "" : "") : club;
+  const yr = r.d ? r.d.slice(0, 4) : r.y || "";
+  return `<div class="rectile s-${esc(sk)}">
+    <div class="rectop"><span class="pbev"><b>${esc(label.split(" ")[0])}</b> ${esc(label.split(" ").slice(1).join(" "))}${c === "M" ? ` <em>${T("larga")}</em>` : ""}</span>${yr ? `<span class="recyr">${esc(yr)}</span>` : ""}</div>
+    <span class="time rectime" data-conv="${esc(r.t)}" data-ev="${esc(ev)}" role="button">${esc(r.t)}</span>
+    <div class="recwho">${club ? crest(club, 22) : ""}<span><b class="${rel && !club ? "relnames" : ""}">${esc(rel ? who : flipName(who))}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span></div>
+  </div>`;
+}
+async function recordsView(div = "D1", g = "M") {
+  setTab("rec");
+  setTitle(T("Récords"));
+  loading();
+  await Promise.all([loadLogos().catch(() => {}), loadUnis().catch(() => {})]);
+  const R = await loadData("records").catch(() => null);
+  if (!R?.ncaa) return errorView("Los récords todavía no están disponibles.");
+  const order = R.order || [];
+  const list = Object.entries(R.ncaa[div]?.[g] || {}).sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
+  const seg = (items, cur, href) => `<div class="seg recseg">${items.map(([k, l]) => `<a class="${k === cur ? "on" : ""}" href="${href(k)}">${l}</a>`).join("")}</div>`;
+  const nUni = Object.keys(R.u || {}).length;
+  $app.innerHTML = `<section class="rechero"><span class="recico">🏆</span><div><h1>${T("Récords NCAA")}</h1><p>${T("Los tiempos más rápidos de la historia de cada división")}</p></div></section>
+  ${seg([["D1", "D-I"], ["D2", "D-II"], ["D3", "D-III"]], div, (k) => `#/rec/${k}/${g}`)}
+  ${seg([["M", "♂ " + T("Chicos")], ["W", "♀ " + T("Chicas")]], g, (k) => `#/rec/${div}/${k}`)}
+  ${list.length ? `<div class="recgrid">${list.map(([ev, r]) => recTile(ev, r)).join("")}</div>` : `<div class="card muted">${T("Sin récords para esta división.")}</div>`}
+  ${nUni ? `<a class="btn wide alt" href="#/rec/unis">🎓 ${T("Récords de cada universidad")} <span class="count">${nUni}</span></a>` : ""}
+  <p class="foot">${T("Récords oficiales de la NCAA (NCAA.org), puestos al día con los resultados del último campeonato. Toca un tiempo para convertirlo a metros.")} ${R.updated ? T("Actualizado: {d}.", { d: fmtDate(R.updated) }) : ""}</p>`;
+}
+// Lista de universidades que tienen sus récords leídos.
+async function recUnisView() {
+  setTab("rec");
+  setTitle(T("Récords de cada universidad"));
+  loading();
+  await Promise.all([loadLogos().catch(() => {}), loadUnis().catch(() => {})]);
+  const R = await loadData("records").catch(() => null);
+  const list = unis.filter((u) => R?.u?.[u.n]).sort((a, b) => a.n.localeCompare(b.n));
+  const divs = ["D1", "D2", "D3", "NAIA"].map((d) => [d, list.filter((u) => u.div === d)]).filter(([, l]) => l.length);
+  $app.innerHTML = `<a class="back" href="#/rec">‹ ${T("Récords NCAA")}</a>
+  <h1>🎓 ${T("Récords de cada universidad")}</h1>
+  ${divs.map(([d, l]) => `<h2>${esc(divLabel(d))} <span class="count">${l.length}</span></h2><div class="recunis">${l.map((u) => `<a href="#/uni/${enc(u.n)}">${crest(u.n, 44)}<b>${esc(u.n)}</b><small>${Object.keys(R.u[u.n].M || {}).length + Object.keys(R.u[u.n].W || {}).length} ${T("récords")}</small></a>`).join("")}</div>`).join("")}
+  <p class="foot">${T("Récords sacados de la web oficial de cada universidad. Solo salen los que se han podido leer bien.")}</p>`;
+}
+// Récords de una universidad (de su web oficial), en su ficha.
+async function uniRecordsHtml(u, g) {
+  const R = await loadData("records").catch(() => null);
+  const x = R?.u?.[u.n];
+  if (!x) return "";
+  const order = R.order || [];
+  const list = Object.entries(x[g] || {}).filter(([ev]) => order.includes(ev)).sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
+  if (!list.length) return "";
+  return `<div class="recgrid">${list.map(([ev, r]) => recTile(ev, r, "")).join("")}</div>${x.src ? `<a class="biosrc" href="${esc(x.src)}" target="_blank" rel="noopener">${T("Récords en la web de la universidad")} ↗</a>` : ""}`;
 }
 
 async function homeView() {
@@ -968,7 +1032,7 @@ async function fillWinners(meet, live) {
     if (!w) return;
     for (const row of document.querySelectorAll(`.erow[data-ev="${CSS.escape(url)}"]`)) {
       row.querySelector(".num").insertAdjacentHTML("afterend", crest(w.t, 34));
-      row.querySelector(".win").innerHTML = `🥇 ${esc(ev.relay ? w.t : w.n)} · <b class="convt" data-conv="${esc(w.m)}" data-ev="${esc(ev.title)}" role="button">${esc(w.m)}</b>`;
+      row.querySelector(".win").innerHTML = `🥇 ${esc(ev.relay ? teamDisp(w.t) : flipName(w.n))} · <b class="convt" data-conv="${esc(w.m)}" data-ev="${esc(ev.title)}" role="button">${esc(w.m)}</b>`;
       row.classList.add("done");
     }
   });
@@ -1097,7 +1161,7 @@ async function teamView(id, team, silent = false) {
   $app.innerHTML = `
   <a class="back" href="#/m/${enc(id)}/equipos">‹ ${esc(meet.name)}</a>
   <section class="thead">${crest(team, 72)}<div><h1>${findUni(meetTeamAlias[team] || team) ? `<a href="#/uni/${enc(findUni(meetTeamAlias[team] || team).n)}">${esc(teamDisp(team))} ›</a>` : esc(teamDisp(team))}</h1><p class="sub">${standing ? `${standing.p}.º · ${esc(standing.pts)} ${T("puntos")} · ` : ""}${medals} ${T("podios")}</p></div>${star(team)}</section>
-  <div class="list">${rows.map(({ ev, r }) => `<a class="trow" href="#/m/${enc(id)}/e/${enc(eventKey(ev.url))}"><span class="place p${r.p}">${esc(r.p)}</span><span class="who"><strong>${esc(ev.relay ? "Relevo " + (r.l || "") : r.n)}</strong><small>${esc(englishToSpanish(ev.title))}${r.s ? " · " + esc(SECTION_ES[r.s] || r.s) : ""}</small></span><span class="time" data-conv="${esc(r.m)}" data-ev="${esc(ev.title)}" role="button"><strong>${esc(r.m)}</strong>${r.pts ? `<em>${esc(r.pts)} pts</em>` : ""}</span></a>`).join("") || `<div class="card muted">${T("Sin resultados todavía.")}</div>`}</div>`;
+  <div class="list">${rows.map(({ ev, r }) => `<a class="trow" href="#/m/${enc(id)}/e/${enc(eventKey(ev.url))}"><span class="place p${r.p}">${esc(r.p)}</span><span class="who"><strong>${esc(ev.relay ? T("Relevo") + " " + (r.l || "") : flipName(r.n))}</strong><small>${esc(englishToSpanish(ev.title))}${r.s ? " · " + esc(SECTION_ES[r.s] || r.s) : ""}</small></span><span class="time" data-conv="${esc(r.m)}" data-ev="${esc(ev.title)}" role="button"><strong>${esc(r.m)}</strong>${r.pts ? `<em>${esc(r.pts)} pts</em>` : ""}</span></a>`).join("") || `<div class="card muted">${T("Sin resultados todavía.")}</div>`}</div>`;
   if (live) scheduleRefresh((s) => teamView(id, team, s));
 }
 
@@ -1312,7 +1376,7 @@ async function uniView(name, tab = "") {
     : `<div class="card muted">${T("Esta universidad no publica su equipo técnico en un formato que se pueda leer.")}${u.staffUrl || web ? ` <a href="${esc(u.staffUrl || web)}" target="_blank" rel="noopener">${T("Ver en su web")} ↗</a>` : ""}</div>`;
   const yr = (y) => ({ FR: T("1º año"), SO: T("2º año"), JR: T("3º año"), SR: T("4º año"), GR: T("Posgrado"), "5Y": T("5º año") }[y] || "");
   const top = (x) => (x.top ? [x.top[0], [x.top[1]]] : Object.entries(x.b)[0]);
-  const row = (x) => { const bi = findBio(bios?.p, x.rf || x.n); return `<a class="urow" href="#/n/${x.i}">${face(x.img || !bi?.img ? x : { ...x, img: bi.img })}<span class="uinfo"><b>${esc(x.n)} ${flagHtml(bi, x)}</b><small>${esc([yr(x.y), top(x) ? `${top(x)[0]} ${top(x)[1][0]}` : ""].filter(Boolean).join(" · "))}</small></span><span class="chev">›</span></a>`; };
+  const row = (x) => { const bi = findBio(bios?.p, x.rf || x.n); return `<a class="urow" href="#/n/${x.i}">${face(x.img || !bi?.img ? x : { ...x, img: bi.img })}<span class="uinfo"><b>${esc(x.n)} ${flagHtml(bi, x)}</b><small>${[yr(x.y) && esc(yr(x.y)), top(x) ? `${esc(top(x)[0])} <span class="convt" data-conv="${esc(top(x)[1][0])}" data-ev="${esc(top(x)[0])}" role="button">${esc(top(x)[1][0])}</span>` : ""].filter(Boolean).join(" · ")}</small></span><span class="chev">›</span></a>`; };
   const squad = (g, label) => {
     const list = team.filter((x) => (x.g || "") === g).sort((a, b) => a.n.localeCompare(b.n));
     if (!list.length) return "";
@@ -1333,6 +1397,7 @@ async function uniView(name, tab = "") {
   <div class="rkcards" id="rkcards"></div>
   <div class="ghead2"><h2>${T("Tiempos del equipo")}</h2><select id="evsel" class="gselect"></select></div>
   <div id="ttimes"></div>
+  <details class="pfold unirec" id="unirecbox" hidden><summary><span class="fico">🏆</span><span class="ftxt"><b>${T("Récords de la universidad")}</b><small>${T("Las mejores marcas de su historia")}</small></span><span class="farrow">›</span></summary><div class="fbody" id="unirec"></div></details>
   <h2>🏆 ${T("Últimos campeonatos nacionales")} ${year ? `<span class="count">${esc(year)}</span>` : ""}</h2>
   <div class="card ncaa">${u.men ? ncaaRow("M", "♂ " + T("Hombres")) : ""}${u.women ? ncaaRow("W", "♀ " + T("Mujeres")) : ""}</div>
   <h2>🏊 ${T("Nadadores")} ${team.length ? `<span class="count">${team.length}</span>` : ""}</h2>
@@ -1385,6 +1450,7 @@ async function uniView(name, tab = "") {
       if (c) cards.push(one("conf", c, confName(c), confLogo(c, 26) || "🏆"));
     }
     document.getElementById("rkcards").innerHTML = cards.join("");
+    uniRecordsHtml(u, g).then((h) => { const box = document.getElementById("unirecbox"); if (!box) return; document.getElementById("unirec").innerHTML = h; box.hidden = !h; }).catch(() => {});
     const evs = Object.keys(times[g]).sort((a, b) => (/Relay/.test(a) - /Relay/.test(b)) || evOrder(a) - evOrder(b));
     const sel = document.getElementById("evsel");
     let ev = sel.value && evs.includes(sel.value) ? sel.value : evs.includes(store.get("uniEv", "")) ? store.get("uniEv", "") : evs.find((e) => e === "100 Y Free") || evs[0];
@@ -1392,7 +1458,7 @@ async function uniView(name, tab = "") {
     sel.style.display = evs.length ? "" : "none";
     const list = times[g][ev] || [];
     document.getElementById("ttimes").innerHTML = list.length
-      ? `<div class="glist">${list.map(([t, n, rel], i) => { if (rel) return `<div class="rkrow"><span class="rkpos ${i < 3 ? "p" + (i + 1) : ""}">${i + 1}</span><span class="uinfo"><b>${esc(evLabel(ev))}</b><small class="wrap">${esc(n)}</small></span><span class="ttime">${esc(t)}</span></div>`; const x0 = findSw(n); const x = x0 && (!x0.g || x0.g === g) ? x0 : null; const inner = `<span class="rkpos ${i < 3 ? "p" + (i + 1) : ""}">${i + 1}</span>${x ? face(x) : `<span class="avatar ${g === "W" ? "w" : "m"}">${g === "W" ? "♀" : "♂"}</span>`}<span class="uinfo"><b>${esc(x?.n || n)}</b><small>${esc(evLabel(ev))}</small></span><span class="ttime">${esc(t)}</span>`; return x ? `<a class="rkrow" href="#/n/${x.i}">${inner}</a>` : `<div class="rkrow">${inner}</div>`; }).join("")}</div>`
+      ? `<div class="glist">${list.map(([t, n, rel], i) => { if (rel) return `<div class="rkrow"><span class="rkpos ${i < 3 ? "p" + (i + 1) : ""}">${i + 1}</span><span class="uinfo"><b>${esc(evLabel(ev))}</b><small class="wrap">${esc(n)}</small></span><span class="ttime" data-conv="${esc(t)}" data-ev="${esc(ev)}" role="button">${esc(t)}</span></div>`; const x0 = findSw(n); const x = x0 && (!x0.g || x0.g === g) ? x0 : null; const inner = `<span class="rkpos ${i < 3 ? "p" + (i + 1) : ""}">${i + 1}</span>${x ? face(x) : `<span class="avatar ${g === "W" ? "w" : "m"}">${g === "W" ? "♀" : "♂"}</span>`}<span class="uinfo"><b>${esc(x?.n || n)}</b><small>${esc(evLabel(ev))}</small></span><span class="ttime" data-conv="${esc(t)}" data-ev="${esc(ev)}" role="button">${esc(t)}</span>`; return x ? `<a class="rkrow" href="#/n/${x.i}">${inner}</a>` : `<div class="rkrow">${inner}</div>`; }).join("")}</div>`
       : `<div class="card muted">${T("Aún no hay tiempos de esta temporada para este equipo.")}</div>`;
   };
   document.getElementById("sexsel")?.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; g = b.dataset.g; store.set("uniSex", g); paint(); });
@@ -1750,7 +1816,7 @@ function applySettings() {
   else root.dataset.theme = th;
   root.dataset.bg = store.get("bg", "ocean");
   root.lang = lang();
-  const labels = { home: T("Campeonatos"), unis: T("Universidades"), nad: T("Nadadores"), ajustes: T("Ajustes") };
+  const labels = { home: T("Campeonatos"), unis: T("Universidades"), nad: T("Nadadores"), rec: T("Récords"), ajustes: T("Ajustes") };
   document.querySelectorAll(".tabbar a").forEach((a) => {
     const l = a.querySelector("em");
     if (l) l.textContent = labels[a.dataset.tab];
@@ -1820,6 +1886,8 @@ function route() {
   if (parts[0] === "rank" && parts[1] && parts[2]) return rankView(parts[1], parts[2], parts[3], parts[4]);
   if (parts[0] === "coach" && parts[1] && parts[2]) return coachView(parts[1], parts[2]);
   if (parts[0] === "ajustes") return settingsView();
+  if (parts[0] === "rec" && parts[1] === "unis") return recUnisView();
+  if (parts[0] === "rec") return recordsView(parts[1] || "D1", parts[2] || "M");
   if (parts[0] === "n" && parts[1]) return swimmerView(parts[1]);
   if (parts[0] === "n") return swimmersView();
   if (parts[0] === "u") return universitiesView();

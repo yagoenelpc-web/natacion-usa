@@ -226,6 +226,7 @@ function tidyRec(ev, r) {
   return { t: r.t.replace(/^0:/, ""), n, y };
 }
 const divOf = Object.fromEntries(unis.map((u) => [u.n, u.div]));
+const nickOf = Object.fromEntries(unis.map((u) => [u.n, (u.nick || "").toLowerCase()]));
 function cleanUni(x, name) {
   const res = { src: x.src, M: {}, W: {} };
   const dv = { D2: "D2", D3: "D3" }[divOf[name]];
@@ -241,7 +242,10 @@ function cleanUni(x, name) {
       const own = dv && ncaa[dv]?.[g]?.[ev];
       if (own && sec < secs(own.t) * 0.99) { bad++; continue; }
       const c = tidyRec(ev, r);
-      if (c) res[g][ev] = c; else bad++;
+      // El apodo del equipo ("Big Red") o el nombre de la universidad no son un nadador.
+      const low = (c?.n || "").toLowerCase();
+      if (c && low && (low === nickOf[name] || name.toLowerCase().includes(low) || (nickOf[name] && low.includes(nickOf[name])))) c.n = "";
+      if (c && (c.n || /Relay/.test(ev))) res[g][ev] = c; else bad++;
     }
     // Si fallan muchos, la tabla entera está mal leída (o es la del otro sexo).
     if (ent.length && bad / ent.length > 0.3) res[g] = {};
