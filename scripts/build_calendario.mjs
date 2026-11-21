@@ -109,13 +109,20 @@ function hometowns(html, names) {
     let i = html.indexOf(">" + n + "<");
     if (i < 0) i = html.indexOf(n);
     if (i < 0) continue;
-    const seg = html.slice(i, i + 4000);
+    let seg = html.slice(i, i + 4000);
+    // Cortar donde empieza la ficha de otro nadador.
+    let cut = seg.length;
+    for (const o of names) { if (o === n || o.includes(n) || n.includes(o)) continue; const j = seg.indexOf(">" + o + "<", n.length); if (j > 0 && j < cut) cut = j; }
+    seg = seg.slice(0, cut);
+    // El dato más cercano al nombre (el siguiente ya es de otro nadador).
+    let best = null;
     for (const re of pats) {
       const m = re.exec(seg);
-      if (!m) continue;
+      if (!m || (best && m.index >= best.index)) continue;
       const v = dec(m[1]).replace(/\s*\/.*$/, "").trim();
-      if (v && !/hometown/i.test(v) && !bad.test(v) && /[a-z]/i.test(v)) { out[n] = v; break; }
+      if (v && !/hometown/i.test(v) && !bad.test(v) && /[a-z]/i.test(v)) best = { index: m.index, v };
     }
+    if (best) out[n] = best.v;
   }
   return out;
 }
