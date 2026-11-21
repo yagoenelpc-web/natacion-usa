@@ -114,8 +114,9 @@ const out = {};
 function parseRecords(text, g0) {
   const rec = { M: {}, W: {} };
   let g = g0, ev = "";
-  for (const raw of text.split("\n")) {
-    const line = raw.replace(/\s+/g, " ").trim();
+  const lines = text.split("\n").map((x) => x.replace(/\s+/g, " ").trim()).filter(Boolean);
+  for (let li = 0; li < lines.length; li++) {
+    const line = lines[li];
     if (!line) continue;
     if (/^(men|men's|mens)\b/i.test(line) && line.length < 40) g = "M";
     if (/^(women|women's|womens)\b/i.test(line) && line.length < 40) g = "W";
@@ -130,7 +131,7 @@ function parseRecords(text, g0) {
     const before = e ? line.slice(0, line.indexOf(time)).replace(/^.*?\b(free(style)?|back(stroke)?|breast(stroke)?|fly|butterfly|im|individual medley|relay)\b/i, "").trim() : line.slice(0, line.indexOf(time)).trim();
     const year = /\b(19[6-9]\d|20[0-2]\d)\b/.exec(line)?.[1] || "";
     const who = (after.replace(/\b(19|20)\d{2}\b.*$/, "") || before).replace(/^(relay|team)\s+/i, "").replace(/[,;|-]+$/, "").replace(/\s{2,}/g, " ").trim().slice(0, 120);
-    rec[g][evNow] = { t: time, n: who, y: year };
+    rec[g][evNow] = { t: time, n: who, nb: before.slice(0, 120), nx: (lines[li + 1] || "").slice(0, 80), pv: (lines[li - 1] || "").slice(0, 80), y: year };
     ev = "";
   }
   return rec;
@@ -181,7 +182,75 @@ await pool(todo, 6, async (u) => {
   if (n >= 6) out[u.n] = { src, M: res.M, W: res.W };
   if (SOLO.length) console.log(u.n, JSON.stringify(out[u.n] || null).slice(0, 1500));
 });
-if (SOLO.length) { console.log(JSON.stringify(ncaa).slice(0, 3000)); process.exit(0); }
+// ---------- Limpieza: solo se guarda lo que tiene sentido ----------
+const BADW = /\b(relay|rank|name|time|year|butterfly|freestyle|backstroke|breaststroke|medley|championships?|invitational|invite|ncaa|record|school|team|meet|conference|vs\.?|dual)\b/i;
+const PART = /^(de|van|von|da|del|la|le|di|du|st\.?|jr\.?|ii|iii|iv)$/i;
+const tcase = (w) => (w === w.toUpperCase() && w.length > 2 ? w[0] + w.slice(1).toLowerCase() : w);
+// Saca "Nombre Apellido" de un trozo de texto con fechas, puestos, siglas o la competición pegados.
+function pickName(str) {
+  const s0 = String(str || "").replace(/[\u200b-\u200d\ufeff]/g, "").replace(/\b\d{1,2}[\/-]\d{1,2}([\/-]\d{0,4})?/g, " ").replace(/\b\d{1,2}-[A-Z][a-z]{2}-\d{2,4}\b/g, " ").replace(/[‘'’]\d{2}\b/g, " ").replace(/\/\d{4}\/\S*/g, " ").replace(/\([^)]*\)?/g, " ").replace(/[*#]+/g, " ").replace(/\.{2,}/g, " ");
+  const toks = s0.split(/[\s,;|]+/).filter(Boolean);
+  let best = [];
+  for (let i = 0; i < toks.length; i++) {
+    const run = [];
+    for (let j = i; j < toks.length; j++) {
+      const w = toks[j].replace(/[.:]+$/, (m) => (/^[A-Z]$/.test(toks[j][0]) && toks[j].length === 2 ? "." : ""));
+      const isWord = /^\p{Lu}[\p{L}'’\-]+$/u.test(w) || (/^[A-Z]\.?$/.test(w) && run.length > 0) || (PART.test(w) && run.length > 0) || /^"[\p{L}]+"$/u.test(w);
+      if (!isWord || BADW.test(w) || /^(and|at|the|of)$/i.test(w) || /-$/.test(w) || /^[A-Z]{2,3}$/.test(w) || /^(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|january|february|march|april|june|july|august|september|october|november|december)\.?$/i.test(w)) break;
+      // Siglas de equipo o conferencia ("WAC", "NSIC") cortan el nombre, salvo que todo esté en mayúsculas.
+      if (run.length >= 2 && /^[A-Z]{2,5}$/.test(w) && !run.every((x) => x === x.toUpperCase())) break;
+      run.push(w);
+    }
+    if (run.length >= 2 && run.length <= 4) { best = run; break; }
+  }
+  return best.length ? best.map(tcase).join(" ") : "";
+}
+const yy = new Date().getUTCFullYear() % 100;
+function tidyRec(ev, r) {
+  const rel = /Relay/.test(ev);
+  const raw = String(r.n || "");
+  let y = r.y || "";
+  const dm = /\b\d{1,2}\/\d{1,2}\/(\d{4}|\d{2})\b/.exec(raw + " " + (r.nb || ""));
+  if (!y && dm) y = dm[1].length === 4 ? dm[1] : String(+dm[1] <= yy ? 2000 + +dm[1] : 1900 + +dm[1]);
+  if (!/^(19[5-9]\d|20[0-3]\d)$/.test(y)) y = "";
+  let n = "";
+  if (rel) {
+    const parts = raw.replace(/^(relay|team)\s+/i, "").split(/\s*[,/&]\s*|\s+-\s+/).map(pickName);
+    n = parts.length >= 2 && parts.every(Boolean) ? parts.join(", ") : "";
+  } else {
+    // El nombre puede estar en la misma línea, o justo debajo o encima (tablas de dos líneas), si esa línea no es otra marca.
+    const near = (x) => (x && !/(\d{1,2}:)?\d{1,2}\.\d{2}/.test(x) ? pickName(x) : "");
+    n = pickName(raw) || pickName(r.nb) || near(r.nx) || near(r.pv);
+    if (!n) return null;
+  }
+  return { t: r.t.replace(/^0:/, ""), n, y };
+}
+const divOf = Object.fromEntries(unis.map((u) => [u.n, u.div]));
+function cleanUni(x, name) {
+  const res = { src: x.src, M: {}, W: {} };
+  const dv = { D2: "D2", D3: "D3" }[divOf[name]];
+  for (const g of ["M", "W"]) {
+    const ent = Object.entries(x[g] || {}).filter(([ev]) => ORDER.includes(ev));
+    let bad = 0;
+    for (const [ev, r] of ent) {
+      const top = ncaa.D1[g][ev];
+      const sec = secs(r.t);
+      // Más rápido que el récord NCAA de la División I es imposible; mucho más lento, prueba mal leída.
+      if (top && (sec < secs(top.t) - 0.005 || sec > secs(top.t) * 1.4)) { bad++; continue; }
+      // Tampoco puede batir el récord de su propia división por mucho (se lee mal o es del otro sexo).
+      const own = dv && ncaa[dv]?.[g]?.[ev];
+      if (own && sec < secs(own.t) * 0.99) { bad++; continue; }
+      const c = tidyRec(ev, r);
+      if (c) res[g][ev] = c; else bad++;
+    }
+    // Si fallan muchos, la tabla entera está mal leída (o es la del otro sexo).
+    if (ent.length && bad / ent.length > 0.3) res[g] = {};
+  }
+  const n = Object.keys(res.M).length + Object.keys(res.W).length;
+  return n >= 6 ? res : null;
+}
+if (SOLO.length) { for (const k of Object.keys(out)) console.log(k, JSON.stringify(cleanUni(out[k], k)).slice(0, 1200)); console.log(JSON.stringify(ncaa).slice(0, 3000)); process.exit(0); }
 for (const [k, v] of Object.entries(old.u || {})) if (!out[k]) out[k] = v;
+for (const k of Object.keys(out)) { const c = cleanUni(out[k], k); if (c) out[k] = c; else delete out[k]; }
 await writeFile("web/data/records.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), order: ORDER, ncaa, u: out }));
 console.log("récords de universidades:", Object.keys(out).length, "de", todo.length);

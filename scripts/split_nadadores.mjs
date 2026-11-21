@@ -43,14 +43,72 @@ let rosterWho = new Map(), rosterKey = () => "";
   const minDate = `${(now0.getUTCMonth() >= 7 ? now0.getUTCFullYear() : now0.getUTCFullYear() - 1) - 1}-08-01`;
   const fixN = (n) => (n.includes(",") ? n.split(",").map((x) => x.trim()).filter(Boolean).reverse().join(" ") : n).replace(/\s+/g, " ").trim();
   const evOf = (title) => title.replace(/^(Women|Men|Girls|Boys|Mixed)\s+/i, "").replace(/\s+Yard\s+/i, " Y ").replace(/\s+LC\s+Meter\s+|\s+SC\s+Meter\s+|\s+Meter\s+/i, " M ").replace(/Freestyle/i, "Free").replace(/Backstroke/i, "Back").replace(/Breaststroke/i, "Breast").replace(/Butterfly/i, "Fly").replace(/Individual Medley/i, "IM").replace(/\s+(Time Trial|Swim-?off|Prelims|Finals|Consolation|Bonus)\b.*$/i, "").trim();
-  const nk = (n, t) => n.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+[a-z]\.?(?=\s)/g, "").replace(/[^a-z ]+/g, "").replace(/\s+/g, " ").trim() + "|" + (alias[t] || t).toLowerCase();
+  // Equipo con un tiempo pegado ("CU 1:09.63", del tiempo de inscripción mal leído) → solo el equipo.
+  const cleanTeam = (t) => String(t || "").replace(/[\s(]*[xX*]?(\d{1,2}:)?\d{1,2}\.\d{2}\b.*$/, "").replace(/^\d{2}-\d{2}\s+/, "").replace(/^GS\s+/, "").replace(/\s*\((W|M|Men|Women)\)$/i, "").replace(/\s*\([^)]*$/, "").trim();
+  // Llave del equipo: alias de plantillas, o el nombre sin región ("-NE") ni palabras de relleno ("University", "Swimming").
+  const teamKey = (t0) => {
+    const t = cleanTeam(t0), t2 = t.replace(/-[A-Z]{1,3}$/, "").trim();
+    const a = alias[t] || alias[t2];
+    const base = (a || t2).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/univeristy/g, "university");
+    return base.replace(/^(the )?university of /, "").replace(/, university of,?/, "").replace(/\bsaint\b/g, "st").replace(/\bst\.?$/, "state").replace(/\bsuny /, "").replace(/\b(university|college|swimming|swim|diving|team|athletics|aquatics|club)\b/g, " ").replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim() || base;
+  };
+  const nk = (n, t0) => nk0(n, teamKey(t0));
+  const nk0 = (n, t) => n.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+[a-z]\.?(?=\s)/g, "").replace(/[^a-z ]+/g, "").replace(/\s+/g, " ").trim() + "|" + t;
   const byKey = new Map();
   // Segunda llave: apellidos + equipo, para unir "Alvar" con "Alvaro" o "Matt" con "Matthew".
   const byRest = new Map();
   const restOf = (k) => { const [nm, tm] = k.split("|"); const w = nm.split(" "); return [w[0], w.slice(1).join(" ") + "|" + tm]; };
   const addRest = (k, s) => { const [f, r] = restOf(k); if (!byRest.has(r)) byRest.set(r, []); byRest.get(r).push([f, s]); };
   const findRest = (k) => { const [f, r] = restOf(k); const c = (byRest.get(r) || []).filter(([f2]) => f.length >= 3 && f2.length >= 3 && (f.startsWith(f2) || f2.startsWith(f))); return c.length === 1 ? c[0][1] : null; };
-  for (const s of d.swimmers) { const k = nk(s.n, s.t); if (!byKey.has(k)) { byKey.set(k, s); addRest(k, s); } }
+  // Nadadores repetidos (mismo nombre y equipo): se juntan en uno con todas sus marcas.
+  let dupes = 0;
+  const mergeInto = (o, s) => {
+    for (const [e, v] of Object.entries(s.b || {})) if (!o.b?.[e] || secs(v[0]) < secs(o.b[e][0])) (o.b ||= {})[e] = v;
+    for (const id of s.m || []) if (!(o.m ||= []).includes(id)) o.m.push(id);
+    for (const f of ["img", "y", "g", "l", "u"]) if (!o[f] && s[f]) o[f] = s[f];
+    if (s._gv) { o._gv ||= { M: 0, W: 0 }; o._gv.M += s._gv.M; o._gv.W += s._gv.W; }
+    // Mejor el nombre completo del equipo que un código.
+    if (/^[A-Z0-9]{2,6}(-[A-Z]{2})?$/.test(o.t) && !/^[A-Z0-9]{2,6}(-[A-Z]{2})?$/.test(s.t)) o.t = s.t;
+    dupes++;
+  };
+  {
+    const dropped = new Set();
+    for (const s of d.swimmers) {
+      s.t = cleanTeam(s.t) || s.t;
+      const k = nk(s.n, s.t);
+      const o = byKey.get(k);
+      if (!o) { byKey.set(k, s); addRest(k, s); continue; }
+      mergeInto(o, s); dropped.add(s);
+    }
+    if (dropped.size) d.swimmers = d.swimmers.filter((s) => !dropped.has(s));
+  }
+  // Mismo nombre con el equipo en siglas y en nombre completo ("BSU" y "Bridgewater State University").
+  const words = (t) => cleanTeam(t).replace(/-[A-Z]{1,3}$/, "").split(/[\s.,]+/).filter(Boolean);
+  const initials = (t) => { const w = words(t).filter((x) => !/^(the|and|at)$/i.test(x)); return [w.filter((x) => !/^of$/i.test(x) && /^[A-Z]/.test(x)).map((x) => x[0]).join(""), w.map((x) => x[0].toUpperCase()).join("")]; };
+  // ¿Es el mismo equipo escrito de otra forma? Siglas ("BSU"), principio del nombre ("ROCK" → Rockhurst) o nombre cortado ("Long" → Long Island).
+  const sameTeam = (a, b) => {
+    const ka = teamKey(a), kb = teamKey(b);
+    if (ka && kb && (kb.startsWith(ka + " ") || ka.startsWith(kb + " "))) return true;
+    const code = cleanTeam(a).replace(/-[A-Z]{1,3}$/, "");
+    if (!/^[A-Z]{2,6}$/.test(code)) return false;
+    if (initials(b).includes(code)) return true;
+    return code.length >= 4 && kb.split(" ").some((w) => w.startsWith(code.toLowerCase()));
+  };
+  const mergeInitials = () => {
+    const byName = new Map();
+    for (const s of d.swimmers) { const k = nk0(s.n, ""); if (!byName.has(k)) byName.set(k, []); byName.get(k).push(s); }
+    const dropped = new Set();
+    for (const list of byName.values()) {
+      if (list.length < 2) continue;
+      for (const a of list) {
+        if (dropped.has(a)) continue;
+        const full = list.filter((b) => b !== a && !dropped.has(b) && sameTeam(a.t, b.t));
+        if (full.length === 1) { mergeInto(full[0], a); dropped.add(a); }
+      }
+    }
+    if (dropped.size) d.swimmers = d.swimmers.filter((s) => !dropped.has(s));
+  };
+  mergeInitials();
   d.mi ||= {};
   let added = 0, better = 0, files = 0, taFiles = 0;
   const taAll = {};
@@ -108,16 +166,28 @@ let rosterWho = new Map(), rosterKey = () => "";
         if (sw) byKey.set(k, sw);
         if (!sw) {
           if (!x.d || x.d < minDate) continue;
-          sw = { n: name.replace(/\s+[A-Z]\.?(?=\s)/g, ""), t: x.ta?.[team] || team, g, b: {}, m: [] };
+          sw = { n: name.replace(/\s+[A-Z]\.?(?=\s)/g, ""), t: x.ta?.[team] || cleanTeam(team) || team, g, b: {}, m: [] };
           if (n0.includes(",")) sw.l = n0.split(",")[0].trim();
           d.swimmers.push(sw); byKey.set(k, sw); addRest(k, sw); added++;
         }
         sw.g ||= g;
+        if (g) (sw._gv ||= { M: 0, W: 0 })[g]++;
         if (!sw.b[evn] || sec < secs(sw.b[evn][0])) { sw.b[evn] = [t, "", id]; better++; }
         if (!sw.m.includes(id)) sw.m.push(id);
       }
     }
   }
+  mergeInitials();
+  console.log("nadadores repetidos juntados:", dupes);
+  // Sexo por mayoría de las pruebas en que sale (un título mal leído no lo cambia).
+  let gFix = 0;
+  for (const sw of d.swimmers) {
+    const v = sw._gv; delete sw._gv;
+    if (!v) continue;
+    const g2 = v.M > v.W * 2 ? "M" : v.W > v.M * 2 ? "W" : "";
+    if (g2 && sw.g !== g2) { sw.g = g2; gFix++; }
+  }
+  console.log("sexo corregido:", gFix);
   // Piezas de una competición unida (Day 1, Day 2…) → la competición completa.
   const fin = (id) => aliasOf[id] || id;
   for (const id of Object.keys(aliasOf)) delete d.mi[id];
