@@ -94,6 +94,19 @@ function schedule(html, base, uname) {
   }
   return { games: games.filter((g) => !g.d || g.d >= seasonStart), live: [...live] };
 }
+// Ciudad de origen junto al nombre en la plantilla (tarjeta, tabla o datos de la página).
+function hometowns(html, names) {
+  const out = {};
+  for (const n of names) {
+    let i = html.indexOf(">" + n + "<");
+    if (i < 0) i = html.indexOf(n);
+    if (i < 0) continue;
+    const seg = html.slice(i, i + 5000);
+    const m = /class="[^"]*hometown[^"]*"[^>]*>\s*(?:<[^>]+>\s*)*(?:Hometown:?\s*(?:<[^>]+>\s*)*)?([^<]{3,80})</i.exec(seg) || /"hometown"\s*:\s*"([^"]{3,80})"/i.exec(seg);
+    if (m) { const v = dec(m[1]).replace(/\s*\/.*$/, "").trim(); if (v && !/hometown/i.test(v)) out[n] = v; }
+  }
+  return out;
+}
 function roster(html, base) {
   const out = new Map();
   const hrefs = new Map();
@@ -167,7 +180,7 @@ function logoIn(html, base) {
 const EXTRA = {
   "Grand Canyon": { M: [["Mario Perez Torrado", "https://images.sidearmdev.com/crop?url=https%3A%2F%2Fdxbhsrqyrr690.cloudfront.net%2Fsidearm.nextgen.sites%2Fgculopes.com%2Fimages%2F2025%2F10%2F1%2Fmario.png&width=200&height=200&type=webp"]] },
 };
-const cal = {}, plant = {}, liveLinks = new Set(), srcs = {}, bioLinks = {}, pastPhotos = {};
+const cal = {}, plant = {}, liveLinks = new Set(), srcs = {}, bioLinks = {}, pastPhotos = {}, origins = {};
 let logosAdded = 0, athFound = 0;
 // Webs deportivas mal detectadas en algunas universidades.
 const FIX = { "Carson–Newman": "https://cneagles.com", "Staten Island": "https://csidolphins.com", "Concordia (D2)": "https://cuigoldeneagles.com", "Florida Institute Technology": "https://floridatechsports.com", "Lees–McRae": "https://lmcbobcats.com", "Lynn": "https://lynnfightingknights.com", "Mars Hill": "https://mhulions.com", "Roberts Wesleyan": "https://robertsredhawks.com", "Saint Michael's": "https://smcathletics.com", "Southern Connecticut State": "https://southernctowls.com", "Albion": "https://albionbritons.com", "Allegheny": "https://alleghenygators.com", "Alma": "https://almascots.com", "Asbury": "https://asburyeagles.com", "Austin": "https://acroos.com", "Bridgewater State": "https://bsubears.com", "Brooklyn": "https://brooklyncollegeathletics.com", "California Institute Technology": "https://gocaltech.com", "Catholic University": "https://catholicathletics.com", "Cedar Crest": "https://cedarcrestfalcons.com", "Centre": "https://centrecolonels.com", "Chatham": "https://chathamathletics.com", "Clark": "https://clarkathletics.com", "Connecticut College": "https://camelathletics.com", "Drew": "https://drewrangers.com", "Elms": "https://elmsblazers.com", "Fairleigh Dickinson , Florham": "https://fdudevils.com", "Gallaudet": "https://gallaudetathletics.com", "Gettysburg": "https://gettysburgsports.com", "Greensboro": "https://gcpride.com", "Hamline": "https://hamlineathletics.com", "Hanover": "https://hanoverathletics.com", "Hartwick": "https://hartwickhawks.com", "Hendrix": "https://hendrixwarriors.com", "Illinois Tech": "https://illinoistechathletics.com", "Immaculata Mighty": "https://immaculataathletics.com", "Juniata": "https://juniataeagles.com", "Loras": "https://duhawkathletics.com", "Marymount": "https://marymountsaints.com", "Marywood": "https://marywoodpacers.com", "McDaniel": "https://mcdanielathletics.com", "Messiah": "https://gomessiah.com", "Nazareth": "https://nazathletics.com", "Olivet": "https://olivetcomets.com", "Penn State Behrend": "https://psbehrendsports.com", "Piedmont": "https://piedmontlions.com", "Randolph": "https://randolphwildcats.com", "St. Joseph's-Long Island": "https://sjcathletics.com", "St. Joseph's": "https://gomonks.com", "St. Olaf": "https://athletics.stolaf.edu", "Sarah Lawrence": "https://gogryphons.com", "Sewanee": "https://sewaneetigers.com", "Smith": "https://smithpioneers.com", "New Paltz": "https://newpaltzhawks.com", "Oneonta State": "https://oneontaathletics.com", "Potsdam State": "https://potsdambears.com", "Purchase College": "https://purchasecollegeathletics.com", "Stevenson": "https://gomustangsports.com", "Susquehanna River": "https://susquehannasports.com", "Swarthmore": "https://swarthmoreathletics.com", "ULV": "https://leopardathletics.com", "Minnesota Morris": "https://cougars.morris.umn.edu", "Ozarks": "https://ozarkseagles.com", "Puget Sound": "https://loggerathletics.com", "Utica": "https://uticapioneers.com", "Warren Wilson": "https://warrenwilsonowls.com", "Wellesley": "https://wellesleyblue.com", "Wells": "https://wellsexpress.com", "Westfield State": "https://westfieldstateowls.com", "Westminster": "https://westminstertitans.com", "Wheaton (IL)": "https://wheatonthunder.com", "Whittier": "https://poetathletics.com", "Whitworth": "https://whitworthpirates.com", "Arizona Christian": "https://acufirestorm.com", "Saint Mary (NE)": "https://csmflames.com", "Life": "https://liferunningeagles.com", "Master's": "https://mastersathletics.com", "Midland": "https://midlandathletics.com", "ONU": "https://olivetathletics.com", "Simpson (NAIA)": "https://simpsonathletics.org", "SUA": "https://sokalions.com", "Emmanuel": "https://emmanuelsaints.com", "Converse": "https://conversevalkyries.com", "Salem (VA)": "https://salemtigers.com", "Puerto Rico Mayagüez": "https://www.uprm.edu", "Bluefield State": "https://bluefieldstateathletics.com", "Carnegie Mellon": "https://athletics.cmu.edu", "Saint Vincent (NY)": "https://mscathletics.com", "Anderson Ravens": "https://athletics.anderson.edu", "Alfred State": "https://alfredstateathletics.com", "Buff State": "https://buffalostateathletics.com", "Mount Holyoke": "https://athletics.mtholyoke.edu", "State New York Delhi": "https://delhibroncos.com", "St. Ambrose Fighting Bees & Queen": "https://saintambroseathletics.com", "Columbia (SC)": "https://ccfightingkoalas.com", "SCAD": "https://scadbees.com", "WBU": "https://wbuathletics.com", Tennessee: "https://utsports.com", Omaha: "https://omavs.com", "Indiana State": "https://gosycamores.com", "Mount St. Mary's": "https://mountathletics.com", "Central Connecticut": "https://ccsubluedevils.com", Missouri: "https://mutigers.com", Arkansas: "https://arkansasrazorbacks.com", "Arizona State": "https://thesundevils.com", "Saint John's": "https://gojohnnies.com", "Saint Benedict": "https://gobennies.com", Manchester: "https://muspartans.com", "Minnesota State Moorhead": "https://msumdragons.com", Denison: "https://denisonbigred.com", "Knox Prairie": "https://prairiefire.knox.edu" };
@@ -200,6 +213,7 @@ await pool(todo, 10, async (u) => {
         // Más de 130 nombres no es una plantilla de natación (p. ej. lista histórica de deportistas).
         if (list.length && list.length <= 130) {
           names[who] = list; got = true;
+          Object.assign((origins[u.n] ||= {}), hometowns(ro.html, list.map(([n]) => n)));
           // Plantillas de las dos temporadas anteriores: fotos de los que ya no están este año (salen en resultados pasados).
           if (/\/roster\/?$/.test(ro.url.split("?")[0])) for (const k of [1, 2]) {
             const sy = (new Date().getUTCMonth() >= 7 ? new Date().getUTCFullYear() : new Date().getUTCFullYear() - 1) - k;
@@ -209,6 +223,8 @@ await pool(todo, 10, async (u) => {
             if (pl.length > 130) continue;
             const dst = (pastPhotos[u.n] ||= {});
             for (const [n, img] of pl) if (img && !dst[n]) dst[n] = img;
+            const ho = (origins[u.n] ||= {});
+            for (const [n, h] of Object.entries(hometowns(old.html, pl.map(([n]) => n)))) ho[n] ||= h;
           }
           const bl = (bioLinks[u.n] ||= { p: {}, c: {} });
           for (const [n, h] of list.hrefs) bl.p[n] = h;
@@ -263,6 +279,8 @@ console.log("ejemplo Drury:", JSON.stringify(cal.Drury || []).slice(0, 800));
 console.log("enlaces:", [...liveLinks].slice(0, 30).join(" "));
 await writeFile("web/data/calendario.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), live: [...liveLinks], cal, src: srcs }));
 await writeFile("web/data/enlaces-bio.json", JSON.stringify(bioLinks));
+await writeFile("web/data/origen.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), u: origins }));
+console.log("ciudades de origen:", Object.values(origins).reduce((a, x) => a + Object.keys(x).length, 0));
 await writeFile("web/data/fotos-pasadas.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), u: pastPhotos }));
 console.log("fotos de temporadas anteriores:", Object.values(pastPhotos).reduce((a, x) => a + Object.keys(x).length, 0), "de", Object.keys(pastPhotos).length, "universidades");
 // Logos de las conferencias (ESPN): los mapas de Wikipedia no sirven como logo.

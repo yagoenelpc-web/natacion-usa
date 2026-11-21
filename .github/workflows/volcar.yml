@@ -21,7 +21,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - run: scripts/datos-rama.sh bajar
+        if: ${{ inputs.grep == 'DIRECTO' }}
+      - run: node scripts/revisar_directo.mjs
+        if: ${{ inputs.grep == 'DIRECTO' }}
+        env:
+          URLS: ${{ inputs.urls != '-' && inputs.urls || '' }}
       - run: node scripts/volcar.mjs
+        if: ${{ inputs.grep != 'DIRECTO' }}
         env:
           URLS: ${{ inputs.urls }}
           MAX: ${{ inputs.max }}
