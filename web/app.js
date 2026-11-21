@@ -418,6 +418,8 @@ async function loadSwimmers() {
   swimmers.mi = d?.mi || {};
   return swimmers;
 }
+// Nada de natación máster (USMS / Masters): Yago no la quiere en la app.
+const isMasters = (name) => /\busms\b|\bmasters?\b(?! of)|máster/i.test(name || "");
 const isDual = (name) => /\bvs\.?\s|\bv\.\s|\bdual\b|tri[- ]?meet|quad[- ]?meet/i.test(name);
 async function loadArchive() {
   const d = await loadData("archivo");
@@ -428,7 +430,7 @@ async function loadArchive() {
     const prev = latest.get(base);
     if (!prev || (m.start || "") > (prev.start || "")) latest.set(base, m);
   }
-  return [...latest.values()].map((m) => ({
+  return [...latest.values()].filter((m) => !isMasters(m.name) && m.org !== "usms").map((m) => ({
     id: m.url.split("#")[0],
     name: m.name,
     org: isDual(m.name) ? "dual" : m.org || organization(m.name),
@@ -494,7 +496,7 @@ function statusOf(meet) {
 async function loadSummaries() {
   const year = +todayUS().slice(0, 4);
   const years = new Set([year - 1, year, year + 1].map(String));
-  const catalog = parseCatalog(await api(SOURCE, 3600), SOURCE).filter((m) => years.has(m.year));
+  const catalog = parseCatalog(await api(SOURCE, 3600), SOURCE).filter((m) => years.has(m.year) && !isMasters(m.name));
   const metas = await pool(catalog, 4, async (c) => {
     const id = meetIdFromUrl(c.url);
     const cached = store.get("s:" + id);
@@ -551,7 +553,7 @@ async function loadAllMeets() {
     ids.add(s.id);
     out.push(s);
   }
-  return out;
+  return out.filter((s) => !isMasters(s.name) && s.org !== "usms");
 }
 
 function rememberTeams(ev) {
@@ -713,7 +715,7 @@ async function homeView() {
 
   $app.innerHTML = `
   <section class="hero">
-    <div class="brands">${["ncaa", "usas", "usms"].map((o) => orgLogo(o, 44)).join("")}</div>
+    <div class="brands">${["ncaa", "usas"].map((o) => orgLogo(o, 44)).join("")}</div>
     <h1>${lang() === "en" ? "Swim USA" : "Natación USA"}</h1>
     <p>${T("Resultados de NCAA, USA Swimming y campeonatos de EE. UU.")}</p>
   </section>
@@ -742,7 +744,7 @@ function setupMeetSearch(list) {
   const build = async () => {
     await loadResIndex().catch(() => null);
     const seen = new Set(list.map((m) => m.id));
-    const stored = (resIdx?.meets || []).filter((m) => !seen.has(m.id)).map((m) => ({ id: m.id, name: m.n, start: m.d, end: m.e, org: /champ|conference|league/i.test(m.n) ? organization(m.n) : "dual", host: m.u[0], unis: m.u.join(" ") }));
+    const stored = (resIdx?.meets || []).filter((m) => !seen.has(m.id) && !isMasters(m.n)).map((m) => ({ id: m.id, name: m.n, start: m.d, end: m.e, org: /champ|conference|league/i.test(m.n) ? organization(m.n) : "dual", host: m.u[0], unis: m.u.join(" ") }));
     return [...list, ...stored].map((m) => ({ ...m, key: low(`${m.name} ${m.unis || ""} ${m.host || ""} ${(m.start || "").slice(0, 4)}`) }));
   };
   const draw = async () => {
