@@ -254,8 +254,13 @@ function pickName(str) {
   return best.length ? best.map(tcase).join(" ") : "";
 }
 const yy = new Date().getUTCFullYear() % 100;
+// Nombres de conferencia pegados al nadador ("Ella Smith Little East") se quitan.
+let CONFRE = null;
 function tidyRec(ev, r) {
   const rel = /Relay/.test(ev);
+  CONFRE ||= new RegExp(`\\b(${[...new Set(unis.flatMap((u) => [u.cm, u.cw]).filter((c) => c && c.length > 3))].map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")}|Big East|Little East|Big Ten|Big West|Mountain West|Sun Belt|Ivy League)\\b`, "gi");
+  const strip = (x) => String(x || "").replace(CONFRE, " ");
+  r = { ...r, n: strip(r.n), nb: strip(r.nb), nx: strip(r.nx), pv: strip(r.pv) };
   const raw = String(r.n || "");
   let y = r.y || "";
   const dm = /\b\d{1,2}\/\d{1,2}\/(\d{4}|\d{2})\b/.exec(raw + " " + (r.nb || ""));

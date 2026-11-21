@@ -262,6 +262,47 @@ let rosterWho = new Map(), rosterKey = () => "";
     if (dropped.size) d.swimmers = d.swimmers.filter((s) => !dropped.has(s));
     console.log("mismo nadador con otro equipo, juntados:", sim);
   }
+  // Mismo equipo y el nombre escrito de otra forma: apellidos al revés ("Ciotti Anthony"), con o sin guion
+  // ("Lopez Vergara"/"Lopez-Vergara"), solo un apellido ("Mariana Diaz"/"Mariana Diaz-Ponce") o la "f" perdida
+  // al leer el PDF ("So ia"/"Soϐia"/"Sofia"). Se queda el nombre de la plantilla oficial, o el más largo.
+  {
+    for (const sw of d.swimmers) if (sw.n.includes("ϐ")) sw.n = sw.n.replace(/ϐ/g, "f");
+    const tk = (n) => n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z ]+/g, " ").trim().split(/\s+/).filter(Boolean);
+    const same = (a, b) => {
+      const A = tk(a.n), B = tk(b.n);
+      if (A.length < 2 || B.length < 2) return false;
+      if ([...A].sort().join(" ") === [...B].sort().join(" ")) return true;
+      if (A.join("").replace(/f/g, "") === B.join("").replace(/f/g, "") && Math.abs(A.join("").length - B.join("").length) <= 1) return true;
+      if (A[0] !== B[0]) return false;
+      const ra = A.slice(1), rb = B.slice(1);
+      if (!(ra.every((x) => rb.includes(x)) || rb.every((x) => ra.includes(x)))) return false;
+      const ua = rosterWho.get(rosterKey(a.n)), ub = rosterWho.get(rosterKey(b.n));
+      return !(ua && ub && rosterKey(a.n) !== rosterKey(b.n) && [...ua].some((u) => ub.has(u)));
+    };
+    const groups = new Map();
+    for (const sw of d.swimmers) { const k = teamKey(sw.t) + "|" + (sw.g || ""); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(sw); }
+    const dropped = new Set();
+    let n2 = 0;
+    for (const list of groups.values()) {
+      if (list.length < 2) continue;
+      const byLast = new Map();
+      for (const sw of list) for (const w of new Set(tk(sw.n))) { if (!byLast.has(w)) byLast.set(w, []); byLast.get(w).push(sw); }
+      for (const a of list) {
+        if (dropped.has(a)) continue;
+        const cand = new Set();
+        for (const w of tk(a.n)) for (const b of byLast.get(w) || []) if (b !== a && !dropped.has(b)) cand.add(b);
+        for (const sw of list) if (sw !== a && !dropped.has(sw) && sw.n.replace(/[\sf]/gi, "") === a.n.replace(/[\sf]/gi, "")) cand.add(sw);
+        for (const b of cand) {
+          if (dropped.has(b) || dropped.has(a) || !same(a, b)) continue;
+          const score = (x) => (rosterWho.has(rosterKey(x.n)) ? 1000 : 0) + x.n.length;
+          const [keep, gone] = score(a) >= score(b) ? [a, b] : [b, a];
+          mergeInto(keep, gone); dropped.add(gone); n2++;
+        }
+      }
+    }
+    if (dropped.size) d.swimmers = d.swimmers.filter((s) => !dropped.has(s));
+    console.log("mismo equipo, nombre escrito de otra forma, juntados:", n2);
+  }
   console.log("nadadores repetidos juntados:", dupes);
   // Sexo por mayoría de las pruebas en que sale (un título mal leído no lo cambia).
   let gFix = 0;
