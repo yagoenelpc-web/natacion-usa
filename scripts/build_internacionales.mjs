@@ -138,15 +138,22 @@ for (let i = 0; i < cs.length; i += 50) {
 // Foto: primero la de su ficha de Wikidata (suele ser un retrato); la del artículo solo si no es de grupo (podio,
 // relevo, varias personas) y el archivo lleva su apellido, para no poner la cara de otro.
 const GROUP = /medal|podium|podio|ceremon|medaill|siegerehrung|relay|staffel|team|group|teammates|[_ ]and[_ ]|&|_y_|_et_|_und_/i;
+const EVENT = /final|heat|meet|champ|race|wk[_ ]|[_ ]vs[_ ]|games|olymp|\d+ ?m[_ ]|yard/i;
+const okPhoto = (url, name) => {
+  if (!url) return false;
+  const norm = (t) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  let file = url.split("?")[0].split("/").pop() || "";
+  try { file = decodeURIComponent(file); } catch {}
+  // Varias personas: "Antani_Ivanov,_Kristóf_Milák,_Damian_Chrzanowski" (tras la coma, otro nombre sin cifras).
+  const parts = file.replace(/\.[a-z]+$/i, "").replace(/_/g, " ").split(",").slice(1).map((t) => t.trim());
+  if (GROUP.test(file) || parts.some((t) => /^\p{Lu}[\p{L}'-]+( \p{Lu}[\p{L}'-]+){1,2}$/u.test(t))) return false;
+  // Foto de una carrera o un podio: solo si el archivo lleva su apellido.
+  return norm(file).includes(norm(name.split(" ").pop())) || !EVENT.test(file);
+};
 function photo(x, name) {
-  if (x.q && personImg.has(x.q)) return personImg.get(x.q);
-  const img = x.img || "";
-  if (!img) return "";
-  const file = decodeURIComponent(img.split("/").pop() || "");
-  const last = name.split(" ").pop().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  const f = file.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  if (GROUP.test(file) || (file.match(/,/g) || []).length >= 2) return "";
-  return f.includes(last) ? img : "";
+  const p18 = x.q && personImg.get(x.q);
+  if (okPhoto(p18, name)) return p18;
+  return x.img && okPhoto(x.img, name) ? x.img : "";
 }
 for (const [t, p] of pages) {
   if (/^List of /i.test(t)) continue;
