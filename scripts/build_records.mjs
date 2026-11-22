@@ -14,11 +14,11 @@ const readJSON = async (f, d) => { try { return JSON.parse(await readFile(f, "ut
 const tmp = await mkdtemp(join(tmpdir(), "rec-"));
 let nTmp = 0;
 
-async function get(url, bin = false) {
+async function get(url, bin = false, ms = 25000) {
   // Documentos de Google públicos: se piden como texto.
   url = url.replace(/^https:\/\/docs\.google\.com\/document\/d\/([\w-]+).*$/, "https://docs.google.com/document/d/$1/export?format=txt").replace(/^https:\/\/docs\.google\.com\/spreadsheets\/d\/([\w-]+).*$/, "https://docs.google.com/spreadsheets/d/$1/export?format=csv");
   try {
-    const r = await fetch(url, { headers: UA, redirect: "follow", signal: AbortSignal.timeout(25000) });
+    const r = await fetch(url, { headers: UA, redirect: "follow", signal: AbortSignal.timeout(ms) });
     if (!r.ok) return null;
     return { url: r.url, type: r.headers.get("content-type") || "", body: bin ? Buffer.from(await r.arrayBuffer()) : await r.text() };
   } catch { return null; }
@@ -280,13 +280,14 @@ await pool(todo, 6, async (u) => {
   if (Object.keys(res.M).length + Object.keys(res.W).length < 6 && (!loaded || !hadCands)) {
     const hosts = [...new Set(sportPages(u).map(([, sp]) => { try { return new URL(sp).hostname.replace(/^www\./, ""); } catch { return ""; } }).filter(Boolean))];
     for (const h of hosts.slice(0, 2)) {
-      const q = `https://web.archive.org/cdx/search/cdx?url=${h}/*&output=json&fl=original,timestamp&filter=statuscode:200&filter=original:.*(swim|sd|record).*&collapse=urlkey&limit=3000`;
-      const r = await get(q);
+      const q = `https://web.archive.org/cdx/search/cdx?url=${h}/*&output=json&fl=original,timestamp&filter=statuscode:200&filter=original:.*(swim|sd|record).*&collapse=urlkey&limit=1500`;
+      let r = await get(q, false, 90000);
+      if (!r) { await new Promise((ok) => setTimeout(ok, 3000)); r = await get(q, false, 90000); }
       let rows = []; try { rows = JSON.parse(r?.body || "[]").slice(1); } catch {}
       const good = rows.filter(([o]) => /record|top-?10|top-?ten|all-?time/i.test(o) && /swim|\bsd\b|_sd_|-sd-|dive/i.test(o) && !/news|story|article|national|ncaa|conference|\.(jpe?g|png|gif|css|js)(\?|$)/i.test(o));
       // Lo más reciente primero, PDF antes que páginas.
       good.sort((a, b) => (/\.pdf/i.test(b[0]) - /\.pdf/i.test(a[0])) || b[1].localeCompare(a[1]));
-      if (SOLO.length) console.log(u.n, "archivo:", h, rows.length, "→", good.slice(0, 4).map((x) => x[0]).join(" | "));
+      if (SOLO.length) console.log(u.n, "archivo:", h, r ? "ok" : "sin respuesta", rows.length, "→", good.slice(0, 4).map((x) => x[0]).join(" | "));
       if (!good.length) continue;
       if (await tryCands(good.slice(0, 4).map(([o, t]) => `https://web.archive.org/web/${t}id_/${o}`), "", `https://${h}`)) { fromArchive.push(u.n); break; }
     }
