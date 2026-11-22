@@ -108,7 +108,7 @@ const EN = {
   "universidades": "universities", "Ninguna universidad con estos filtros.": "No universities match these filters.",
   "Marca con ★ las tuyas: aparecerán en la portada y podrás filtrar los resultados.": "Star ★ yours: they'll show on the home screen and you can filter results.",
   "Entrenador": "Head coach", "Entrenador (hombres)": "Men's head coach", "Entrenadora/entrenador (mujeres)": "Women's head coach",
-  "No disponible": "Not available", "Equipo técnico": "Coaching staff", "Ver en la web oficial": "See official site", "Ciudad": "City", "División": "Division", "Récords": "Records", "Récords NCAA": "NCAA records", "Los tiempos más rápidos de la historia de cada división": "The fastest times ever in each division", "Sin récords para esta división.": "No records for this division.", "Récords de cada universidad": "Each school's records", "Hoy se compite": "Competing today", "Récords de {u}": "{u} records", "Esta universidad no tiene récords guardados.": "This school has no saved records.", "Récords de la web oficial de la universidad.": "Records from the school's official site.", "Ver la fuente": "See source", "Toca un tiempo para convertirlo.": "Tap a time to convert it.", "Resultados": "Results", "Ver las {n} de hoy": "See all {n} today", "Resultados en directo": "Live results", "equipo": "team", "equipos": "teams", "en {u}": "at {u}", "Buscar nadador con récord…": "Search a record holder…", "Buscar universidad o nadador…": "Search a school or swimmer…", "Cuenta": "Account", "Administrador": "Admin", "Cambiar contraseña": "Change password", "Contraseña actual": "Current password", "Contraseña nueva": "New password", "Guardar": "Save", "Contraseña cambiada.": "Password changed.", "Invitaciones": "Invitations", "Cada código sirve para una sola persona y una sola vez.": "Each code works for one person, once.", "Crear código de invitación": "Create invitation code", "Personas con acceso": "People with access", "Cerrar sesión": "Sign out", "Quitar acceso": "Remove access", "¿Seguro? Toca otra vez": "Sure? Tap again", "Códigos creados sin usar: {n}": "Unused codes created: {n}", "Copiar invitación": "Copy invitation", "Copiado ✓": "Copied ✓", "Te invito a USA Results. Entra aquí y crea tu cuenta con este código: {c} {l}": "Join me on USA Results. Open this link and create your account with this code: {c} {l}", "La contraseña actual no es correcta.": "Current password is wrong.", "La contraseña debe tener al menos 6 caracteres.": "Password must be at least 6 characters.", "No hay récords de universidades que coincidan.": "No school records match.", "Récord de {u}": "{u} record", "Récords de «{q}»": "Records of “{q}”", "Ningún nadador con ese nombre tiene récords guardados.": "No swimmer with that name holds a saved record.", "récords": "records", "Récords sacados de la web oficial de cada universidad. Solo salen los que se han podido leer bien.": "Records taken from each school's official site. Only those read reliably are shown.", "Récords oficiales de la NCAA (NCAA.org), puestos al día con los resultados del último campeonato. Toca un tiempo para convertirlo a metros.": "Official NCAA records (NCAA.org), updated with the latest championship results. Tap a time to convert it to meters.", "Actualizado: {d}.": "Updated: {d}.", "Récords de la universidad": "School records", "Las mejores marcas de su historia": "The best times in its history", "Récords en la web de la universidad": "Records on the school site", "Los récords todavía no están disponibles.": "Records are not available yet.", "Natación de EE. UU.": "US swimming", "NCAA, USA Swimming y universidades": "NCAA, USA Swimming and colleges", "Ver las {n} en directo": "See all {n} live", "larga": "long course", "competiciones": "meets", "en plantilla": "on roster", "Biografía": "Bio", "Su universidad compite ahora": "Their school is competing now", "{n} competiciones": "{n} meets", "Más información": "More info", "División I": "Division I", "División II": "Division II", "División III": "Division III", "Apodo": "Nickname",
+  "No disponible": "Not available", "Equipo técnico": "Coaching staff", "Ver en la web oficial": "See official site", "Ciudad": "City", "División": "Division", "Récords": "Records", "Récords NCAA": "NCAA records", "Los tiempos más rápidos de la historia de cada división": "The fastest times ever in each division", "Sin récords para esta división.": "No records for this division.", "Récords de cada universidad": "Each school's records", "Hoy se compite": "Competing today", "Récords de {u}": "{u} records", "Esta universidad no tiene récords guardados.": "This school has no saved records.", "Récords de la web oficial de la universidad.": "Records from the school's official site.", "Ver la fuente": "See source", "Toca un tiempo para convertirlo.": "Tap a time to convert it.", "Resultados": "Results", "Ver las {n} de hoy": "See all {n} today", "Resultados en directo": "Live results", "equipo": "team", "equipos": "teams", "en {u}": "at {u}", "Buscar nadador con récord…": "Search a record holder…", "Buscar universidad o nadador…": "Search a school or swimmer…", "Olímpicos, internacionales y profesionales": "Olympians, internationals and pros", "Nadadores de esta universidad con ficha en Wikipedia": "Swimmers from this school with a Wikipedia page", "Nada esta temporada": "Swimming this season", "Entrena aquí como profesional": "Trains here as a pro", "Ver los {n}": "See all {n}", "De las categorías de Wikipedia de la universidad. Incluye a quien nada o nadó aquí, también a profesionales que entrenan con el equipo.": "From the school\u2019s Wikipedia categories. Includes current and past swimmers, and pros who train with the team.", "Nadadores con ese nombre": "Swimmers with that name", "Sus récords": "Their records", "Este nadador ya no compite esta temporada, así que no tiene ficha con sus marcas en la app.": "This swimmer is no longer competing this season, so there is no profile with their times in the app.", "Buscar en Wikipedia": "Search Wikipedia", "Ver en Wikipedia": "See on Wikipedia", "Cuenta": "Account", "Administrador": "Admin", "Cambiar contraseña": "Change password", "Contraseña actual": "Current password", "Contraseña nueva": "New password", "Guardar": "Save", "Contraseña cambiada.": "Password changed.", "Invitaciones": "Invitations", "Cada código sirve para una sola persona y una sola vez.": "Each code works for one person, once.", "Crear código de invitación": "Create invitation code", "Personas con acceso": "People with access", "Cerrar sesión": "Sign out", "Quitar acceso": "Remove access", "¿Seguro? Toca otra vez": "Sure? Tap again", "Códigos creados sin usar: {n}": "Unused codes created: {n}", "Copiar invitación": "Copy invitation", "Copiado ✓": "Copied ✓", "Te invito a USA Results. Entra aquí y crea tu cuenta con este código: {c} {l}": "Join me on USA Results. Open this link and create your account with this code: {c} {l}", "La contraseña actual no es correcta.": "Current password is wrong.", "La contraseña debe tener al menos 6 caracteres.": "Password must be at least 6 characters.", "No hay récords de universidades que coincidan.": "No school records match.", "Récord de {u}": "{u} record", "Récords de «{q}»": "Records of “{q}”", "Ningún nadador con ese nombre tiene récords guardados.": "No swimmer with that name holds a saved record.", "récords": "records", "Récords sacados de la web oficial de cada universidad. Solo salen los que se han podido leer bien.": "Records taken from each school's official site. Only those read reliably are shown.", "Récords oficiales de la NCAA (NCAA.org), puestos al día con los resultados del último campeonato. Toca un tiempo para convertirlo a metros.": "Official NCAA records (NCAA.org), updated with the latest championship results. Tap a time to convert it to meters.", "Actualizado: {d}.": "Updated: {d}.", "Récords de la universidad": "School records", "Las mejores marcas de su historia": "The best times in its history", "Récords en la web de la universidad": "Records on the school site", "Los récords todavía no están disponibles.": "Records are not available yet.", "Natación de EE. UU.": "US swimming", "NCAA, USA Swimming y universidades": "NCAA, USA Swimming and colleges", "Ver las {n} en directo": "See all {n} live", "larga": "long course", "competiciones": "meets", "en plantilla": "on roster", "Biografía": "Bio", "Su universidad compite ahora": "Their school is competing now", "{n} competiciones": "{n} meets", "Más información": "More info", "División I": "Division I", "División II": "Division II", "División III": "Division III", "Apodo": "Nickname",
   "Ver sus resultados": "See their results", "Wikipedia": "Wikipedia", "Web oficial": "Official site",
   "Datos de Wikipedia (CC BY-SA).": "Data from Wikipedia (CC BY-SA).",
   "Idioma": "Language", "Tema": "Theme", "Automático": "Automatic", "Claro": "Light", "Oscuro": "Dark", "Fondo": "Background",
@@ -266,6 +266,9 @@ async function loadUnis() {
   } catch {
     unis = [];
   }
+  // Escudos de Wikipedia: solo logos, sellos o emblemas. Fuera fotos del campus (una entrada, un edificio, una vista aérea).
+  const okLogo = (url) => { if (!url) return false; const f = decodeURIComponent(url.split("?")[0].split("/").pop() || "").toLowerCase(); return /\.(svg|png|gif|webp)/.test(f) || /logo|seal|wordmark|emblem|crest|shield|athletic|mark|flag|insignia|coat_of_arms/.test(f); };
+  for (const u of unis) { if (u.logo && !okLogo(u.logo)) delete u.logo; if (u.seal && !okLogo(u.seal)) delete u.seal; }
   uniIndex = {};
   for (const u of unis) {
     const info = { logo: u.logo || u.seal || "", color: "#0b63ce", display: u.n, uni: u };
@@ -344,7 +347,7 @@ async function loadSwimmers() {
   if (swimmers) return swimmers;
   await loadLogos().catch(() => {});
   // Índice ligero (nad-indice.json); las marcas de cada uno se bajan al abrir su ficha (web/data/nad/<trozo>.json).
-  let [d, pl, fpast, fextra, forig] = await Promise.all([loadData("nad-indice"), loadData("plantillas"), loadData("fotos-pasadas").catch(() => null), loadData("fotos-extra").catch(() => null), loadData("origen").catch(() => null)]);
+  let [d, pl, fpast, fextra, forig, wint] = await Promise.all([loadData("nad-indice"), loadData("plantillas"), loadData("fotos-pasadas").catch(() => null), loadData("fotos-extra").catch(() => null), loadData("origen").catch(() => null), loadData("internacionales").catch(() => null)]);
   if (d?.s) d = { updated: d.updated, swimmers: d.s.map(([n, t, g, y, te, tt, l]) => ({ n, t, g, y, l, b: {}, m: [], top: te ? [te, tt] : null, src: [[n, t]] })) };
   else d = await loadData("nadadores");
   const secs = (t) => { const m = /^(?:(\d+):)?(\d+\.\d+)/.exec(t || ""); return m ? (+m[1] || 0) * 60 + +m[2] : Infinity; };
@@ -440,6 +443,19 @@ async function loadSwimmers() {
   }
   // Nacionalidad de Wikidata (nadadores internacionales con ficha), para la bandera cuando no hay ciudad de origen.
   for (const x of merged.values()) { const cc = fextra?.c?.[kx(x.rf || x.n)]; if (cc) x.cc = cc; }
+  // Nadadores de su universidad con página en Wikipedia: su foto libre y su país si faltan.
+  const wmap = new Map();
+  if (wint?.u) for (const x of merged.values()) {
+    const l = x.u && wint.u[x.u.n];
+    if (!l) continue;
+    if (!wmap.has(x.u.n)) wmap.set(x.u.n, new Map(l.map((e) => [kx(e[0]), e])));
+    {
+      const m = wmap.get(x.u.n), e = m.get(kx(x.rf || x.n)) || m.get(kx(x.n));
+      if (!e) continue;
+      if (!x.img && e[2]) x.img = e[2];
+      if (!x.cc && e[3]) x.cc = e[3];
+    }
+  }
   // Ciudad de origen (para la bandera) desde las plantillas de esta temporada y las anteriores.
   for (const x of merged.values()) {
     const o = x.u && forig?.u?.[x.u.n];
@@ -772,7 +788,7 @@ function recTile(ev, r, team, tag = "") {
   return `<div class="rectile s-${esc(sk)}">
     <div class="rectop"><span class="pbev"><b>${esc(label.split(" ")[0])}</b> ${esc(label.split(" ").slice(1).join(" "))}${c === "M" ? ` <em>${T("larga")}</em>` : ""}</span>${yr ? `<span class="recyr">${esc(yr)}</span>` : ""}</div>
     <span class="time rectime" data-conv="${esc(r.t)}" data-ev="${esc(ev)}" role="button">${esc(r.t)}</span>
-    <div class="recwho">${!rel && r.i ? `<span class="recface"><img src="${esc(r.i)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()">${club ? crest(club, 16) : ""}</span>` : club ? crest(club, 22) : ""}<span><b class="${rel && !club ? "relnames" : ""}">${esc(rel ? who : flipName(who))}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span></div>
+    <div class="recwho">${!rel && r.i ? `<span class="recface"><img src="${esc(r.i)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()">${club ? crest(club, 16) : ""}</span>` : club ? crest(club, 22) : ""}<span>${!rel && who ? `<a class="recname" href="#/np/${enc(flipName(who))}/${enc(club || "")}"><b>${esc(flipName(who))}</b></a>` : `<b class="${rel && !club ? "relnames" : ""}">${esc(rel ? who : flipName(who))}</b>`}${sub ? `<small>${esc(sub)}</small>` : ""}</span></div>
     ${tag ? `<span class="rectag">${esc(tag)}</span>` : ""}
   </div>`;
 }
@@ -877,6 +893,25 @@ async function recUniView(name, g = "") {
   <p class="foot">${T("Récords de la web oficial de la universidad.")} ${x.src ? `<a href="${esc(x.src)}" target="_blank" rel="noopener">${T("Ver la fuente")} ↗</a>` : ""} ${T("Toca un tiempo para convertirlo.")}</p>`;
 }
 // Récords de una universidad (de su web oficial), en su ficha.
+// Página de Wikipedia: título de la inglesa o enlace completo (nadadores sin artículo en inglés, como Carles Coll).
+const wikiUrl = (page) => (!page ? "" : /^https:\/\/[a-z]+\.wikipedia\.org\//.test(page) ? page : `https://en.wikipedia.org/wiki/${encodeURIComponent(page.replace(/ /g, "_"))}`);
+// Nadadores de la universidad con página en Wikipedia (olímpicos, internacionales, profesionales que entrenan allí).
+async function uniWikiHtml(u) {
+  const W = await loadData("internacionales").catch(() => null);
+  const l = W?.u?.[u.n];
+  if (!l?.length) return "";
+  const sw = await loadSwimmers().catch(() => []);
+  const low = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z ]+/g, " ").replace(/\s+/g, " ").trim();
+  const mine = new Map(sw.filter((x) => x.u && x.u.n === u.n).map((x) => [low(x.n), x]));
+  const row = ([n, page, img, cc, g, pro]) => {
+    const x = mine.get(low(n));
+    const href = x ? `#/n/${x.i}` : wikiUrl(page);
+    const pic = img || x?.img;
+    const sub = [pro ? `💪 ${T("Entrena aquí como profesional")}` : "", x ? T("Nada esta temporada") : page ? "Wikipedia ↗" : ""].filter(Boolean).join(" · ");
+    return `<a class="urow"${href ? ` href="${esc(href)}"` : ""}${x || !href ? "" : ` target="_blank" rel="noopener"`}>${pic ? `<img class="face" src="${esc(pic)}" alt="" width="38" height="38" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'avatar',textContent:'${g === "W" ? "♀" : "♂"}'}))">` : `<span class="avatar ${g === "W" ? "w" : "m"}">${g === "W" ? "♀" : "♂"}</span>`}<span class="uinfo"><b>${esc(n)} ${cc ? flagHtml(null, { cc }) : ""}</b><small>${sub}</small></span>${href ? `<span class="chev">›</span>` : ""}</a>`;
+  };
+  return `<div class="list">${l.slice(0, 80).map(row).join("")}</div>${l.length > 80 ? `<details class="more"><summary>${T("Ver los {n}", { n: l.length })}</summary><div class="list">${l.slice(80).map(row).join("")}</div></details>` : ""}<p class="foot">${T("De las categorías de Wikipedia de la universidad. Incluye a quien nada o nadó aquí, también a profesionales que entrenan con el equipo.")}</p>`;
+}
 async function uniRecordsHtml(u, g) {
   const R = await loadData("records").catch(() => null);
   const x = R?.u?.[u.n];
@@ -1515,6 +1550,7 @@ async function uniView(name, tab = "") {
   <div class="rkcards" id="rkcards"></div>
   <div class="ghead2"><h2>${T("Tiempos del equipo")}</h2><select id="evsel" class="gselect"></select></div>
   <div id="ttimes"></div>
+  <details class="pfold unirec" id="uniwikibox" hidden><summary><span class="fico">🌍</span><span class="ftxt"><b>${T("Olímpicos, internacionales y profesionales")}</b><small>${T("Nadadores de esta universidad con ficha en Wikipedia")}</small></span><span class="farrow">›</span></summary><div class="fbody" id="uniwiki"></div></details>
   <details class="pfold unirec" id="unirecbox" hidden><summary><span class="fico">🏆</span><span class="ftxt"><b>${T("Récords de la universidad")}</b><small>${T("Las mejores marcas de su historia")}</small></span><span class="farrow">›</span></summary><div class="fbody" id="unirec"></div></details>
   <h2>🏆 ${T("Últimos campeonatos nacionales")} ${year ? `<span class="count">${esc(year)}</span>` : ""}</h2>
   <div class="card ncaa">${u.men ? ncaaRow("M", "♂ " + T("Hombres")) : ""}${u.women ? ncaaRow("W", "♀ " + T("Mujeres")) : ""}</div>
@@ -1568,6 +1604,7 @@ async function uniView(name, tab = "") {
       if (c) cards.push(one("conf", c, confName(c), confLogo(c, 26) || "🏆"));
     }
     document.getElementById("rkcards").innerHTML = cards.join("");
+    uniWikiHtml(u).then((h) => { const box = document.getElementById("uniwikibox"); if (!box) return; document.getElementById("uniwiki").innerHTML = h; box.hidden = !h; }).catch(() => {});
     uniRecordsHtml(u, g).then((h) => { const box = document.getElementById("unirecbox"); if (!box) return; document.getElementById("unirec").innerHTML = h; box.hidden = !h; }).catch(() => {});
     const evs = Object.keys(times[g]).sort((a, b) => (/Relay/.test(a) - /Relay/.test(b)) || evOrder(a) - evOrder(b));
     const sel = document.getElementById("evsel");
@@ -1933,6 +1970,36 @@ async function loadSwimmerDetail(x, sw) {
   }
   x.detail = true;
 }
+// Desde un récord: abre la ficha del nadador si está en la app; si no (récords antiguos), una ficha con sus récords.
+async function swimmerByName(name, team) {
+  setTab("rec");
+  loading();
+  const [sw, R] = await Promise.all([loadSwimmers().catch(() => []), loadData("records").catch(() => null), loadUnis().catch(() => {}), loadLogos().catch(() => {})]);
+  const low = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z ]+/g, " ").replace(/\s+/g, " ").trim();
+  const n = low(name), tk = n.split(" "), u = team ? findUni(team) : null;
+  const same = (x) => { const xt = low(x.n).split(" "); return low(x.n) === n || (xt[0] === tk[0] && xt[xt.length - 1] === tk[tk.length - 1]); };
+  const hits = sw.filter(same);
+  const x = (u && hits.find((h) => h.u && h.u.n === u.n)) || (hits.length === 1 ? hits[0] : null);
+  if (x) return location.replace(`#/n/${x.i}`);
+  setTitle(name);
+  const all = [];
+  const DL = { D1: "D-I", D2: "D-II", D3: "D-III" };
+  for (const [dv, gs] of Object.entries(R?.ncaa || {})) for (const [gg, evs] of Object.entries(gs)) for (const [ev, r] of Object.entries(evs)) if (!/Relay/.test(ev) && low(flipName(r.n)) === n) all.push([ev, r, "", `NCAA ${DL[dv] || dv} · ${gg === "M" ? "♂" : "♀"}`]);
+  for (const [un, xx] of Object.entries(R?.u || {})) for (const gg of ["M", "W"]) for (const [ev, r] of Object.entries(xx[gg] || {})) if (!/Relay/.test(ev) && low(flipName(r.n)) === n) all.push([ev, r, un, `${T("Récord de {u}", { u: un })} · ${gg === "M" ? "♂" : "♀"}`]);
+  // Ficha de Wikipedia del nadador (foto, bandera y enlace directo), mejor la de su universidad.
+  const W = await loadData("internacionales").catch(() => null);
+  let we = null;
+  for (const [un, l] of Object.entries(W?.u || {})) for (const e of l) if (low(e[0]) === n && (!we || (u && un === u.n))) we = e;
+  const img = all.find(([, r]) => r.i)?.[1].i || we?.[2];
+  const club = u ? u.n : team;
+  const wlink = wikiUrl(we?.[1]) || `https://en.wikipedia.org/w/index.php?search=${encodeURIComponent(name + " swimmer")}`;
+  $app.innerHTML = `<a class="back" href="javascript:history.back()">‹ ${T("Récords")}</a>
+  <div class="mtop">${img ? `<span class="bigphoto"><img src="${esc(img)}" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('nophoto')"><i>${crest(club, 30)}</i></span>` : `<span class="bigcrest">${crest(club, 76)}</span>`}<div><h1>${esc(name)}${we?.[3] ? " " + flagHtml(null, { cc: we[3] }) : ""}</h1><p>${u ? `<a href="#/uni/${enc(u.n)}">${esc(u.full || u.n)}</a>` : esc(team)}</p></div></div>
+  ${hits.length > 1 ? `<h2>${T("Nadadores con ese nombre")}</h2><div class="card">${hits.slice(0, 10).map((h) => `<a class="urow" href="#/n/${h.i}">${face(h, 34)}<span class="uinfo"><b>${esc(h.n)}</b><small>${esc(h.u ? h.u.n : h.t)}</small></span><span class="chev">›</span></a>`).join("")}</div>` : ""}
+  <h2>${T("Sus récords")} <span class="count">${all.length}</span></h2>
+  <div class="recgrid">${all.map(([ev, r, un, tag]) => recTile(ev, r, un, tag)).join("")}</div>
+  <p class="foot">${T("Este nadador ya no compite esta temporada, así que no tiene ficha con sus marcas en la app.")} <a href="${esc(wlink)}" target="_blank" rel="noopener">${T(we?.[1] ? "Ver en Wikipedia" : "Buscar en Wikipedia")} ↗</a></p>`;
+}
 async function swimmerView(i) {
   setTab("nad");
   loading();
@@ -2132,6 +2199,7 @@ function route() {
   if (parts[0] === "rec" && parts[1] === "unis") return recUnisView();
   if (parts[0] === "rec" && parts[1] === "uni") return recUniView(parts[2] || "", parts[3] || "");
   if (parts[0] === "rec") return recordsView(parts[1] || "D1", parts[2] || "M");
+  if (parts[0] === "np" && parts[1]) return swimmerByName(parts[1], parts[2] || "");
   if (parts[0] === "n" && parts[1]) return swimmerView(parts[1]);
   if (parts[0] === "n") return swimmersView();
   if (parts[0] === "u") return universitiesView();
