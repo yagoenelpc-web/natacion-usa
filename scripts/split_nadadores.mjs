@@ -379,6 +379,21 @@ const put = (bag, ev, t, who, g) => {
   const prev = l.get(k);
   if (!prev || secs(t) < secs(prev[0])) l.set(k, [t, who]);
 };
+// Sexo de cada prueba comprobado con los nombres de pila (Madison, Michael...) contados en todos los nadadores:
+// algunos PDF etiquetan mal la prueba ("Men 100 Yard Freestyle" lleno de nadadoras) o mezclan las dos.
+const firstOf = (n) => (fixName(String(n)).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").match(/[a-z]+/) || [""])[0];
+const fnCount = new Map();
+for (const sw of d.swimmers) if (sw.g === "M" || sw.g === "W") { const f = firstOf(sw.n); if (f.length < 3) continue; const c = fnCount.get(f) || { M: 0, W: 0 }; c[sw.g]++; fnCount.set(f, c); }
+const sexOf = new Map();
+for (const [f, c] of fnCount) { const t = c.M + c.W; if (t >= 8 && Math.max(c.M, c.W) >= 0.92 * t) sexOf.set(f, c.M > c.W ? "M" : "W"); }
+let flipped = 0, skipped = 0, dropped = 0;
+const realSex = (ev, g) => {
+  let ok = 0, bad = 0;
+  for (const r of ev.res || []) { const s = r[1] && sexOf.get(firstOf(r[1])); if (s === g) ok++; else if (s) bad++; }
+  if (ok + bad < 3 || bad <= ok) return g;
+  if (bad >= 3 * ok) { flipped++; return g === "M" ? "W" : "M"; }
+  skipped++; return "";
+};
 for (const f of await readdir("web/data/m").catch(() => [])) {
   let x;
   try { x = JSON.parse(await readFile("web/data/m/" + f, "utf8")); } catch { continue; }
@@ -386,7 +401,9 @@ for (const f of await readdir("web/data/m").catch(() => [])) {
   if (!S) continue;
   S.meets++;
   for (const ev of x.ev || []) {
-    const g = sexOfT(ev.ti || ""), evn = shortEv(ev.ti || "");
+    const evn = shortEv(ev.ti || "");
+    let g = sexOfT(ev.ti || "");
+    if (g && !REL.test(evn)) g = realSex(ev, g);
     if (!g) continue;
     const rel = REL.test(evn);
     if (!rel && !IND.test(evn)) continue;
@@ -398,10 +415,15 @@ for (const f of await readdir("web/data/m").catch(() => [])) {
       const st = /Back|Fly|IM/.test(evn) ? 1.0 : /Breast/.test(evn) ? 1.1 : 0.9;
       if (pc < (rel ? 0.33 : 0.36) || pc > st * (/ M /.test(evn) ? 1.12 : 1)) continue;
       if (rel) { const sw = (r[8] || []).map(fixName); put(T0(S, x.ta?.[team] || team)["R" + g], evn, t, sw.length ? sw : [r[7] || "A"], g); }
-      else if (n && /^[\p{L}][\p{L}'’.,\- ]+$/u.test(n.trim())) put(T0(S, x.ta?.[team] || team)[g], evn, t, fixName(n), g);
+      else if (n && /^[\p{L}][\p{L}'’.,\- ]+$/u.test(n.trim())) {
+        const sx = sexOf.get(firstOf(n));
+        if (sx && sx !== g) { dropped++; continue; } // nadadora en una prueba de hombres (o al revés): fuera
+        put(T0(S, x.ta?.[team] || team)[g], evn, t, fixName(n), g);
+      }
     }
   }
 }
+console.log("pruebas con el sexo cambiado:", flipped, "· dudosas:", skipped, "· tiempos de otro sexo quitados:", dropped);
 // Fecha de las marcas que vienen de competiciones HY-TEK del archivo (v[2] es su dirección, no un id guardado):
 // antes se perdían y equipos como Texas o Florida no salían en el ranking de esta temporada.
 const archDate = new Map();
