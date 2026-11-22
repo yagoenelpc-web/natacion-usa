@@ -12,7 +12,7 @@ const pace = ([ev, v]) => secs(v[0]) / (+(/^(\d+)/.exec(ev)?.[1]) || 100);
 // Alias de equipos: códigos de los resultados ("GAC-MN", "KEN", "Gusties-MN") → universidad, según en qué plantilla
 // oficial (de este año o anteriores) salen sus nadadores. La app lo usa cuando el nombre no basta.
 const alias = {};
-let rosterWho = new Map(), rosterKey = () => "";
+let rosterWho = new Map(), rosterKey = () => "", rosterSex = new Map();
 // Apodos: "Oli" y "Oliver" son la misma persona.
 const NICK = new Map();
 for (const grp of ["joseph joe joey jo", "john jack johnny jon", "michael mike mikey mick", "katherine kathryn katelyn katie kate kat kathy catherine cate", "jacob jake jakob", "samuel sam sammy", "samantha sam sammie", "william will billy bill liam", "robert rob bob bobby robbie", "alexander alex xander", "alexandra alex alexa lexi", "matthew matt matty", "nicholas nick nico nicolas", "christopher chris topher", "thomas tom tommy", "daniel dan danny", "benjamin ben benji benny", "anthony tony", "elizabeth liz lizzie libby beth eliza ellie", "margaret maggie meg peggy", "megan meg", "abigail abby abbie", "gabriella gabrielle gabby gabi", "gabriel gabe", "eleanor ellie elle nora", "james jim jimmy jamie", "andrew andy drew", "edward ed eddie ted", "charles charlie chuck", "zachary zach zack", "maximilian max", "nathan nate nathaniel", "joshua josh", "timothy tim timmy", "stephen steven steve", "gregory greg", "patrick pat", "jennifer jen jenny", "rebecca becca becky", "allison ally allie", "madison maddie maddy", "madeline maddie maddy madelyn", "olivia liv livvy", "oliver ollie oli", "olivia oli", "harrison harry", "henry harry hank", "frederick fred freddie", "jonathan jon jonny", "dominic dom", "sebastian seb", "nicole nikki nicki", "natalie nat", "kimberly kim", "jessica jess jessie", "theodore theo teddy", "leonardo leo", "mitchell mitch", "zoe zoey", "emily em emmy", "emilia emelia emmy", "isabella isabel bella izzy", "victoria tori vicky", "anne annie ann anna", "kamdyn kami", "reginald reggie", "regan reggie", "janos jancsi", "oceane oc", "rudy ru", "justin jb", "isabelle izzy isabel", "isadora izzy", "isobel izzy", "lucas luke", "allison ali", "evelyn evie", "jocelyn josie", "josephine josie", "volodymyr vova", "nikola nick", "michail mike", "mingna min", "elizabeth ella", "eleanor ella", "cameron cam", "connor cam"]) { const w = grp.split(" "); for (const x of w) (NICK.get(x) || NICK.set(x, []).get(x)).push(w[0]); }
@@ -24,6 +24,8 @@ for (const grp of ["joseph joe joey jo", "john jack johnny jon", "michael mike m
   const who = new Map();
   const add = (uni, n) => { const k = key(n); if (!k) return; if (!who.has(k)) who.set(k, new Set()); who.get(k).add(uni); };
   for (const [uni, p] of Object.entries(pl)) for (const l of Object.values(p)) for (const e of l) add(uni, Array.isArray(e) ? e[0] : e);
+  // Sexo según la plantilla oficial (listas M/W separadas): manda sobre cualquier otra pista.
+  for (const [uni, p] of Object.entries(pl)) for (const g of ["M", "W"]) for (const e of p[g] || []) { const k = key(Array.isArray(e) ? e[0] : e); if (k) rosterSex.set(k + "|" + uni, rosterSex.has(k + "|" + uni) && rosterSex.get(k + "|" + uni) !== g ? "?" : g); }
   for (const [uni, m] of Object.entries(past)) for (const n of Object.keys(m)) add(uni, n);
   const byTeam = new Map();
   for (const s of d.swimmers) { if (!byTeam.has(s.t)) byTeam.set(s.t, []); byTeam.get(s.t).push(s.n); }
@@ -315,6 +317,47 @@ for (const grp of ["joseph joe joey jo", "john jack johnny jon", "michael mike m
     if (dropped.size) d.swimmers = d.swimmers.filter((s) => !dropped.has(s));
     console.log("mismo equipo, nombre escrito de otra forma, juntados:", n2);
   }
+  // Última pasada: nombres cortados por HY-TEK ("Aar Parseghian", "A Sliman"), erratas de una letra ("Gabriellle",
+  // "Griffley"), curso metido en el nombre ("Brandon FR Wilson") y el mismo equipo con otro código (alias de plantillas).
+  // Solo se juntan si hay un único candidato y nunca si los dos nadan en la misma competición (serían dos personas).
+  {
+    for (const sw of d.swimmers) sw.n = sw.n.replace(/\s+(FR|SO|JR|SR|GR|5Y)\s+/g, " ").replace(/\s*-\s+/g, "-").replace(/\s{2,}/g, " ").trim();
+    const tk = (n) => n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z ]+/g, " ").trim().split(/\s+/).filter(Boolean);
+    const lev = (a, b) => { if (Math.abs(a.length - b.length) > 1) return 9; let p = [...Array(b.length + 1).keys()]; for (let i = 1; i <= a.length; i++) { const c = [i]; for (let k = 1; k <= b.length; k++) c[k] = Math.min(p[k] + 1, c[k - 1] + 1, p[k - 1] + (a[i - 1] === b[k - 1] ? 0 : 1)); p = c; } return p[b.length]; };
+    const nickOf = (x) => NICK.get(x) || [x];
+    const firstSame = (fa, fb) => fa === fb || fa.startsWith(fb) || fb.startsWith(fa) || nickOf(fa).some((h) => nickOf(fb).includes(h)) || (Math.min(fa.length, fb.length) >= 4 && lev(fa, fb) <= 1);
+    const like = (a, b) => {
+      const A = tk(a.n), B = tk(b.n);
+      if (A.length < 2 || B.length < 2 || A.join(" ") === B.join(" ")) return A.join(" ") === B.join(" ") && A.length >= 2;
+      const la = A[A.length - 1], lb = B[B.length - 1];
+      if (la === lb) return firstSame(A[0], B[0]);
+      return A[0] === B[0] && Math.min(la.length, lb.length) >= 6 && lev(la, lb) <= 1;
+    };
+    const groups = new Map();
+    for (const sw of d.swimmers) { if (!sw.g) continue; const t = cleanTeam(sw.t) || sw.t; const k = (alias[sw.t] || alias[t] || alias[t.replace(/-[A-Z]{2}$/, "")] || teamKey(sw.t)) + "|" + sw.g; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(sw); }
+    const dropped = new Set();
+    let n3 = 0;
+    for (const list of groups.values()) {
+      if (list.length < 2) continue;
+      const byLast = new Map();
+      for (const sw of list) { const w = tk(sw.n); const k = (w[w.length - 1] || "").slice(0, 4); if (!byLast.has(k)) byLast.set(k, []); byLast.get(k).push(sw); }
+      for (const a of list) {
+        if (dropped.has(a)) continue;
+        const w = tk(a.n); const k = (w[w.length - 1] || "").slice(0, 4);
+        const c = (byLast.get(k) || []).filter((b) => b !== a && !dropped.has(b) && like(a, b) && !(a.m || []).some((x) => (b.m || []).includes(x)));
+        if (c.length !== 1) continue;
+        const b = c[0];
+        const ua = rosterWho.get(rosterKey(a.n)), ub = rosterWho.get(rosterKey(b.n));
+        if (ua && ub && rosterKey(a.n) !== rosterKey(b.n)) continue;
+        const score = (x) => { const w = tk(x.n); return (rosterWho.has(rosterKey(x.n)) ? 1000 : 0) - (w.slice(0, -1).some((y) => y.length <= 2) ? 300 : 0) + w[0].length * 5 + (x.m?.length || 0) * 2; };
+        const [keep, gone] = score(a) >= score(b) ? [a, b] : [b, a];
+        if (process.env.VER) console.log("parecido:", keep.n, "<-", gone.n, "·", keep.t, "/", gone.t);
+        mergeInto(keep, gone); dropped.add(gone); n3++;
+      }
+    }
+    if (dropped.size) d.swimmers = d.swimmers.filter((s) => !dropped.has(s));
+    console.log("nombres cortados, erratas y códigos de equipo, juntados:", n3);
+  }
   console.log("nadadores repetidos juntados:", dupes);
   // Sexo por mayoría de las pruebas en que sale (un título mal leído no lo cambia).
   let gFix = 0;
@@ -324,7 +367,9 @@ for (const grp of ["joseph joe joey jo", "john jack johnny jon", "michael mike m
     const g2 = v.M > v.W * 2 ? "M" : v.W > v.M * 2 ? "W" : "";
     if (g2 && sw.g !== g2) { sw.g = g2; gFix++; }
   }
-  console.log("sexo corregido:", gFix);
+  let gRoster = 0;
+  for (const sw of d.swimmers) { const t = String(sw.t || ""); const u = alias[t] || alias[t.replace(/-[A-Z]{2}$/, "")]; const g = u && rosterSex.get(rosterKey(sw.n) + "|" + u); if ((g === "M" || g === "W") && sw.g !== g) { sw.g = g; gRoster++; } }
+  console.log("sexo corregido:", gFix, "· por la plantilla oficial:", gRoster);
   // Piezas de una competición unida (Day 1, Day 2…) → la competición completa.
   const fin = (id) => aliasOf[id] || id;
   for (const id of Object.keys(aliasOf)) delete d.mi[id];
@@ -339,6 +384,56 @@ for (const grp of ["joseph joe joey jo", "john jack johnny jon", "michael mike m
   console.log("competiciones guardadas leídas:", files, "· marcas mejoradas:", better, "· nadadores nuevos:", added);
 }
 
+// Sexo por el nombre de pila cuando es clarísimo (≥20 nadadores y ≥97 % de un sexo), salvo si la plantilla oficial dice otra cosa.
+{
+  const f0 = (n) => n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z ]+/g, " ").trim().split(" ")[0] || "";
+  const c = new Map();
+  for (const sw of d.swimmers) if (sw.g === "M" || sw.g === "W") { const f = f0(sw.n); if (f.length < 3) continue; const x = c.get(f) || { M: 0, W: 0 }; x[sw.g]++; c.set(f, x); }
+  let nf = 0;
+  for (const sw of d.swimmers) {
+    const x = c.get(f0(sw.n)); if (!x) continue; const t = x.M + x.W, o = sw.g === "M" ? "W" : "M";
+    if (t < 20 || x[o] < 0.97 * t) continue;
+    const tt = String(sw.t || ""), u = alias[tt] || alias[tt.replace(/-[A-Z]{2}$/, "")];
+    if (u && rosterSex.get(rosterKey(sw.n) + "|" + u) === sw.g) continue;
+    sw.g = o; nf++;
+  }
+  console.log("sexo corregido por el nombre de pila:", nf);
+}
+// Mejores marcas registradas de cada universidad (para las que no publican récords legibles): la mejor marca de cada prueba
+// en los resultados guardados, con nadador y año. Solo marcas de competiciones (no de biografías), con ritmo posible y
+// nunca más rápidas que el récord NCAA de su división. La app las enseña como "mejores marcas", no como récord oficial.
+{
+  const RJ = await readFile("web/data/records.json", "utf8").then(JSON.parse).catch(() => ({}));
+  const NC = RJ.ncaa || {}, ORD = (RJ.order || []).filter((e) => !/Relay/.test(e));
+  const U = await readFile("web/data/unis.json", "utf8").then(JSON.parse).catch(() => []);
+  const UL = U.unis || U;
+  const divOf = Object.fromEntries(UL.map((u) => [u.n, u.div]));
+  const byName = new Map(); for (const u of UL) for (const k of [u.n, u.full]) if (k) byName.set(k.toLowerCase(), u.n);
+  const uniOf = (t0) => { const t = String(t0 || ""), t2 = t.replace(/-[A-Z]{2}$/, ""); return alias[t] || alias[t2] || byName.get(t.toLowerCase()) || byName.get(t2.toLowerCase()); };
+  const capOf = (ev) => { const em = /^(\d+) Y (Free|Back|Breast|Fly|IM)$/.exec(ev); return em ? [+em[1], { Free: 0.9, Back: 1.0, Fly: 1.0, Breast: 1.1, IM: 1.0 }[em[2]]] : null; };
+  const out = {}, MI = d.mi || {};
+  for (const sw of d.swimmers) {
+    if (sw.g !== "M" && sw.g !== "W") continue;
+    const u = uniOf(sw.t); if (!u) continue;
+    const dv = { D2: "D2", D3: "D3" }[divOf[u]];
+    for (const [ev, v] of Object.entries(sw.b || {})) {
+      if (!ORD.includes(ev) || !v[2]) continue;
+      const c = capOf(ev); if (!c) continue;
+      const sc = secs(v[0]), pc = sc / c[0];
+      if (!(pc >= 0.36 && pc <= c[1])) continue;
+      if (sc < secs(NC.D1?.[sw.g]?.[ev]?.t) - 0.01) continue;
+      if (dv && sc < secs(NC[dv]?.[sw.g]?.[ev]?.t) * 0.99) continue;
+      const g = ((out[u] ||= {})[sw.g] ||= {});
+      if (g[ev] && secs(g[ev].t) <= sc) continue;
+      const date = (MI[v[2]] && MI[v[2]][1]) || "";
+      g[ev] = { t: v[0], n: sw.n, ...(date ? { y: date.slice(0, 4) } : {}), ...(MI[v[2]]?.[0] || v[1] ? { m: (MI[v[2]]?.[0] || v[1]).slice(0, 80) } : {}) };
+    }
+  }
+  // Un sexo con menos de 4 pruebas no se enseña (pocos datos).
+  for (const [u, x] of Object.entries(out)) { for (const g of ["M", "W"]) if (x[g] && Object.keys(x[g]).length < 4) delete x[g]; if (!x.M && !x.W) delete out[u]; }
+  await writeFile("web/data/records-hist.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), u: out }));
+  console.log("mejores marcas registradas: universidades", Object.keys(out).length);
+}
 const idx = [], shards = {};
 const mi = d.mi || {};
 for (const s of d.swimmers) {

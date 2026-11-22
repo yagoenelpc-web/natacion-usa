@@ -34,7 +34,21 @@ for (const [f, fn] of jobs) {
   const rev = (await J("fotos-revisadas.json"))?.u || {};
   const bad = (img) => img && (rev[img] === 0 || BADIMG.test(decodeURIComponent(img).split("?url=").pop()) || (who.get(img)?.size || 0) > 1);
   let quitadas = 0, nombres = 0;
+  // Foto de otro compañero: el nombre del archivo lleva el nombre completo de otro nadador de la plantilla y no el suyo
+  // ("Lynch_Jaedon.jpg" puesta a Jameson Cooke). Se quita; la app enseña sus iniciales.
+  const lowT = (t) => String(t).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z ]+/g, " ").trim();
+  const fileWords = (img) => { try { return new Set(lowT(decodeURIComponent(img.split("?")[0].split("/").pop()).replace(/[_\-.]/g, " ")).split(/\s+/)); } catch { return new Set(); } };
+  const otherFace = (n, img, names) => {
+    if (!img) return false;
+    const f = fileWords(img), mine = lowT(n).split(/\s+/).filter((w) => w.length > 2);
+    if (mine.some((w) => f.has(w))) return false;
+    return names.some((n2) => { if (n2 === n) return false; const w = lowT(n2).split(/\s+/).filter((x) => x.length > 3); return w.length >= 2 && w.every((x) => f.has(x)); });
+  };
   if (pl) {
+    for (const p of Object.values(pl.plant || {})) {
+      const names = Object.values(p).flat().map((e) => (Array.isArray(e) ? e[0] : e));
+      for (const l of Object.values(p)) for (const e of l) if (Array.isArray(e) && e[1] && otherFace(e[0], e[1], names)) { e.length = 1; quitadas++; }
+    }
     for (const p of Object.values(pl.plant || {})) for (const [g, l] of Object.entries(p)) {
       p[g] = l.filter((e) => { const n = Array.isArray(e) ? e[0] : e; if (BADNAME.test(String(n).trim())) { nombres++; return false; } return true; });
       for (const e of p[g]) if (Array.isArray(e) && bad(e[1])) { e.length = 1; quitadas++; }
@@ -42,6 +56,7 @@ for (const [f, fn] of jobs) {
     await writeFile("web/data/plantillas.json", JSON.stringify(pl));
   }
   if (fp) {
+    for (const m of Object.values(fp.u || {})) { const names = Object.keys(m); for (const [n, img] of Object.entries(m)) if (otherFace(n, img, names)) { delete m[n]; quitadas++; } }
     for (const m of Object.values(fp.u || {})) for (const [n, img] of Object.entries(m)) { if (BADNAME.test(n.trim())) { delete m[n]; nombres++; } else if (bad(img)) { delete m[n]; quitadas++; } }
     await writeFile("web/data/fotos-pasadas.json", JSON.stringify(fp));
   }
