@@ -9,6 +9,10 @@ on:
         description: "Probar solo con estas universidades (separadas por comas), sin guardar"
         required: false
         default: ""
+      texto:
+        description: "Con solo: imprimir el texto de las páginas de récords"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -31,6 +35,7 @@ jobs:
       - run: node scripts/build_records.mjs
         env:
           SOLO: ${{ inputs.solo }}
+          TEXTO: ${{ inputs.texto && '1' || '' }}
       - name: Guardar
         if: ${{ !inputs.solo }}
         run: scripts/datos-rama.sh subir-uno web/data/records.json

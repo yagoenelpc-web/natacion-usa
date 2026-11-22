@@ -214,6 +214,7 @@ await pool(todo, 6, async (u) => {
         }
         const rec = parseRecords(text, g);
         const n = Object.keys(rec.M).length + Object.keys(rec.W).length;
+        if (SOLO.length && process.env.TEXTO) console.log("=== TEXTO", r.url, "\n" + text.split("\n").filter((x) => x.trim()).slice(0, 70).join("\n"));
         if (n > (best[u.n]?.[1] ?? -1)) best[u.n] = [r.url, n];
         if (SOLO.length) console.log(u.n, g, c, "→", r.url, "pruebas:", n);
         if (n >= 6) {
