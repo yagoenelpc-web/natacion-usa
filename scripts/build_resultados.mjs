@@ -6,7 +6,7 @@
 // Temporada actual (enlaces de calendario.json) y temporadas anteriores (calendario de cada año en su web).
 // Va por partes: se para a los MAX_MIN minutos y sigue en la siguiente ejecución.
 import { readFile, writeFile, mkdir, rm } from "node:fs/promises";
-import { writeFileSync } from "node:fs";
+import { writeFileSync, readdirSync, unlinkSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
@@ -54,9 +54,22 @@ const fixLig = (t) => t.replace(/Butter\s?ly/g, "Butterfly").replace(/([A-Za-z])
 function pdfText(buf) {
   const f = join(TMP, `${tmpN++ % 64}.pdf`);
   writeFileSync(f, buf);
-  try { return execFileSync("pdftotext", ["-layout", "-enc", "UTF-8", f, "-"], { maxBuffer: 64e6, timeout: 60000 }).toString("utf8"); }
-  catch { return ""; }
+  let t = "";
+  try { t = execFileSync("pdftotext", ["-layout", "-enc", "UTF-8", f, "-"], { maxBuffer: 64e6, timeout: 60000 }).toString("utf8"); } catch {}
+  // PDF escaneado (solo imagen, sin texto): se lee con OCR (tesseract), como mucho 12 páginas y 15 PDF por ejecución.
+  if (t.replace(/\s/g, "").length < 80 && ocrLeft > 0) {
+    try {
+      ocrLeft--;
+      const base = f.replace(/\.pdf$/, "");
+      execFileSync("pdftoppm", ["-r", "220", "-gray", "-png", "-l", "12", f, base], { timeout: 120000 });
+      const pages = readdirSync(TMP).filter((x) => x.startsWith(base.split("/").pop() + "-") && x.endsWith(".png")).sort();
+      t = pages.map((pg) => { try { return execFileSync("tesseract", [join(TMP, pg), "-", "--psm", "6", "-c", "preserve_interword_spaces=1"], { maxBuffer: 16e6, timeout: 90000 }).toString("utf8"); } catch { return ""; } finally { try { unlinkSync(join(TMP, pg)); } catch {} } }).join("\f");
+      ocrUsed++;
+    } catch {}
+  }
+  return t;
 }
+let ocrLeft = +(process.env.OCR_MAX || 15), ocrUsed = 0;
 
 const NOISE = /HY-TEK'?s MEET MANAGER|Hy-Tek'?s MEET MANAGER|MEET MANAGER \d|Site License|Licensed to|^\s*Page \d+\s*$|\bPage \d+\s*$/i;
 // Convierte el texto de un PDF de resultados HY-TEK en { name, start, end, events: [ev...] } (mismo formato que parseEvent).
@@ -516,6 +529,7 @@ await pool(cand, 6, async (c) => {
   ok++;
 });
 console.log("motivos sin resultados:", JSON.stringify(whyC));
+console.log("PDF escaneados leídos con OCR:", ocrUsed);
 console.log("leídos ahora:", ok, "sin resultados:", empty, "fallos:", fail, "· encuentros guardados:", meetsById.size, "· minutos:", ((Date.now() - T0) / 60e3).toFixed(1));
 
 // ---------- Mejores marcas ----------
