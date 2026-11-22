@@ -394,7 +394,10 @@ await pool(cand, 6, async (c) => {
   const id = "r:" + createHash("sha1").update(sigOf(meet)).digest("hex").slice(0, 12);
   done[c.url] = id;
   const prev = meetsById.get(id);
-  if (prev) { if (c.uni && !prev.u.includes(c.uni)) prev.u.push(c.uni); return; }
+  if (prev) {
+    if (c.uni && !prev.u.includes(c.uni)) { prev.u.push(c.uni); const f = `web/data/m/${id.slice(2)}.json`; const x = await readJSON(f, null); if (x && !x.alias) { x.u = prev.u; await writeFile(f, JSON.stringify(x)); } }
+    return;
+  }
   const entry = { id, n: meet.name.slice(0, 120), d: meet.start, e: meet.end, u: [c.uni].filter(Boolean), s: c.season || seasonOf(meet.start), src: c.url, ev: meet.events.length };
   meetsById.set(id, entry);
   newMeets.push({ entry, meet });
@@ -489,7 +492,8 @@ await writeFile("web/data/nadadores.json", JSON.stringify({ ...sw, swimmers: lis
       const srcs = new Set([tx.src, ...(tx.parts || [])]);
       for (const [m, x] of files.slice(1)) {
         for (const e of x.ev) if (!seen.has(sig(e))) { seen.add(sig(e)); tx.ev.push(e); }
-        for (const u of x.u || []) if (!tx.u.includes(u)) tx.u.push(u);
+        // Universidades de las dos listas: la del fichero y la del índice (allí se suman las que enlazan el mismo PDF).
+        for (const u of [...(x.u || []), ...(m.u || []), ...(tm.u || [])]) if (!tx.u.includes(u)) tx.u.push(u);
         if (x.d && (!tx.d || x.d < tx.d)) tx.d = x.d;
         if ((x.e || x.d) > (tx.e || "")) tx.e = x.e || x.d;
         srcs.add(x.src); for (const p of x.parts || []) srcs.add(p);
@@ -507,6 +511,25 @@ await writeFile("web/data/nadadores.json", JSON.stringify({ ...sw, swimmers: lis
     }
   }
   console.log("competiciones unidas:", groups, "· piezas juntadas:", pieces);
+}
+// Todas las universidades que nadan en cada competición (no solo la que enlazó el PDF): así sale en la ficha de cada
+// equipo participante (p. ej. Drury en el SMU Invite). Equipo de los resultados → universidad con alias-equipos.json.
+{
+  const al = (await readJSON("web/data/alias-equipos.json", { a: {} })).a || {};
+  const clean = (t) => String(t || "").replace(/\s*\((m|w)\)\s*$/i, "").trim();
+  let added = 0;
+  await pool([...meetsById.values()], 16, async (m) => {
+    const f = `web/data/m/${m.id.slice(2)}.json`;
+    const x = await readJSON(f, null);
+    if (!x || x.alias || !x.ev) return;
+    const n = new Map();
+    for (const e of x.ev) for (const r of e.res || []) { const u = al[r[2]] || al[clean(r[2])]; if (u) n.set(u, (n.get(u) || 0) + 1); }
+    const extra = [...n].filter(([u, k]) => k >= 3 && !m.u.includes(u)).map(([u]) => u);
+    if (!extra.length) return;
+    m.u = [...m.u, ...extra]; x.u = m.u; added += extra.length;
+    await writeFile(f, JSON.stringify(x));
+  });
+  console.log("universidades añadidas a sus competiciones:", added);
 }
 const meets = [...meetsById.values()].sort((a, b) => (b.d || "").localeCompare(a.d || ""));
 await writeFile("web/data/encuentros.json", JSON.stringify({ v: VER, updated: new Date().toISOString().slice(0, 10), meets, done, pastDone: [...pastDone], recapDone: idx.recapDone || [] }));
