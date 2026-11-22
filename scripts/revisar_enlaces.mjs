@@ -39,7 +39,7 @@ await Promise.all(Array.from({ length: 16 }, async () => {
     if (r.dead) {
       out.n[u] = (old.n[u] || 0) + 1;
       if (out.n[u] >= 2) { out.bad[u] = 1; nBad++; }
-    } else if (r.final && !same(r.final, u) && !/login|signin|404|not-?found|error/i.test(r.final)) { out.fix[u] = r.final; nFix++; }
+    } else if (r.final && !same(r.final, u) && !/login|signin|404|not-?found|error|splash/i.test(r.final)) { out.fix[u] = r.final; nFix++; }
   }
 }));
 console.log("movidos:", nFix, "· rotos:", nBad, "· fallaron hoy (se miran otro día):", Object.keys(out.n).length - nBad);
