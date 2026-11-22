@@ -1,0 +1,36 @@
+name: Escudos de Wikipedia
+
+on:
+  schedule:
+    - cron: "13 4 * * 4"
+  workflow_dispatch:
+    inputs:
+      solo:
+        description: "Probar solo con estas universidades (separadas por comas), sin guardar"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ inputs.solo && 'escudos-prueba' || 'escudos' }}
+  cancel-in-progress: false
+
+jobs:
+  wiki:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: scripts/datos-rama.sh bajar
+      - run: node scripts/build_escudos.mjs
+        env:
+          SOLO: ${{ inputs.solo }}
+      - name: Guardar
+        if: ${{ !inputs.solo }}
+        # Solo guarda su propio fichero, así no pisa lo que guarden a la vez los otros procesos de datos.
+        run: scripts/datos-rama.sh subir-uno web/data/escudos.json
