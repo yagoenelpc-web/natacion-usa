@@ -24,5 +24,6 @@ jobs:
           node-version: "20"
       - run: scripts/datos-rama.sh bajar
       - run: node scripts/build_calendario.mjs
+      - run: node scripts/fix_keys.mjs
       - name: Guardar
         run: scripts/datos-rama.sh subir

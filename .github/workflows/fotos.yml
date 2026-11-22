@@ -1,0 +1,34 @@
+name: Revisar fotos
+
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+    inputs:
+      minutos:
+        description: Minutos máximos
+        default: "25"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: datos-app
+  cancel-in-progress: false
+
+jobs:
+  fotos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: scripts/datos-rama.sh bajar
+      - run: node scripts/revisar_fotos.mjs
+        env:
+          MAX_MIN: ${{ inputs.minutos || '25' }}
+      - run: node scripts/fix_keys.mjs
+      - name: Guardar
+        run: scripts/datos-rama.sh subir
