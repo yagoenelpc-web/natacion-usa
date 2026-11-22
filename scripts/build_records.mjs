@@ -103,7 +103,7 @@ for (const [g, url] of [["M", "http://fs.ncaa.org/Docs/stats/swimming_rb/MensSwi
     if (ev && m) {
       let rest = m[2], who = "", team = rest;
       const rel = /Relay/.test(ev);
-      if (rel) { const p = /^(.*?)\s*\((.*)\)$/.exec(rest); if (p) { team = p[1]; who = p[2]; } }
+      if (rel) { const p = /^(.*?)\s*\(([^()]*,[^()]*)\)$/.exec(rest) || /^(.*?)\s*\((.*)\)$/.exec(rest); if (p) { team = p[1]; who = p[2]; } } // "Queens (NC) (Ana, Eva…)": los nombres son el último paréntesis
       else { const i = rest.lastIndexOf(","); if (i > 0) { who = rest.slice(0, i).trim(); team = rest.slice(i + 1).trim(); } }
       let [mo, dd, yy] = m[3].split("-");
       if (yy.length === 2) yy = (+yy > 50 ? "19" : "20") + yy; // "11-22-24" (así viene el 100 mariposa de Gretchen Walsh)
@@ -185,6 +185,9 @@ const sportPages = (u) => {
   return [...new Map(l.map((x) => [x[1], x])).values()];
 };
 const todo = unis.filter((u) => (!SOLO.length || SOLO.includes(u.n)) && sportPages(u).length);
+// Diagnóstico: por qué no salen los récords de cada universidad (se imprime al final).
+const diag = { "sin web del deporte": unis.filter((u) => !sportPages(u).length).map((u) => u.n), "web del deporte no carga": [], "sin enlace de récords": [], "página de récords sin tabla legible": [], "récords quitados al limpiar": [] };
+const best = {};
 await pool(todo, 6, async (u) => {
   const res = { M: {}, W: {} };
   let src = "";
@@ -211,6 +214,7 @@ await pool(todo, 6, async (u) => {
         }
         const rec = parseRecords(text, g);
         const n = Object.keys(rec.M).length + Object.keys(rec.W).length;
+        if (n > (best[u.n]?.[1] ?? -1)) best[u.n] = [r.url, n];
         if (SOLO.length) console.log(u.n, g, c, "→", r.url, "pruebas:", n);
         if (n >= 6) {
           for (const gg of ["M", "W"]) for (const [e, v] of Object.entries(rec[gg])) res[gg][e] ||= v;
@@ -220,20 +224,24 @@ await pool(todo, 6, async (u) => {
       }
     return false;
   };
+  let loaded = 0, hadCands = 0;
   for (const [g, sp] of sportPages(u)) {
     if (Object.keys(res.M).length >= 8 && Object.keys(res.W).length >= 8) break;
     const page = await get(sp);
     if (!page) continue;
+    loaded++;
     const origin = new URL(page.url).origin;
     // Enlaces "Records" del menú del deporte (Sidearm los guarda en JSON y en <a>).
     const cands = new Set();
     for (const m of page.body.matchAll(/"title":"([^"]*Records?[^"]*)"[^{}]*?"url":"([^"]+)"/gi)) if (!/national|ncaa|conference|pool|facility/i.test(m[1])) cands.add(new URL(m[2], origin).href);
     for (const m of page.body.matchAll(/<a[^>]+href="([^"]+)"[^>]*>([^<]{0,60}Records?[^<]{0,30})<\/a>/gi)) if (!/national|ncaa|conference/i.test(m[2])) cands.add(new URL(m[1].replace(/&amp;/g, "&"), origin).href);
+    if (cands.size) hadCands++;
     if (!cands.size) for (const x of ["records", "records/records", "history"]) cands.add(`${sp.replace(/\/+$/, "")}/${x}`);
     await tryCands(cands, g, origin);
   }
   const n = Object.keys(res.M).length + Object.keys(res.W).length;
   if (n >= 6) out[u.n] = { src, M: res.M, W: res.W };
+  else diag[!loaded ? "web del deporte no carga" : !hadCands && !best[u.n] ? "sin enlace de récords" : "página de récords sin tabla legible"].push(u.n + (best[u.n] ? ` (${best[u.n][0]} → ${best[u.n][1]})` : ""));
   if (SOLO.length) console.log(u.n, JSON.stringify(out[u.n] || null).slice(0, 1500));
 });
 // ---------- Limpieza: solo se guarda lo que tiene sentido ----------
@@ -360,7 +368,7 @@ function cleanUni(x0, name) {
 }
 if (SOLO.length) { for (const k of Object.keys(out)) console.log(k, JSON.stringify(cleanUni(out[k], k)).slice(0, 1200)); console.log(JSON.stringify(ncaa).slice(0, 3000)); process.exit(0); }
 for (const [k, v] of Object.entries(old.u || {})) if (!out[k]) out[k] = v;
-for (const k of Object.keys(out)) { const c = cleanUni(out[k], k); if (c) out[k] = c; else delete out[k]; }
+for (const k of Object.keys(out)) { const c = cleanUni(out[k], k); if (c) out[k] = c; else { delete out[k]; diag["récords quitados al limpiar"].push(k); } }
 // ---------- Fotos de los nadadores con récord ----------
 // Solo fotos claramente suyas: de la plantilla de su universidad (este año o anteriores) con el mismo nombre,
 // o de Wikipedia cuando la página dice que es nadador.
@@ -400,3 +408,4 @@ for (const k of Object.keys(out)) { const c = cleanUni(out[k], k); if (c) out[k]
 }
 await writeFile("web/data/records.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), order: ORDER, ncaa, u: out }));
 console.log("récords de universidades:", Object.keys(out).length, "de", todo.length);
+for (const [k, l] of Object.entries(diag)) console.log(`· ${k}: ${l.length}\n   ${l.slice(0, 60).join("\n   ")}`);

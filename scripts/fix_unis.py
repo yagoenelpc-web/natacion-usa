@@ -51,6 +51,15 @@ for u in d["unis"]:
             u.pop(k, None)
         else:
             u[k] = v
+# Universidades que faltan en la lista de Wikipedia (salen en récords NCAA y resultados).
+EXTRA = [
+    {"n": "Queens", "full": "Queens University of Charlotte", "div": "D1", "men": True, "women": True, "cm": "ASUN", "cw": "ASUN", "diving": False,
+     "city": "Charlotte, North Carolina", "st": "NC", "web": "https://queensathletics.com", "wiki": "https://en.wikipedia.org/wiki/Queens_Royals", "nick": "Royals"},
+]
+have = {u["full"] for u in d["unis"]}
+for x in EXTRA:
+    if x["full"] not in have:
+        d["unis"].append(x)
 # filas repetidas (tablas de transición)
 uniq, keys = [], set()
 for u in d["unis"]:
