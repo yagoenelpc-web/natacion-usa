@@ -210,6 +210,7 @@ const todo = unis.filter((u) => (!SOLO.length || SOLO.includes(u.n)) && sportPag
 // Diagnóstico: por qué no salen los récords de cada universidad (se imprime al final).
 const diag = { "sin web del deporte": unis.filter((u) => !sportPages(u).length).map((u) => u.n), "web del deporte no carga": [], "sin enlace de récords": [], "página de récords sin tabla legible": [], "récords quitados al limpiar": [] };
 const best = {}, fromArchive = [];
+let cdxChain = Promise.resolve();
 await pool(todo, 6, async (u) => {
   const res = { M: {}, W: {} };
   let src = "";
@@ -281,10 +282,12 @@ await pool(todo, 6, async (u) => {
     const hosts = [...new Set(sportPages(u).map(([, sp]) => { try { return new URL(sp).hostname.replace(/^www\./, ""); } catch { return ""; } }).filter(Boolean))];
     for (const h of hosts.slice(0, 2)) {
       const q = `https://web.archive.org/cdx/search/cdx?url=${h}/*&output=json&fl=original,timestamp&filter=statuscode:200&filter=original:.*(swim|sd|record).*&collapse=urlkey&limit=1500`;
-      let r = await get(q, false, 90000);
-      if (!r) { await new Promise((ok) => setTimeout(ok, 3000)); r = await get(q, false, 90000); }
+      // El Archivo limita las consultas seguidas: van de una en una, con pausa, y se reintenta.
+      const cdx = () => (cdxChain = cdxChain.then(async () => { const x = await get(q, false, 90000); await new Promise((ok) => setTimeout(ok, 2500)); return x; }));
+      let r = await cdx();
+      if (!r) { await new Promise((ok) => setTimeout(ok, 8000)); r = await cdx(); }
       let rows = []; try { rows = JSON.parse(r?.body || "[]").slice(1); } catch {}
-      const good = rows.filter(([o]) => /record|top-?10|top-?ten|all-?time/i.test(o) && /swim|\bsd\b|_sd_|-sd-|dive/i.test(o) && !/news|story|article|national|ncaa|conference|\.(jpe?g|png|gif|css|js)(\?|$)/i.test(o));
+      const good = rows.filter(([o, t]) => t >= "2019" && /record|top-?10|top-?ten|all-?time/i.test(o) && /swim|\bsd\b|_sd_|-sd-|dive/i.test(o) && !/news|story|article|national|ncaa|conference|\.(jpe?g|png|gif|css|js)(\?|$)/i.test(o));
       // Lo más reciente primero, PDF antes que páginas.
       good.sort((a, b) => (/\.pdf/i.test(b[0]) - /\.pdf/i.test(a[0])) || b[1].localeCompare(a[1]));
       if (SOLO.length) console.log(u.n, "archivo:", h, r ? "ok" : "sin respuesta", rows.length, "→", good.slice(0, 4).map((x) => x[0]).join(" | "));
