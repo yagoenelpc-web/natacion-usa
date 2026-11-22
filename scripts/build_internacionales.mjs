@@ -52,6 +52,26 @@ for (const u of unis) {
   }
   if (SOLO.length) console.log(u.n, "·", names.join(" | "), "→", found ? "con categoría" : "sin categoría");
 }
+// Profesionales que entrenan ahora con el equipo de la universidad sin estudiar allí (grupos "pro"). Lista revisada a
+// mano con su fuente; se marcan como "entrena aquí". [universidad, página de Wikipedia, fuente]
+const PRO = [
+  ["Texas", "Léon Marchand", "https://swimswam.com/leon-marchand-on-training-with-bowman-pro-group-in-austin-its-a-dream-to-be-here/"],
+  ["Texas", "Tyler Ray (swimmer)", "https://swimswam.com/?p=1012413"],
+  ["Texas", "Jack Wilkening", "https://swimswam.com/?p=1012413"],
+  ["Texas", "Jack Aikins", "https://swimswam.com/?p=1012413"],
+  ["Florida", "Caeleb Dressel", "https://swimswam.com/practice-pancakes-florida-pro-group-am-workout-with-dressel-ledecky-hinds/"],
+  ["Florida", "Katie Ledecky", "https://swimswam.com/olympic-champion-katie-ledecky-heads-to-florida-to-train-under-anthony-nesty/"],
+  ["Florida", "Natalie Hinds", "https://swimswam.com/practice-pancakes-florida-pro-group-am-workout-with-dressel-ledecky-hinds/"],
+  ["Florida", "Bobby Finke", "https://sportskeeda.com/swimming/katie-ledecky-explored-training-caeleb-dressel-bobby-finke-like"],
+  ["Virginia", "Isabelle Stadden", "https://swimswam.com/american-backstroker-isabelle-stadden-joins-virginia-pro-group"],
+  ["Virginia Tech", "Carles Coll", "https://hokiesports.com/sports/swimming-diving/roster/player/carles-coll-marti"],
+].filter(([u]) => !SOLO.length || SOLO.includes(u));
+const proOf = new Map();
+for (const [u, t] of PRO) {
+  if (!pages.has(t)) pages.set(t, { g: "", unis: new Set() });
+  pages.get(t).unis.add(u);
+  proOf.set(t + "|" + u, 1);
+}
 console.log("categorías:", nCats, "· nadadores con página:", pages.size);
 // Foto libre, id de Wikidata y descripción corta, de 50 en 50.
 const titles = [...pages.keys()];
@@ -76,6 +96,7 @@ for (let i = 0; i < qs.length; i += 50) {
     if (sx) personSex.set(q, sx === "Q6581097" ? "M" : sx === "Q6581072" ? "W" : "");
   }
 }
+console.log("Wikidata: personas", qs.length, "· con país", personC.size, "· con sexo", personSex.size);
 const cs = [...new Set(personC.values())];
 for (let i = 0; i < cs.length; i += 50) {
   const r = await wd({ action: "wbgetentities", ids: cs.slice(i, i + 50).join("|"), props: "claims" });
@@ -84,13 +105,13 @@ for (let i = 0; i < cs.length; i += 50) {
 for (const [t, p] of pages) {
   const x = info.get(t) || {};
   // Solo nadadores (no entrenadores ni otras personas que acaben en la categoría).
-  if (x.desc && !/swim/i.test(x.desc)) continue;
+  if (x.desc && !/swim/i.test(x.desc) && ![...p.unis].some((un) => proOf.has(t + "|" + un))) continue;
   const name = t.replace(/\s*\(.*\)$/, "");
   const cc = x.q ? country.get(personC.get(x.q)) || "" : "";
   const g = (x.q && personSex.get(x.q)) || p.g || "";
-  for (const un of p.unis) (out[un] ||= []).push([name, t, x.img || "", cc, g]);
+  for (const un of p.unis) (out[un] ||= []).push([name, info.has(t) && x.q ? t : "", x.img || "", cc, g, proOf.get(t + "|" + un) || 0]);
 }
-for (const l of Object.values(out)) l.sort((a, b) => (b[2] ? 1 : 0) - (a[2] ? 1 : 0) || a[0].localeCompare(b[0]));
+for (const l of Object.values(out)) l.sort((a, b) => b[5] - a[5] || (b[2] ? 1 : 0) - (a[2] ? 1 : 0) || a[0].localeCompare(b[0]));
 const total = Object.values(out).reduce((s, l) => s + l.length, 0);
 console.log("universidades con nadadores en Wikipedia:", Object.keys(out).length, "· nadadores:", total, "· con foto:", Object.values(out).flat().filter((x) => x[2]).length, "· con país:", Object.values(out).flat().filter((x) => x[3]).length);
 if (SOLO.length) { for (const [k, l] of Object.entries(out)) console.log(k, l.length, JSON.stringify(l.slice(0, 12))); process.exit(0); }
