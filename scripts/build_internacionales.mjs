@@ -81,10 +81,12 @@ const PRO = [
   ["Florida", "Natalie Hinds", "https://swimswam.com/practice-pancakes-florida-pro-group-am-workout-with-dressel-ledecky-hinds/"],
   ["Florida", "Bobby Finke", "https://sportskeeda.com/swimming/katie-ledecky-explored-training-caeleb-dressel-bobby-finke-like"],
   ["Virginia", "Isabelle Stadden", "https://swimswam.com/american-backstroker-isabelle-stadden-joins-virginia-pro-group"],
-  ["Virginia Tech", "Carles Coll", "https://hokiesports.com/sports/swimming-diving/roster/player/carles-coll-marti"],
+  // Sin artículo en la Wikipedia inglesa: se usa su ficha de Wikidata y la Wikipedia en español.
+  ["Virginia Tech", "Carles Coll", "https://hokiesports.com/sports/swimming-diving/roster/player/carles-coll-marti", "Q126952996", "https://es.wikipedia.org/wiki/Carles_Coll"],
 ].filter(([u]) => !SOLO.length || SOLO.includes(u));
-const proOf = new Map();
-for (const [u, t] of PRO) {
+const proOf = new Map(), extra = new Map();
+for (const [u, t, , q, link] of PRO) {
+  if (q) extra.set(t, { q, link });
   if (!pages.has(t)) pages.set(t, { g: "", unis: new Set() });
   pages.get(t).unis.add(u);
   proOf.set(t + "|" + u, 1);
@@ -111,6 +113,7 @@ for (let i = 0; i < titles.length; i += 20) {
   } while (cont);
   await sleep(100);
 }
+for (const [t, e] of extra) if (!info.get(t)?.q) info.set(t, { q: e.q, img: "", desc: "", link: e.link });
 console.log("páginas con datos:", info.size, "de", titles.length);
 // Nacionalidad (P1532 país para el deporte, si no P27 ciudadanía) → código ISO del país (P297).
 const qs = [...new Set([...info.values()].map((x) => x.q).filter(Boolean))];
@@ -132,14 +135,28 @@ for (let i = 0; i < cs.length; i += 50) {
   const r = await wd({ action: "wbgetentities", ids: cs.slice(i, i + 50).join("|"), props: "claims" });
   for (const [q, e] of Object.entries(r?.entities || {})) { const iso = e.claims?.P297?.[0]?.mainsnak?.datavalue?.value; if (iso) country.set(q, iso.toLowerCase()); }
 }
+// Foto: primero la de su ficha de Wikidata (suele ser un retrato); la del artículo solo si no es de grupo (podio,
+// relevo, varias personas) y el archivo lleva su apellido, para no poner la cara de otro.
+const GROUP = /medal|podium|podio|ceremon|medaill|siegerehrung|relay|staffel|team|group|teammates|[_ ]and[_ ]|&|_y_|_et_|_und_/i;
+function photo(x, name) {
+  if (x.q && personImg.has(x.q)) return personImg.get(x.q);
+  const img = x.img || "";
+  if (!img) return "";
+  const file = decodeURIComponent(img.split("/").pop() || "");
+  const last = name.split(" ").pop().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const f = file.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  if (GROUP.test(file) || (file.match(/,/g) || []).length >= 2) return "";
+  return f.includes(last) ? img : "";
+}
 for (const [t, p] of pages) {
+  if (/^List of /i.test(t)) continue;
   const x = info.get(t) || {};
   // Solo nadadores (no entrenadores ni otras personas que acaben en la categoría).
   if (x.desc && !/swim/i.test(x.desc) && ![...p.unis].some((un) => proOf.has(t + "|" + un))) continue;
   const name = t.replace(/\s*\(.*\)$/, "");
   const cc = x.q ? country.get(personC.get(x.q)) || "" : "";
   const g = (x.q && personSex.get(x.q)) || p.g || "";
-  for (const un of p.unis) (out[un] ||= []).push([name, info.has(t) && x.q ? t : "", x.img || (x.q && personImg.get(x.q)) || "", cc, g, proOf.get(t + "|" + un) || 0]);
+  for (const un of p.unis) (out[un] ||= []).push([name, x.link || (info.has(t) && x.q ? t : ""), photo(x, name), cc, g, proOf.get(t + "|" + un) || 0]);
 }
 for (const l of Object.values(out)) l.sort((a, b) => b[5] - a[5] || (b[2] ? 1 : 0) - (a[2] ? 1 : 0) || a[0].localeCompare(b[0]));
 const total = Object.values(out).reduce((s, l) => s + l.length, 0);
