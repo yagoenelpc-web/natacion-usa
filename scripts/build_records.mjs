@@ -99,13 +99,14 @@ for (const [g, url] of [["M", "http://fs.ncaa.org/Docs/stats/swimming_rb/MensSwi
     if (dv && /MEN/.test(line)) { div = dv[0]; ev = ""; continue; }
     if (!div) continue;
     if (/^[0-9,]+-YARD [A-Z ]+$/.test(line)) { ev = evName(line); continue; }
-    const m = /^((?:\d{1,2}:)?\d{1,2}\.\d{1,2})\s*[—–-]\s*(.+?),\s*(\d{1,2}-\d{1,2}-\d{4})/.exec(line);
+    const m = /^((?:\d{1,2}:)?\d{1,2}\.\d{1,2})\s*[—–-]\s*(.+?),\s*(\d{1,2}-\d{1,2}-(?:\d{4}|\d{2}))\b/.exec(line);
     if (ev && m) {
       let rest = m[2], who = "", team = rest;
       const rel = /Relay/.test(ev);
       if (rel) { const p = /^(.*?)\s*\((.*)\)$/.exec(rest); if (p) { team = p[1]; who = p[2]; } }
       else { const i = rest.lastIndexOf(","); if (i > 0) { who = rest.slice(0, i).trim(); team = rest.slice(i + 1).trim(); } }
-      const [mo, dd, yy] = m[3].split("-");
+      let [mo, dd, yy] = m[3].split("-");
+      if (yy.length === 2) yy = (+yy > 50 ? "19" : "20") + yy; // "11-22-24" (así viene el 100 mariposa de Gretchen Walsh)
       ncaa[div][g][ev] ||= { t: m[1].replace(/\.(\d)$/, ".$10"), n: who, s: team, d: `${yy}-${mo.padStart(2, "0")}-${dd.padStart(2, "0")}`, src: "NCAA.org" };
       ev = "";
     }

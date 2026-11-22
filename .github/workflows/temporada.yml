@@ -24,6 +24,8 @@ jobs:
       - run: scripts/datos-rama.sh bajar
       - run: node scripts/fix_keys.mjs
       - run: node scripts/build_temporada.mjs
+      - run: node scripts/auditar.mjs
       - run: node scripts/split_nadadores.mjs
+      - run: node scripts/auditar.mjs despues
       - name: Guardar
         run: scripts/datos-rama.sh subir

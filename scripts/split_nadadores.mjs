@@ -246,10 +246,16 @@ for (const grp of ["joseph joe joey jo", "john jack johnny jon", "michael mike m
     for (const sw of d.swimmers) { const k = nk0(sw.n, ""); if (k.split(" ").length < 2) continue; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(sw); }
     const weak = (t) => { const c = cleanTeam(t).replace(/-[A-Z]{1,3}$/, "").trim(); return !c || /^\d/.test(c) || /^(new|university|college|univ|team|the|simon|north|south|east|west|saint|st)$/i.test(c) || (/^[A-Z]{1,3}$/.test(c) && !alias[c] && !alias[cleanTeam(t)]); };
     const similar = (a, b) => { let n = 0, ok = 0; for (const [ev, v] of Object.entries(a.b || {})) { const w = b.b?.[ev]; if (!w) continue; const r = secs(v[0]) / secs(w[0]); n++; if (r > 0.965 && r < 1.035) ok++; } return ok >= 1 && ok * 2 >= n; };
+    // Equipos que comparten una palabra propia ("Queens University Charlotte" / "Queens (Nc)", "Suny-Delhi Swim" / "Suny Delhi-AD")
+    // y no tienen estados distintos: con el mismo nombre completo y sexo, es la misma persona.
+    const GEN = /^(state|north|south|east|west|central|northern|southern|eastern|western|christian|baptist|methodist|lutheran|technology|tech|institute|community|valley|river|lake|city|new|york|american|national|international|maritime|coast|mountain|wesleyan|catholic|county|metro|pacific|atlantic)$/;
+    const words = (t) => new Set(teamKey(t).split(" ").filter((w) => w.length >= 4 && !GEN.test(w)));
+    const region = (t) => (/-([A-Z]{2})$/.exec(cleanTeam(t)) || /\(([A-Z][A-Za-z])\)$/.exec(cleanTeam(t)) || [])[1]?.toUpperCase() || "";
+    const shareWord = (a, b) => { if (a.g !== b.g || !a.g) return false; const ra = region(a.t), rb = region(b.t); if (ra && rb && ra !== rb) return false; const wb = words(b.t); return [...words(a.t)].some((w) => wb.has(w)); };
     const dropped = new Set();
     let sim = 0;
     for (const list of groups.values()) {
-      if (list.length < 2 || list.length > 4) continue;
+      if (list.length < 2 || list.length > 8) continue;
       for (const a of list) {
         if (dropped.has(a)) continue;
         const rest = list.filter((b) => b !== a && !dropped.has(b));
@@ -257,6 +263,7 @@ for (const grp of ["joseph joe joey jo", "john jack johnny jon", "michael mike m
         let into = null;
         if (weak(a.t) && strong.length === 1) into = strong[0];
         else { const c = rest.filter((b) => similar(a, b)); if (c.length === 1) into = c[0]; }
+        if (!into) { const c = rest.filter((b) => shareWord(a, b)); if (c.length) into = c.sort((x, y) => (y.m?.length || 0) - (x.m?.length || 0))[0]; }
         if (!into) continue;
         const [keep, gone] = (into.m?.length || 0) >= (a.m?.length || 0) || weak(a.t) ? [into, a] : [a, into];
         mergeInto(keep, gone); dropped.add(gone); sim++;

@@ -55,7 +55,9 @@ jobs:
           ANADIR: ${{ inputs.anadir }}
           RETRY_EMPTY: ${{ (inputs.reintentar == 'si') && '1' || '' }}
           SEASONS_BACK: ${{ inputs.temporadas || '2' }}
+      - run: node scripts/auditar.mjs
       - run: node scripts/split_nadadores.mjs
+      - run: node scripts/auditar.mjs despues
       - name: Guardar
         if: ${{ inputs.guardar != 'no' && inputs.urls == '' }}
         run: scripts/datos-rama.sh subir
