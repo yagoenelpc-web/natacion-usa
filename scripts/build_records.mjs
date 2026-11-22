@@ -209,7 +209,7 @@ const sportPages = (u) => {
 const todo = unis.filter((u) => (!SOLO.length || SOLO.includes(u.n)) && sportPages(u).length);
 // Diagnóstico: por qué no salen los récords de cada universidad (se imprime al final).
 const diag = { "sin web del deporte": unis.filter((u) => !sportPages(u).length).map((u) => u.n), "web del deporte no carga": [], "sin enlace de récords": [], "página de récords sin tabla legible": [], "récords quitados al limpiar": [] };
-const best = {};
+const best = {}, fromArchive = [];
 await pool(todo, 6, async (u) => {
   const res = { M: {}, W: {} };
   let src = "";
@@ -274,6 +274,22 @@ await pool(todo, 6, async (u) => {
     if (cands.size) hadCands++;
     if (!cands.size) for (const x of ["records", "records/records", "history"]) cands.add(`${sp.replace(/\/+$/, "")}/${x}`);
     await tryCands(cands, g, origin);
+  }
+  // La web no carga o no enlaza los récords: copias guardadas en el Archivo de Internet (Wayback Machine) de páginas o
+  // PDF de récords de natación de ese mismo dominio.
+  if (Object.keys(res.M).length + Object.keys(res.W).length < 6 && (!loaded || !hadCands)) {
+    const hosts = [...new Set(sportPages(u).map(([, sp]) => { try { return new URL(sp).hostname.replace(/^www\./, ""); } catch { return ""; } }).filter(Boolean))];
+    for (const h of hosts.slice(0, 2)) {
+      const q = `https://web.archive.org/cdx/search/cdx?url=${h}/*&output=json&fl=original,timestamp&filter=statuscode:200&filter=original:.*(swim|sd|record).*&collapse=urlkey&limit=3000`;
+      const r = await get(q);
+      let rows = []; try { rows = JSON.parse(r?.body || "[]").slice(1); } catch {}
+      const good = rows.filter(([o]) => /record|top-?10|top-?ten|all-?time/i.test(o) && /swim|\bsd\b|_sd_|-sd-|dive/i.test(o) && !/news|story|article|national|ncaa|conference|\.(jpe?g|png|gif|css|js)(\?|$)/i.test(o));
+      // Lo más reciente primero, PDF antes que páginas.
+      good.sort((a, b) => (/\.pdf/i.test(b[0]) - /\.pdf/i.test(a[0])) || b[1].localeCompare(a[1]));
+      if (SOLO.length) console.log(u.n, "archivo:", h, rows.length, "→", good.slice(0, 4).map((x) => x[0]).join(" | "));
+      if (!good.length) continue;
+      if (await tryCands(good.slice(0, 4).map(([o, t]) => `https://web.archive.org/web/${t}id_/${o}`), "", `https://${h}`)) { fromArchive.push(u.n); break; }
+    }
   }
   const n = Object.keys(res.M).length + Object.keys(res.W).length;
   if (n >= 6) out[u.n] = { src, M: res.M, W: res.W };
@@ -444,4 +460,5 @@ for (const k of Object.keys(out)) { const c = cleanUni(out[k], k); if (c) out[k]
 }
 await writeFile("web/data/records.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), order: ORDER, ncaa, u: out }));
 console.log("récords de universidades:", Object.keys(out).length, "de", todo.length);
+console.log("· recuperadas del Archivo de Internet:", fromArchive.length, fromArchive.join(", "));
 for (const [k, l] of Object.entries(diag)) console.log(`· ${k}: ${l.length}\n   ${l.slice(0, 60).join("\n   ")}`);
