@@ -103,12 +103,14 @@ for (let i = 0; i < titles.length; i += 20) {
 console.log("páginas con datos:", info.size, "de", titles.length);
 // Nacionalidad (P1532 país para el deporte, si no P27 ciudadanía) → código ISO del país (P297).
 const qs = [...new Set([...info.values()].map((x) => x.q).filter(Boolean))];
-const country = new Map(), personC = new Map(), personSex = new Map();
+const country = new Map(), personC = new Map(), personSex = new Map(), personImg = new Map();
 for (let i = 0; i < qs.length; i += 50) {
   const r = await wd({ action: "wbgetentities", ids: qs.slice(i, i + 50).join("|"), props: "claims" });
   for (const [q, e] of Object.entries(r?.entities || {})) {
     const c = e.claims?.P1532?.[0]?.mainsnak?.datavalue?.value?.id || e.claims?.P27?.[0]?.mainsnak?.datavalue?.value?.id;
     if (c) personC.set(q, c);
+    const im = e.claims?.P18?.[0]?.mainsnak?.datavalue?.value;
+    if (im) personImg.set(q, `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(im.replace(/ /g, "_"))}?width=240`);
     const sx = e.claims?.P21?.[0]?.mainsnak?.datavalue?.value?.id;
     if (sx) personSex.set(q, sx === "Q6581097" ? "M" : sx === "Q6581072" ? "W" : "");
   }
@@ -126,7 +128,7 @@ for (const [t, p] of pages) {
   const name = t.replace(/\s*\(.*\)$/, "");
   const cc = x.q ? country.get(personC.get(x.q)) || "" : "";
   const g = (x.q && personSex.get(x.q)) || p.g || "";
-  for (const un of p.unis) (out[un] ||= []).push([name, info.has(t) && x.q ? t : "", x.img || "", cc, g, proOf.get(t + "|" + un) || 0]);
+  for (const un of p.unis) (out[un] ||= []).push([name, info.has(t) && x.q ? t : "", x.img || (x.q && personImg.get(x.q)) || "", cc, g, proOf.get(t + "|" + un) || 0]);
 }
 for (const l of Object.values(out)) l.sort((a, b) => b[5] - a[5] || (b[2] ? 1 : 0) - (a[2] ? 1 : 0) || a[0].localeCompare(b[0]));
 const total = Object.values(out).reduce((s, l) => s + l.length, 0);
