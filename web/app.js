@@ -799,14 +799,19 @@ function recTile(ev, r, team, tag = "") {
   const [d, c, st, rel] = ev.split(" ");
   const label = rel ? `4×${+d / 4} ${T(st === "Medley" ? "Estilos" : "Libre")}` : `${d} ${T(STROKE_ES[st] || st)}`;
   const sk = rel ? (st === "Medley" ? "im" : "free") : st.toLowerCase();
+  // Relevo mal partido en datos antiguos: "Queens" + "NC) (Ana, Eva…)" → "Queens (NC)" + "Ana, Eva…".
+  const bad = rel && /^([A-Z]{2,3})\)\s*\((.*)\)?$/.exec(r.n || "");
+  if (bad) r = { ...r, s: `${r.s} (${bad[1]})`, n: bad[2].replace(/\)$/, "") };
   const club = team || (r.s ? REC_SCHOOL[r.s] || teamDisp(r.s) : "");
   const who = rel ? (club || r.n || "") : (r.n || "");
   const sub = rel ? (club ? r.n || "" : "") : club;
   const yr = r.d ? r.d.slice(0, 4) : r.y || "";
+  // La universidad se puede tocar y lleva a su ficha (en los relevos es el nombre principal).
+  const fu = club && findUni(club), uniLink = fu ? `#/uni/${enc(fu.n)}` : "";
   return `<div class="rectile s-${esc(sk)}">
     <div class="rectop"><span class="pbev"><b>${esc(label.split(" ")[0])}</b> ${esc(label.split(" ").slice(1).join(" "))}${c === "M" ? ` <em>${T("larga")}</em>` : ""}</span>${yr ? `<span class="recyr">${esc(yr)}</span>` : ""}</div>
     <span class="time rectime" data-conv="${esc(r.t)}" data-ev="${esc(ev)}" role="button">${esc(r.t)}</span>
-    <div class="recwho">${!rel && r.i ? `<span class="recface"><img src="${esc(r.i)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()">${club ? crest(club, 16) : ""}</span>` : club ? crest(club, 22) : ""}<span>${!rel && who ? `<a class="recname" href="#/np/${enc(flipName(who))}/${enc(club || "")}"><b>${esc(flipName(who))}</b></a>` : `<b class="${rel && !club ? "relnames" : ""}">${esc(rel ? who : flipName(who))}</b>`}${sub ? `<small>${esc(sub)}</small>` : ""}</span></div>
+    <div class="recwho">${!rel && r.i ? `<span class="recface"><img src="${esc(r.i)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()">${club ? crest(club, 16) : ""}</span>` : club ? crest(club, 22) : ""}<span>${!rel && who ? `<a class="recname" href="#/np/${enc(flipName(who))}/${enc(club || "")}"><b>${esc(flipName(who))}</b></a>` : (rel && uniLink ? `<a class="recname" href="${uniLink}"><b>${esc(who)}</b></a>` : `<b class="${rel && !club ? "relnames" : ""}">${esc(rel ? who : flipName(who))}</b>`)}${sub ? (!rel && uniLink ? `<a class="recuni" href="${uniLink}"><small>${esc(sub)}</small></a>` : `<small>${esc(sub)}</small>`) : ""}</span></div>
     ${tag ? `<span class="rectag">${esc(tag)}</span>` : ""}
   </div>`;
 }
@@ -1376,7 +1381,7 @@ async function universitiesView() {
     );
     document.getElementById("fbar").innerHTML = `
       <div class="frow">${chip("div", "", T("Todas"))}${DIVS.map(([k]) => chip("div", k, k === "NAIA" ? "NAIA" : k.replace("D", "D-"))).join("")}<i class="fsep"></i><button class="fchip ${flt.fav ? "on" : ""}" data-f="fav" data-v="${flt.fav ? "" : "1"}" aria-label="${T("Mis favoritas")}">★</button></div>
-      <div class="frow">${chip("sex", "", T("Todos"))}${chip("sex", "m", "♂ " + T("Hombres"))}${chip("sex", "w", "♀ " + T("Mujeres"))}<i class="fsep"></i>${chip("sort", "rank", "🏆")}${chip("sort", "az", "A-Z")}</div>
+      <div class="frow">${chip("sex", "", T("Todos"))}${chip("sex", "m", "♂ " + T("Chicos"))}${chip("sex", "w", "♀ " + T("Chicas"))}<i class="fsep"></i>${chip("sort", "rank", "🏆")}${chip("sort", "az", "A-Z")}</div>
       <div class="frow selects">
         <label><span>${T("Conferencia")}</span><select id="fconf"><option value="">${T("Todas")}</option>${confs(flt.div).map((c) => `<option ${c === flt.conf ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label>
         <label><span>${T("Estado")}</span><select id="fst"><option value="">${T("Todos")}</option>${states.map((c) => `<option ${c === flt.st ? "selected" : ""}>${esc(c)}</option>`).join("")}</select></label>

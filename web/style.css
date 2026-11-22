@@ -821,3 +821,23 @@ body.min .tabbar a em { opacity: 0; max-height: 0; }
 .ctrlbar { flex-wrap: nowrap; }
 .ctrlbar .mini-seg { flex: 1 1 0; min-width: 0; }
 .ctrlbar .mini-seg button, .ctrlbar .mini-seg a { flex: 1 1 0; min-width: 0; text-align: center; padding: 6px 4px; font-size: 12.5px; white-space: nowrap; transition: background .3s cubic-bezier(.3, 1.2, .5, 1), color .2s; }
+
+/* Nitidez: la cabecera de arriba es sólida (nada se ve difuminado detrás), igual que las barras fijas y los filtros. */
+:root { --solid: #f6f9fe; --field: #ffffff; }
+:root[data-theme="dark"] { --solid: #0c1426; --field: #1a2338; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --solid: #0c1426; --field: #1a2338; } }
+header.top { background: var(--solid); -webkit-backdrop-filter: none; backdrop-filter: none; border-bottom: .5px solid var(--glass-line); }
+.seg { background: var(--field); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.seg[style*="sticky"], main .seg { box-shadow: 0 1px 0 var(--glass-line), 0 4px 14px rgba(10, 30, 70, .06); }
+.fchip, .frow.selects select, input[type="search"], .mini-seg, details.squad > summary { background: var(--field); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.fchip { padding: 8px 13px; font-size: 13.5px; box-shadow: 0 1px 2px rgba(10, 30, 70, .06); }
+.frow { flex-wrap: wrap; overflow: visible; }
+.frow.selects { flex-wrap: nowrap; }
+.frow.selects select { box-shadow: 0 1px 2px rgba(10, 30, 70, .06); background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 18px) 55%, calc(100% - 13px) 55%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 30px; }
+.frow { flex-wrap: nowrap; overflow-x: auto; gap: 7px; }
+.frow .fsep { display: none; }
+.fchip { padding: 8px 11px; }
+.frow { justify-content: space-between; }
+@media (max-width: 380px) { .frow { gap: 5px; } .fchip { padding: 7px 8px; font-size: 12.5px; } }
+.recuni { display: block; }
+.recuni small { text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--muted) 40%, transparent); text-underline-offset: 2px; }
