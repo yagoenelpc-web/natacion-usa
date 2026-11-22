@@ -247,6 +247,19 @@ if (RESET) { for (const k of Object.keys(done)) delete done[k]; idx.meets = []; 
 // "Loyola (MD) vs NCAA Division I Championships" → el nombre es el del campeonato, no un dual.
 const EVENTY = /\b(championships?|invitational|invite|classic|open|ncaa|nationals?|conference|cup|relays|shootout|showdown|frosh)\b/i;
 const RENAME = /^(.+?) vs (.*\b(championships?|invitational|invite|classic|open|ncaa|nationals?|conference|cup|relays|shootout|showdown)\b.*)$/i;
+// Documento de otro año puesto con la fecha de esta competición (p. ej. resultados de 2019 enlazados desde la portada):
+// el año de la carpeta del enlace no cuadra con la temporada de la fecha. Se quita y no se vuelve a leer.
+const wrongYear = (url, d) => {
+  const y = +(/\/(20\d\d)\//.exec(url || "")?.[1] || 0), dy = +(d || "").slice(0, 4), mo = +(d || "").slice(5, 7);
+  if (!y || !dy) return false;
+  const season = mo >= 8 ? dy : dy - 1; // temporada que empieza en agosto
+  return y < season || y > season + 1;
+};
+{
+  let gone = 0;
+  idx.meets = (idx.meets || []).filter((m) => { if (!wrongYear(m.src, m.d)) return true; done[m.src] = 0; gone++; rm(`web/data/m/${m.id.slice(2)}.json`, { force: true }).catch(() => {}); return false; });
+  console.log("competiciones con documentos de otro año, quitadas:", gone);
+}
 let renamed = 0;
 for (const m of idx.meets || []) {
   const r = RENAME.exec(m.n);
@@ -273,7 +286,7 @@ const seasonY = new Date().getUTCMonth() >= 7 ? y : y - 1; // 2026 = temporada 2
 const label = (sy) => `${sy}-${String(sy + 1).slice(2)}`;
 const cand = [];
 const add = (u, uni, g, d, o, season) => {
-  if (!u || skipHost.test(u) || done[u] !== undefined) return;
+  if (!u || skipHost.test(u) || done[u] !== undefined || wrongYear(u, d)) return;
   if (!isPdf(u) && !isHy(u) && !isTxt(u)) { if (/^https?:\/\//i.test(u) && !landing.some((x) => x.url === u)) landing.push({ url: u, uni, g, d, o, season }); return; }
   if (isHy(u) && inArchive.has(normalizeMeetUrl(u))) return; // ya se abre en directo desde el archivo
   if (cand.some((c) => c.url === u)) return;
@@ -291,7 +304,7 @@ for (const [uni, games] of Object.entries(cal.cal || {})) for (const g of games)
     const body = String(r.body);
     for (const m of body.matchAll(/href="([^"]+)"/gi)) {
       let href; try { href = new URL(m[1].replace(/&amp;/g, "&"), r.url).href; } catch { continue; }
-      if (href === t.url || skipHost.test(href)) continue;
+      if (href === t.url || skipHost.test(href) || wrongYear(href, t.d)) continue;
       const file = href.split("/").pop().toLowerCase();
       const ok = (isPdf(href) && /result|final|score|prelim|session|day|complete/i.test(file) && !/psych|heat|timeline|info|team|entr|program|order|warm|roster/i.test(file)) || isHy(href) || (isTxt(href) && /result/i.test(file));
       if (ok) { const n0 = cand.length; add(href, t.uni, t.g, t.d, t.o, t.season); if (cand.length > n0) found++; }
