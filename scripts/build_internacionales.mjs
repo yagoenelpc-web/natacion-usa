@@ -11,10 +11,16 @@ const J = async (f, d) => { try { return JSON.parse(await readFile("web/data/" +
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function api(host, params) {
   const u = `https://${host}/w/api.php?` + new URLSearchParams({ format: "json", formatversion: "2", ...params });
-  for (let i = 0; i < 3; i++) {
-    try { const r = await fetch(u, { headers: UA, signal: AbortSignal.timeout(30000) }); if (r.ok) return await r.json(); if (r.status === 429) await sleep(5000); } catch {}
-    await sleep(1000);
+  await sleep(150);
+  for (let i = 0; i < 6; i++) {
+    try {
+      const r = await fetch(u, { headers: UA, signal: AbortSignal.timeout(30000) });
+      if (r.ok) { const j = await r.json(); if (!j.error) return j; }
+      else if (r.status !== 429 && r.status < 500) return null;
+    } catch {}
+    await sleep(2000 * 2 ** i);
   }
+  console.log("sin respuesta:", host, params.action, params.list || params.prop || "");
   return null;
 }
 const wp = (p) => api("en.wikipedia.org", p);
