@@ -263,6 +263,10 @@ const inArchive = new Set(archivo.meets.map((m) => m.url.split("#")[0]));
 const skipHost = /swimcloud\.com|active\.com|meetmobile|usaswimming\.org|swimmingworld|swimswam\.com|youtube|facebook|twitter|instagram|flickr|smugmug/i;
 const isPdf = (u) => /\.pdf($|\?)/i.test(u);
 const isHy = (u) => /sidearmstats|evtindex\.htm|\/index\.htm$|lastevt\.htm/i.test(u);
+// Resultados de HY-TEK guardados como página de texto (Sidearm /documents/...htm, .txt).
+const isTxt = (u) => (/\/documents\/.*\.html?($|\?)/i.test(u) || /\.txt($|\?)/i.test(u)) && !isHy(u);
+// Páginas "portada" de una competición (p. ej. besmarttinc.com/.../choice.htm) que enlazan a los resultados.
+const landing = [];
 
 const y = new Date().getUTCFullYear();
 const seasonY = new Date().getUTCMonth() >= 7 ? y : y - 1; // 2026 = temporada 2026-27
@@ -270,12 +274,31 @@ const label = (sy) => `${sy}-${String(sy + 1).slice(2)}`;
 const cand = [];
 const add = (u, uni, g, d, o, season) => {
   if (!u || skipHost.test(u) || done[u] !== undefined) return;
-  if (!isPdf(u) && !isHy(u)) return;
+  if (!isPdf(u) && !isHy(u) && !isTxt(u)) { if (/^https?:\/\//i.test(u) && !landing.some((x) => x.url === u)) landing.push({ url: u, uni, g, d, o, season }); return; }
   if (isHy(u) && inArchive.has(normalizeMeetUrl(u))) return; // ya se abre en directo desde el archivo
   if (cand.some((c) => c.url === u)) return;
   cand.push({ url: u, uni, g, d, o, season });
 };
 for (const [uni, games] of Object.entries(cal.cal || {})) for (const g of games) { add(g.res, uni, g.g || "", g.d, g.o, label(seasonY)); if (g.live && g.live !== g.res) add(g.live, uni, g.g || "", g.d, g.o, label(seasonY)); }
+// Portadas de competiciones recientes (45 días): se buscan dentro los PDF, páginas HY-TEK o textos de resultados.
+{
+  const lim = new Date(Date.now() - 45 * 864e5).toISOString().slice(0, 10);
+  const todo = landing.filter((t) => !t.d || t.d >= lim);
+  let found = 0;
+  await pool(todo, 6, async (t) => {
+    const r = await get(t.url);
+    if (!r) return;
+    const body = String(r.body);
+    for (const m of body.matchAll(/href="([^"]+)"/gi)) {
+      let href; try { href = new URL(m[1].replace(/&amp;/g, "&"), r.url).href; } catch { continue; }
+      if (href === t.url || skipHost.test(href)) continue;
+      const file = href.split("/").pop().toLowerCase();
+      const ok = (isPdf(href) && /result|final|score|prelim|session|day|complete/i.test(file) && !/psych|heat|timeline|info|team|entr|program|order|warm|roster/i.test(file)) || isHy(href) || (isTxt(href) && /result/i.test(file));
+      if (ok) { const n0 = cand.length; add(href, t.uni, t.g, t.d, t.o, t.season); if (cand.length > n0) found++; }
+    }
+  });
+  console.log("portadas de competiciones leídas:", todo.length, "· enlaces de resultados en ellas:", found);
+}
 console.log("enlaces de esta temporada por leer:", cand.length);
 // Crónicas de la universidad: suelen enlazar los PDF de todos los días (el calendario solo enlaza uno).
 {
@@ -381,6 +404,12 @@ await pool(cand, 6, async (c) => {
     if (DEBUG > 1 && samples < 3 && text) { samples++; console.log("=== MUESTRA", c.url, "\n" + text.split("\n").slice(0, 70).join("\n")); }
     meet = parsePdfMeet(text, c.url);
     if (DEBUG) meet.text = text;
+  } else if (isTxt(c.url)) {
+    const r = await get(c.url);
+    if (!r) { fail++; return; }
+    const pre = /<pre[^>]*>([\s\S]*?)<\/pre>/i.exec(String(r.body));
+    const text = String(pre ? pre[1] : r.body).replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"');
+    meet = parsePdfMeet(text, c.url);
   } else {
     meet = await parseHtmlMeet(c.url);
     if (!meet) { fail++; return; }

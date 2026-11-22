@@ -51,6 +51,13 @@ for (const f of feeds) {
   const x = await get(f);
   if (x) for (const m of parseFeed(x)) found.push({ url: m.url, name: m.name, article: m.article, src: "swimswam" });
 }
+// Swimming World: igual que SwimSwam, solo titulares y los enlaces a resultados HY-TEK de sus noticias.
+for (const f of ["https://www.swimmingworldmagazine.com/news/feed/", "https://www.swimmingworldmagazine.com/news/feed/?paged=2"]) {
+  const x = await get(f, 1);
+  const n0 = found.length;
+  if (x) for (const m of parseFeed(x)) found.push({ url: m.url, name: m.name, article: m.article, src: "swimmingworld" });
+  console.log("Swimming World:", f, x ? found.length - n0 : "no carga");
+}
 const calJ = await readJSON("web/data/calendario.json", { live: [], cal: {} });
 for (const l of calJ.live || []) found.push({ url: normalizeMeetUrl(l), src: "web" });
 // Resultados HY-TEK enlazados desde el calendario de cada universidad (más nadadores con sus marcas).
