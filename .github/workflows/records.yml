@@ -14,7 +14,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: ${{ inputs.solo && 'records-prueba' || 'datos-app' }}
+  group: ${{ inputs.solo && 'records-prueba' || 'records' }}
   cancel-in-progress: false
 
 jobs:
@@ -33,4 +33,4 @@ jobs:
           SOLO: ${{ inputs.solo }}
       - name: Guardar
         if: ${{ !inputs.solo }}
-        run: scripts/datos-rama.sh subir
+        run: scripts/datos-rama.sh subir-uno web/data/records.json
