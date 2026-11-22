@@ -268,6 +268,9 @@ await pool(todo, 6, async (u) => {
     const cands = new Set();
     for (const m of page.body.matchAll(/"title":"([^"]*Records?[^"]*)"[^{}]*?"url":"([^"]+)"/gi)) if (!/national|ncaa|conference|pool|facility/i.test(m[1])) cands.add(new URL(m[2], origin).href);
     for (const m of page.body.matchAll(/<a[^>]+href="([^"]+)"[^>]*>([^<]{0,60}Records?[^<]{0,30})<\/a>/gi)) if (!/national|ncaa|conference/i.test(m[2])) cands.add(new URL(m[1].replace(/&amp;/g, "&"), origin).href);
+    // Sin enlace "Records": "History", "Top 10", "All-Time" o un PDF con "record" en el nombre.
+    if (!cands.size) for (const m of page.body.matchAll(/<a[^>]+href="([^"]+)"[^>]*>\s*(?:<[^>]+>\s*)*([^<]{0,40}(?:History|Top\s*(?:10|Ten)|All[- ]?Time|Record Book)[^<]{0,30})</gi)) if (!/national|ncaa|conference|news/i.test(m[2] + m[1])) cands.add(new URL(m[1].replace(/&amp;/g, "&"), origin).href);
+    if (!cands.size) for (const m of page.body.matchAll(/href="([^"]+record[^"]*\.pdf[^"]*)"/gi)) cands.add(new URL(m[1].replace(/&amp;/g, "&"), origin).href);
     if (cands.size) hadCands++;
     if (!cands.size) for (const x of ["records", "records/records", "history"]) cands.add(`${sp.replace(/\/+$/, "")}/${x}`);
     await tryCands(cands, g, origin);
