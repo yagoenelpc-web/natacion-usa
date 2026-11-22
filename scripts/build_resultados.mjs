@@ -253,7 +253,7 @@ const wrongYear = (url, d) => {
   const y = +(/\/(20\d\d)\//.exec(url || "")?.[1] || 0), dy = +(d || "").slice(0, 4), mo = +(d || "").slice(5, 7);
   if (!y || !dy) return false;
   const season = mo >= 8 ? dy : dy - 1; // temporada que empieza en agosto
-  return y < season || y > season + 1;
+  return y < season; // un documento subido después (archivo de temporadas pasadas) sí vale
 };
 {
   let gone = 0;
