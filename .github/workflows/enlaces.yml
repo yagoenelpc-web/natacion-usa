@@ -1,0 +1,28 @@
+name: Revisar enlaces
+
+on:
+  schedule:
+    - cron: "47 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: enlaces
+  cancel-in-progress: false
+
+jobs:
+  enlaces:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: scripts/datos-rama.sh bajar
+      - run: node scripts/revisar_enlaces.mjs
+      - name: Guardar
+        # Solo guarda su propio fichero, así no pisa lo que guarden a la vez los otros procesos de datos.
+        run: scripts/datos-rama.sh subir-uno web/data/enlaces.json
