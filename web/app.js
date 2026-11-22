@@ -1197,7 +1197,7 @@ async function fillWinners(meet, live) {
     if (!w) return;
     for (const row of document.querySelectorAll(`.erow[data-ev="${CSS.escape(url)}"]`)) {
       row.querySelector(".num").insertAdjacentHTML("afterend", crest(w.t, 34));
-      row.querySelector(".win").innerHTML = `🥇 ${esc(ev.relay ? teamDisp(w.t) : flipName(w.n))} · <b class="convt" data-conv="${esc(w.m)}" data-ev="${esc(ev.title)}" role="button">${esc(w.m)}</b>`;
+      row.querySelector(".win").innerHTML = `🥇 ${esc(ev.relay ? teamDisp(w.t) : flipName(w.n))} · <b class="convt" data-conv="${esc(w.m)}" data-ev="${esc(ev.title)}" role="button">${esc(tShow(w.m))}</b>`;
       row.classList.add("done");
     }
   });
@@ -1219,6 +1219,10 @@ function findSwimmer(sw, name, team) {
   return list.find((x) => low(x.n) === n) || list.find((x) => { const xt = low(x.n).split(/\s+/); return xt.slice(1).join(" ").split(/[\s-]+/).includes(last) && (xt[0].startsWith(first) || first.startsWith(xt[0])); }) || null;
 }
 
+// "3rd of 3 teams" → "3rd of 3" / "3º de 3": cabe en la pastilla sin cortarse.
+const shortRes = (r) => { const m = /^(\d+)(?:st|nd|rd|th)?\s+of\s+(\d+)/i.exec(String(r || "")); return m ? `${ord(+m[1])} ${T("de {n}", { n: m[2] })}` : r; };
+// Tiempo para mostrar: sin las marcas de HY-TEK pegadas ("1:35.59#", "x58.62", "46.97N").
+const tShow = (m) => String(m || "").replace(/^[xX*](?=\d)/, "").replace(/(\d\.\d{2})[A-Za-z#$&*@!^]+$/, "$1");
 function resultRow(r, relay, id, fav, sw, title) {
   const place = /^\d+$/.test(r.p) ? `<span class="place p${r.p}">${r.p}</span>` : `<span class="place dq">${esc(r.p)}</span>`;
   const extra = [];
@@ -1230,7 +1234,7 @@ function resultRow(r, relay, id, fav, sw, title) {
   return `<details class="rrow ${fav ? "fav" : ""}"><summary>
     ${place}${pic}
     <span class="who">${x ? `<a class="rname" href="#/n/${x.i}"><strong>${nm}</strong></a>` : `<strong>${nm}</strong>`}<small>${relay ? "" : esc(teamDisp(r.t)) + (r.y ? " · " + esc(yrLabel(r.y) || r.y) : "")}</small></span>
-    <span class="time" data-conv="${esc(r.m)}" data-ev="${esc(title || "")}" role="button" title="${T("Convertir tiempo")}"><strong>${esc(r.m)}</strong>${r.pv && !/^(NT|NS|--)$/i.test(r.pv) ? `<small data-conv="${esc(r.pv)}" data-ev="${esc(title || "")}">${esc(r.pv)}</small>` : ""}${r.pts ? `<em>${esc(r.pts)} pts</em>` : ""}</span>
+    <span class="time" data-conv="${esc(r.m)}" data-ev="${esc(title || "")}" role="button" title="${T("Convertir tiempo")}"><strong>${esc(tShow(r.m))}</strong>${r.pv && !/^(NT|NS|--)$/i.test(r.pv) ? `<small data-conv="${esc(r.pv)}" data-ev="${esc(title || "")}">${esc(r.pv)}</small>` : ""}${r.pts ? `<em>${esc(r.pts)} pts</em>` : ""}</span>
   </summary>${extra.join("") || `<div class="splits muted">${T("Sin parciales")}</div>`}
   <a class="tlink" href="#/m/${enc(id)}/t/${enc(r.t)}">${T("Ver todo de {t}", { t: esc(r.t) })} ›</a></details>`;
 }
@@ -1326,7 +1330,7 @@ async function teamView(id, team, silent = false) {
   $app.innerHTML = `
   <a class="back" href="#/m/${enc(id)}/equipos">‹ ${esc(meet.name)}</a>
   <section class="thead">${crest(team, 72)}<div><h1>${findUni(meetTeamAlias[team] || team) ? `<a href="#/uni/${enc(findUni(meetTeamAlias[team] || team).n)}">${esc(teamDisp(team))} ›</a>` : esc(teamDisp(team))}</h1><p class="sub">${standing ? `${standing.p}.º · ${esc(standing.pts)} ${T("puntos")} · ` : ""}${medals} ${T("podios")}</p></div>${star(team)}</section>
-  <div class="list">${rows.map(({ ev, r }) => `<a class="trow" href="#/m/${enc(id)}/e/${enc(eventKey(ev.url))}"><span class="place p${r.p}">${esc(r.p)}</span><span class="who"><strong>${esc(ev.relay ? T("Relevo") + " " + (r.l || "") : flipName(r.n))}</strong><small>${esc(englishToSpanish(ev.title))}${r.s ? " · " + esc(SECTION_ES[r.s] || r.s) : ""}</small></span><span class="time" data-conv="${esc(r.m)}" data-ev="${esc(ev.title)}" role="button"><strong>${esc(r.m)}</strong>${r.pts ? `<em>${esc(r.pts)} pts</em>` : ""}</span></a>`).join("") || `<div class="card muted">${T("Sin resultados todavía.")}</div>`}</div>`;
+  <div class="list">${rows.map(({ ev, r }) => `<a class="trow" href="#/m/${enc(id)}/e/${enc(eventKey(ev.url))}"><span class="place p${r.p}">${esc(r.p)}</span><span class="who"><strong>${esc(ev.relay ? T("Relevo") + " " + (r.l || "") : flipName(r.n))}</strong><small>${esc(englishToSpanish(ev.title))}${r.s ? " · " + esc(SECTION_ES[r.s] || r.s) : ""}</small></span><span class="time" data-conv="${esc(r.m)}" data-ev="${esc(ev.title)}" role="button"><strong>${esc(tShow(r.m))}</strong>${r.pts ? `<em>${esc(r.pts)} pts</em>` : ""}</span></a>`).join("") || `<div class="card muted">${T("Sin resultados todavía.")}</div>`}</div>`;
   if (live) scheduleRefresh((s) => teamView(id, team, s));
 }
 
@@ -1799,7 +1803,7 @@ function gameRow(team, g, both = false) {
   const inApp = !!(rid || g.live);
   const link = rid || g.live || g.res || g.recap;
   const href = rid ? `#/m/${enc(rid)}` : g.live ? `#/m/${enc(normalizeMeetUrl(g.live))}` : link;
-  const inner = `${both ? crest(team, 30) : ""}<span class="vs">${g.at === "at" ? "@" : "vs"}</span>${crest(g.o, 30)}<span class="uinfo"><b>${both ? `${esc(team)} ${g.at === "at" ? "@" : "vs"} ` : ""}${esc(g.o)}</b><small>${esc([when, g.g === "M" ? "♂" : g.g === "W" ? "♀" : "", g.d && g.d >= today && !g.r ? T("próximamente") : ""].filter(Boolean).join(" · "))}</small></span>${g.r ? `<span class="res ${won ? "w" : lost ? "l" : ""}">${esc(g.r)}</span>` : ""}${link ? `<span class="chev">${inApp ? "›" : "↗"}</span>` : ""}`;
+  const inner = `${both ? crest(team, 30) : ""}<span class="vs">${g.at === "at" ? "@" : "vs"}</span>${crest(g.o, 30)}<span class="uinfo"><b>${both ? `${esc(team)} ${g.at === "at" ? "@" : "vs"} ` : ""}${esc(g.o)}</b><small>${esc([when, g.g === "M" ? "♂" : g.g === "W" ? "♀" : "", g.d && g.d >= today && !g.r ? T("próximamente") : ""].filter(Boolean).join(" · "))}</small></span>${g.r ? `<span class="res ${won ? "w" : lost ? "l" : ""}">${esc(shortRes(g.r))}</span>` : ""}${link ? `<span class="chev">${inApp ? "›" : "↗"}</span>` : ""}`;
   return link ? `<a class="urow game" href="${esc(href)}" ${inApp ? "" : 'target="_blank" rel="noopener"'}>${inner}</a>` : `<div class="urow game">${inner}</div>`;
 }
 // Todas las competiciones de hoy según el calendario de cada universidad (aunque aún no tengan resultados en directo):
@@ -2243,7 +2247,24 @@ document.addEventListener("click", (e) => {
 });
 ["gesturestart", "gesturechange", "gestureend"].forEach((t) => document.addEventListener(t, (e) => e.preventDefault(), { passive: false }));
 document.addEventListener("touchmove", (e) => e.touches.length > 1 && e.preventDefault(), { passive: false });
-window.addEventListener("hashchange", route);
+// Navegación como una app de iOS: cambio de pantalla suave y, al volver atrás, la lista donde la dejaste.
+const scrollPos = new Map();
+let lastScroll = 0;
+window.addEventListener("scroll", () => { lastScroll = window.scrollY; }, { passive: true });
+function restoreScroll() {
+  const want = scrollPos.get(location.hash || "#/");
+  if (!want) return;
+  let n = 0;
+  const t = setInterval(() => {
+    if (document.documentElement.scrollHeight >= want + innerHeight - 20 || ++n > 40) { clearInterval(t); window.scrollTo(0, want); }
+  }, 50);
+}
+window.addEventListener("hashchange", (e) => {
+  try { scrollPos.set(new URL(e.oldURL).hash || "#/", lastScroll); } catch {}
+  const run = () => { route(); restoreScroll(); };
+  if (document.startViewTransition && !matchMedia("(prefers-reduced-motion: reduce)").matches) document.startViewTransition(run);
+  else run();
+});
 route();
 
 // Si la web de alojamiento pone un distintivo flotante abajo, sube la barra de pestañas.

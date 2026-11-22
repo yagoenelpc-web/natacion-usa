@@ -757,3 +757,12 @@ details.unirec .fbody .recgrid { margin-bottom: 8px; }
 #cuenta .small { font-size: 12.5px; }
 #cuenta .pill { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 99px; background: var(--brand); color: #fff; vertical-align: 1px; }
 .wsub{font-size:.95rem;font-weight:700;margin:14px 4px 8px;display:flex;gap:6px;align-items:center}.wsub:first-child{margin-top:4px}
+
+/* Cambio de pantalla suave (View Transitions): la cabecera y la barra de pestañas se quedan quietas. */
+header.top { view-transition-name: topbar; }
+.tabbar { view-transition-name: tabbar; }
+::view-transition-old(root) { animation: vt-out .16s ease both; }
+::view-transition-new(root) { animation: vt-in .24s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes vt-out { to { opacity: 0; } }
+@keyframes vt-in { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { ::view-transition-old(root), ::view-transition-new(root) { animation: none; } }
