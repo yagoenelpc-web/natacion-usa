@@ -148,7 +148,29 @@ const cal = await readJSON("web/data/calendario.json", {});
 const old = await readJSON("web/data/records.json", {});
 const out = {};
 // Lee líneas "50 Free   19.88   John Smith   2019" de una tabla o PDF de récords. Se queda con la primera marca de cada prueba.
-function parseRecords(text, g0) {
+// PDF a dos columnas (pdftotext -layout): cada línea lleva un trozo de la columna izquierda y otro de la derecha.
+// Se separan en dos textos seguidos (primero toda la izquierda, luego la derecha) para no mezclar pruebas.
+function splitColumns2(text) {
+  const raw = text.split("\n");
+  const cols = [];
+  for (const l of raw) {
+    const ts = [...l.matchAll(/(?:\d{1,2}:)?\d{2}\.\d{2}/g)];
+    if (ts.length < 2) continue;
+    const between = l.slice(ts[0].index + ts[0][0].length, ts[ts.length - 1].index);
+    const gap = /\s{3,}(?=\S)/g;
+    let m, last = -1;
+    // El último hueco que abre "puesto + nombre" o "nombre" (sin saltar del puesto al nombre de la misma columna).
+    while ((m = gap.exec(between))) if (/^\s*(\d{1,2}\s+)?\p{Lu}/u.test(between.slice(m.index + m[0].length)) && !(last >= 0 && m.index - last < 4)) last = m.index + m[0].length;
+    if (last > 0) cols.push(ts[0].index + ts[0][0].length + last);
+  }
+  if (cols.length < 8 || cols.length < raw.filter((l) => /\d{2}\.\d{2}/.test(l)).length * 0.25) return text;
+  const at = cols.sort((a, b) => a - b)[cols.length >> 2];
+  const cut = (l) => { if (l.length <= at) return [l, ""]; let i = at; while (i > 0 && l[i - 1] !== " ") i--; if (at - i > 12) i = at; return [l.slice(0, i), l.slice(i)]; };
+  const parts = raw.map(cut);
+  return parts.map((p) => p[0]).join("\n") + "\n" + parts.map((p) => p[1]).join("\n");
+}
+function parseRecords(text0, g0) {
+  const text = splitColumns2(text0);
   const rec = { M: {}, W: {} };
   let g = g0, ev = "";
   const lines = text.split("\n").map((x) => x.replace(/(?:\.\s?){2,}/g, " ").replace(/\s+/g, " ").trim()).filter(Boolean);
