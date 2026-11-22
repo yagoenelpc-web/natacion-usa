@@ -13,6 +13,9 @@ const pace = ([ev, v]) => secs(v[0]) / (+(/^(\d+)/.exec(ev)?.[1]) || 100);
 // oficial (de este año o anteriores) salen sus nadadores. La app lo usa cuando el nombre no basta.
 const alias = {};
 let rosterWho = new Map(), rosterKey = () => "";
+// Apodos: "Oli" y "Oliver" son la misma persona.
+const NICK = new Map();
+for (const grp of ["joseph joe joey jo", "john jack johnny jon", "michael mike mikey mick", "katherine kathryn katelyn katie kate kat kathy catherine cate", "jacob jake jakob", "samuel sam sammy", "samantha sam sammie", "william will billy bill liam", "robert rob bob bobby robbie", "alexander alex xander", "alexandra alex alexa lexi", "matthew matt matty", "nicholas nick nico nicolas", "christopher chris topher", "thomas tom tommy", "daniel dan danny", "benjamin ben benji benny", "anthony tony", "elizabeth liz lizzie libby beth eliza ellie", "margaret maggie meg peggy", "megan meg", "abigail abby abbie", "gabriella gabrielle gabby gabi", "gabriel gabe", "eleanor ellie elle nora", "james jim jimmy jamie", "andrew andy drew", "edward ed eddie ted", "charles charlie chuck", "zachary zach zack", "maximilian max", "nathan nate nathaniel", "joshua josh", "timothy tim timmy", "stephen steven steve", "gregory greg", "patrick pat", "jennifer jen jenny", "rebecca becca becky", "allison ally allie", "madison maddie maddy", "madeline maddie maddy madelyn", "olivia liv livvy", "oliver ollie oli", "olivia oli", "harrison harry", "henry harry hank", "frederick fred freddie", "jonathan jon jonny", "dominic dom", "sebastian seb", "nicole nikki nicki", "natalie nat", "kimberly kim", "jessica jess jessie", "theodore theo teddy", "leonardo leo", "mitchell mitch", "zoe zoey", "emily em emmy", "emilia emelia emmy", "isabella isabel bella izzy", "victoria tori vicky", "anne annie ann anna", "kamdyn kami", "reginald reggie", "regan reggie", "janos jancsi", "oceane oc", "rudy ru", "justin jb", "isabelle izzy isabel", "isadora izzy", "isobel izzy", "lucas luke", "allison ali", "evelyn evie", "jocelyn josie", "josephine josie", "volodymyr vova", "nikola nick", "michail mike", "mingna min", "elizabeth ella", "eleanor ella", "cameron cam", "connor cam"]) { const w = grp.split(" "); for (const x of w) (NICK.get(x) || NICK.set(x, []).get(x)).push(w[0]); }
 {
   const J = async (f) => JSON.parse(await readFile("web/data/" + f, "utf8").catch(() => "{}"));
   const [pl, past] = [(await J("plantillas.json")).plant || {}, (await J("fotos-pasadas.json")).u || {}];
@@ -273,7 +276,8 @@ let rosterWho = new Map(), rosterKey = () => "";
       if (A.length < 2 || B.length < 2) return false;
       if ([...A].sort().join(" ") === [...B].sort().join(" ")) return true;
       if (A.join("").replace(/f/g, "") === B.join("").replace(/f/g, "") && Math.abs(A.join("").length - B.join("").length) <= 1) return true;
-      if (A[0] !== B[0]) return false;
+      const nickOf = (x) => NICK.get(x) || [x];
+      if (A[0] !== B[0] && !nickOf(A[0]).some((h) => nickOf(B[0]).includes(h))) return false;
       const ra = A.slice(1), rb = B.slice(1);
       if (!(ra.every((x) => rb.includes(x)) || rb.every((x) => ra.includes(x)))) return false;
       const ua = rosterWho.get(rosterKey(a.n)), ub = rosterWho.get(rosterKey(b.n));
@@ -296,6 +300,7 @@ let rosterWho = new Map(), rosterKey = () => "";
           if (dropped.has(b) || dropped.has(a) || !same(a, b)) continue;
           const score = (x) => (rosterWho.has(rosterKey(x.n)) ? 1000 : 0) + x.n.length;
           const [keep, gone] = score(a) >= score(b) ? [a, b] : [b, a];
+          if (process.env.VER && tk(keep.n)[0] !== tk(gone.n)[0]) console.log("apodo:", keep.n, "<-", gone.n, "·", keep.t);
           mergeInto(keep, gone); dropped.add(gone); n2++;
         }
       }
@@ -450,9 +455,7 @@ const sameWho = (a, b, sharedTime) => {
   // Inicial igual y mismo apellido: solo si comparten algún tiempo exacto (evita juntar hermanos).
   return !!sharedTime && A[0][0] === B[0][0];
 };
-const NICK = new Map();
 const lev1 = (a, b) => { if (a.length < 4 || b.length < 4 || Math.abs(a.length - b.length) > 1) return false; let i = 0; while (i < a.length && a[i] === b[i]) i++; const x = a.slice(i + 1), y = b.slice(i + 1); return x === y || a.slice(i) === y || x === b.slice(i); };
-for (const grp of ["joseph joe joey jo", "john jack johnny jon", "michael mike mikey mick", "katherine kathryn katelyn katie kate kat kathy catherine cate", "jacob jake jakob", "samuel sam sammy", "samantha sam sammie", "william will billy bill liam", "robert rob bob bobby robbie", "alexander alex xander", "alexandra alex alexa lexi", "matthew matt matty", "nicholas nick nico nicolas", "christopher chris topher", "thomas tom tommy", "daniel dan danny", "benjamin ben benji benny", "anthony tony", "elizabeth liz lizzie libby beth eliza ellie", "margaret maggie meg peggy", "megan meg", "abigail abby abbie", "gabriella gabrielle gabby gabi", "gabriel gabe", "eleanor ellie elle nora", "james jim jimmy jamie", "andrew andy drew", "edward ed eddie ted", "charles charlie chuck", "zachary zach zack", "maximilian max", "nathan nate nathaniel", "joshua josh", "timothy tim timmy", "stephen steven steve", "gregory greg", "patrick pat", "jennifer jen jenny", "rebecca becca becky", "allison ally allie", "madison maddie maddy", "madeline maddie maddy madelyn", "olivia liv livvy", "oliver ollie", "emily em emmy", "emilia emelia emmy", "isabella isabel bella izzy", "victoria tori vicky", "anne annie ann anna", "kamdyn kami", "reginald reggie", "regan reggie", "janos jancsi", "oceane oc", "rudy ru", "justin jb", "isabelle izzy isabel", "isadora izzy", "isobel izzy", "lucas luke", "allison ali", "evelyn evie", "jocelyn josie", "josephine josie", "volodymyr vova", "nikola nick", "michail mike", "mingna min", "elizabeth ella", "eleanor ella", "cameron cam", "connor cam"]) { const w = grp.split(" "); for (const x of w) (NICK.get(x) || NICK.set(x, []).get(x)).push(w[0]); }
 const dedupeTeam = (T, g) => {
   const names = new Map(); // nombre -> set de "prueba|tiempo"
   for (const [ev, l] of Object.entries(T[g])) for (const [t, who] of l.values()) (names.get(who) || names.set(who, new Set()).get(who)).add(ev + "|" + t);
