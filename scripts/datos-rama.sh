@@ -19,4 +19,13 @@ case "$1" in
     git commit -q -m "Datos actualizados $(date -u +%F\ %H:%M)"
     for i in 1 2 3; do git push -q origin HEAD:refs/heads/datos && break; sleep 5; git fetch -q origin datos && git rebase -q origin/datos; done
     echo "datos guardados" ;;
+  subir-uno)
+    f="$2"; tmp=$(mktemp -d); cp "$f" "$tmp/f"
+    for i in 1 2 3 4 5; do
+      git fetch -q origin datos
+      rm -rf "$tmp/wt"; git worktree prune; git worktree add -q "$tmp/wt" origin/datos
+      (cd "$tmp/wt" && mkdir -p "$(dirname "$f")" && cp "$tmp/f" "$f" && git add "$f" && { git diff --cached --quiet && echo "sin cambios" && exit 0; git commit -q -m "Datos: $(basename "$f") $(date -u +%F\ %H:%M)" && git push -q origin HEAD:refs/heads/datos; }) && { echo "guardado $f"; exit 0; }
+      sleep 10
+    done
+    exit 1 ;;
 esac
