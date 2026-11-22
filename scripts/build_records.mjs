@@ -183,7 +183,7 @@ const sportPages = (u) => {
   if (!l.length && u.web && !/splash|portada/.test(u.web)) { const o = u.web.replace(/\/+$/, ""); for (const [g, s] of SLUGS) l.push([g, `${o}/sports/${s}`]); }
   return [...new Map(l.map((x) => [x[1], x])).values()];
 };
-const todo = unis.filter((u) => (!SOLO.length || SOLO.includes(u.n)) && (sportPages(u).length || (u.web && !/splash|portada/.test(u.web))));
+const todo = unis.filter((u) => (!SOLO.length || SOLO.includes(u.n)) && sportPages(u).length);
 await pool(todo, 6, async (u) => {
   const res = { M: {}, W: {} };
   let src = "";
@@ -230,14 +230,6 @@ await pool(todo, 6, async (u) => {
     for (const m of page.body.matchAll(/<a[^>]+href="([^"]+)"[^>]*>([^<]{0,60}Records?[^<]{0,30})<\/a>/gi)) if (!/national|ncaa|conference/i.test(m[2])) cands.add(new URL(m[1].replace(/&amp;/g, "&"), origin).href);
     if (!cands.size) for (const x of ["records", "records/records", "history"]) cands.add(`${sp.replace(/\/+$/, "")}/${x}`);
     await tryCands(cands, g, origin);
-  }
-  // Sin suerte en el menú: se pregunta al buscador por la página o el PDF de récords de natación de esa web.
-  if (Object.keys(res.M).length + Object.keys(res.W).length < 12 && u.web && !/splash|portada/.test(u.web)) {
-    const host = new URL(u.web).hostname.replace(/^www\./, "");
-    const s = await get(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(`site:${host} swimming records`)}`);
-    const links = [...(s?.body || "").matchAll(/uddg=([^&'"]+)/g)].map((m) => { try { return decodeURIComponent(m[1]); } catch { return ""; } }).filter((l) => l.includes(host) && /record/i.test(l) && !/\/news\/|national|ncaa|conference|track|field/i.test(l));
-    if (SOLO.length) console.log(u.n, "buscador:", links.slice(0, 4).join(" "));
-    if (links.length) await tryCands(new Set([...new Set(links)].slice(0, 4)), "", new URL(u.web).origin);
   }
   const n = Object.keys(res.M).length + Object.keys(res.W).length;
   if (n >= 6) out[u.n] = { src, M: res.M, W: res.W };
