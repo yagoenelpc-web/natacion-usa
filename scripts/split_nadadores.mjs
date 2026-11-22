@@ -394,10 +394,18 @@ for (const grp of ["joseph joe joey jo", "john jack johnny jon", "michael mike m
     const x = c.get(f0(sw.n)); if (!x) continue; const t = x.M + x.W, o = sw.g === "M" ? "W" : "M";
     if (t < 20 || x[o] < 0.97 * t) continue;
     const tt = String(sw.t || ""), u = alias[tt] || alias[tt.replace(/-[A-Z]{2}$/, "")];
-    if (u && rosterSex.get(rosterKey(sw.n) + "|" + u) === sw.g) continue;
+    if (u && rosterSex.get(rosterKey(sw.n) + "|" + u) === sw.g && t < 40) continue;
     sw.g = o; nf++;
   }
   console.log("sexo corregido por el nombre de pila:", nf);
+}
+// Nada de Masters (equipos de adultos): fuera del índice y de las mejores marcas.
+d.swimmers = d.swimmers.filter((sw) => !/^(masters?|.*\bmasters (swim|team|club)\b.*|usms\b.*|.*\bu\.?s\.? masters\b.*)$/i.test(String(sw.t || "").trim()));
+// Tiempos de más de un minuto escritos solo en segundos ("351.83" → "5:51.83").
+{
+  let nt = 0;
+  for (const sw of d.swimmers) for (const v of Object.values(sw.b || {})) { const m = /^(\d{2,3})\.(\d{2})$/.exec(v[0] || ""); if (m && +m[1] >= 60) { v[0] = `${Math.floor(+m[1] / 60)}:${String(+m[1] % 60).padStart(2, "0")}.${m[2]}`; nt++; } }
+  console.log("tiempos pasados de segundos a minutos:", nt);
 }
 // Mejores marcas registradas de cada universidad (para las que no publican récords legibles): la mejor marca de cada prueba
 // en los resultados guardados, con nadador y año. Solo marcas de competiciones (no de biografías), con ritmo posible y

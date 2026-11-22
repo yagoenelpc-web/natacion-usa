@@ -78,7 +78,17 @@ if (DESPUES) {
     prev.warn["nadador repetido"] = (prev.warn["nadador repetido"] || 0) + 1;
     if ((prev.ex["nadador repetido"] ||= []).length < 8) prev.ex["nadador repetido"].push(`${n} (${t})`);
   }
+  // Campos vacíos o inválidos (null, undefined, NaN, sexo o tiempo raros) en lo que lee la app.
+  for (const k of ["campo vacío o inválido", "sexo dudoso por el nombre"]) { delete prev.warn[k]; delete prev.ex[k]; }
+  const bad = (k, ex) => { prev.warn[k] = (prev.warn[k] || 0) + 1; if ((prev.ex[k] ||= []).length < 8) prev.ex[k].push(ex); };
+  for (const r of idx) if (!r[0] || !r[1] || !/^[MW]?$/.test(r[2]) || (r[5] && !FMT.test(r[5])) || r.some((x) => /^(null|undefined|NaN)$/.test(String(x)))) bad("campo vacío o inválido", r.slice(0, 6).join(" · "));
+  for (const f of ["records.json", "records-hist.json", "unis.json", "calendario.json"]) { const txt = await readFile("web/data/" + f, "utf8").catch(() => ""); const m = txt.match(/:(null|NaN)\b|"(undefined|NaN|null)"/g); if (m) bad("campo vacío o inválido", `${f}: ${m.length}`); }
+  // Sexo que no cuadra con un nombre de pila clarísimo (split_nadadores ya corrige; aquí se cuenta lo que quede).
+  const fc = new Map(), f0 = (n) => plain(n).split(" ")[0] || "";
+  for (const [n, , g] of idx) if (g) { const c = fc.get(f0(n)) || { M: 0, W: 0 }; c[g]++; fc.set(f0(n), c); }
+  for (const [n, t, g] of idx) { const c = fc.get(f0(n)); if (!g || !c) continue; const o = g === "M" ? "W" : "M"; if (c.M + c.W >= 20 && c[o] >= 0.97 * (c.M + c.W)) bad("sexo dudoso por el nombre", `${n} (${t}) ${g}`); }
   await writeFile("web/data/auditoria.json", JSON.stringify(prev));
+  console.log("campos inválidos:", prev.warn["campo vacío o inválido"] || 0, "· sexo dudoso:", prev.warn["sexo dudoso por el nombre"] || 0);
   console.log("nadadores repetidos en el índice:", prev.warn["nadador repetido"] || 0, prev.ex["nadador repetido"] || []);
   process.exit(0);
 }
