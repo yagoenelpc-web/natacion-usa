@@ -76,14 +76,25 @@ console.log("categorías:", nCats, "· nadadores con página:", pages.size);
 // Foto libre, id de Wikidata y descripción corta, de 50 en 50.
 const titles = [...pages.keys()];
 const info = new Map();
-for (let i = 0; i < titles.length; i += 50) {
-  const r = await wp({ action: "query", prop: "pageprops|pageimages|description", ppprop: "wikibase_item", piprop: "thumbnail", pithumbsize: "240", pilicense: "free", titles: titles.slice(i, i + 50).join("|"), redirects: "1" });
-  const norm = new Map((r?.query?.redirects || []).map((x) => [x.to, x.from]));
-  for (const p of r?.query?.pages || []) {
-    const t = norm.get(p.title) || p.title;
-    info.set(t, { q: p.pageprops?.wikibase_item, img: p.thumbnail?.source || "", desc: p.description || "" });
-  }
+for (let i = 0; i < titles.length; i += 20) {
+  const batch = titles.slice(i, i + 20);
+  let cont = {};
+  const alias = new Map();
+  do {
+    const r = await wp({ action: "query", prop: "pageprops|pageimages|description", ppprop: "wikibase_item", piprop: "thumbnail", pithumbsize: "240", pilicense: "free", pilimit: "50", titles: batch.join("|"), redirects: "1", ...cont });
+    if (!r) break;
+    for (const x of [...(r.query?.normalized || []), ...(r.query?.redirects || [])]) alias.set(x.to, alias.get(x.from) || x.from);
+    for (const p of r.query?.pages || []) {
+      if (p.missing) continue;
+      const t = alias.get(p.title) || p.title;
+      const o = info.get(t) || {};
+      info.set(t, { q: p.pageprops?.wikibase_item || o.q, img: p.thumbnail?.source || o.img || "", desc: p.description || o.desc || "" });
+    }
+    cont = r.continue || null;
+  } while (cont);
+  await sleep(100);
 }
+console.log("páginas con datos:", info.size, "de", titles.length);
 // Nacionalidad (P1532 país para el deporte, si no P27 ciudadanía) → código ISO del país (P297).
 const qs = [...new Set([...info.values()].map((x) => x.q).filter(Boolean))];
 const country = new Map(), personC = new Map(), personSex = new Map();
