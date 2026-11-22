@@ -35,15 +35,19 @@ for (const [t, n] of count) {
 }
 const todo = [...groups].filter(([, g]) => g.n >= 3 || SOLO.length);
 console.log("equipos sin escudo:", todo.length);
-const old = (await J("escudos.json", { e: {} })).e || {};
 const out = {};
-const LOGO = /\.(svg|png|gif)$|logo|wordmark|athletic|emblem|crest|shield|seal|mark/i;
+const LOGO = /logo|wordmark|athletic|emblem|crest|shield|seal|lockup|insignia/i;
+// Nombres que confunden al buscador: se busca directamente su equipo de deportes. Los ambiguos no se buscan.
+const ALIAS = { "south": "Sewanee Tigers", "ofthe south sewanee": "Sewanee Tigers", "ofthe south sewanne": "Sewanee Tigers", "evansvile": "Evansville Purple Aces", "suny maritime": "Maritime College", "regina cougar sw": "Regina Cougars", "amercan": "American Eagles", "harding": "Harding Bisons", "felician": "Felician Golden Falcons", "aquinas": "Aquinas Saints", "united states military academy": "Army Black Knights", "us military academy": "Army Black Knights", "pennwest edinboro": "Edinboro Fighting Scots", "pennwest california": "California Vulcans", "suny purchase": "Purchase College", "st josephs maine": "Saint Joseph's College of Maine", "meridian community": "Meridian Community College" };
+const DENY = new Set(["york", "baltimore maryland", "new york a", "state new york a"]);
 for (const [k, g] of todo) {
   // Nombre limpio para buscar: sin código de zona ni "Swim Team"; los cortados a 30 letras los arregla el buscador.
   const name = g.names.sort((a, b) => b.length - a.length)[0].replace(/-[A-Z]{2}$/, "").replace(/^FY\s+/, "").replace(/\b(Swim(ming)?( Team)?|Varsity|Men'?s Swim)\b.*$/i, "").replace(/^U\.?S\.? /, "United States ").replace(/^U of /, "University of ").trim();
-  const sig = k.split(" ").filter((w) => w.length >= 4);
+  if (DENY.has(k)) { console.log("· (ambiguo)", g.names[0]); continue; }
+  const alias = ALIAS[k];
+  const sig = escudoKey(alias || k).split(" ").filter((w) => w.length >= 4);
   let logo = "";
-  for (const q of [`${name} athletics`, `${name} sports teams`, name]) {
+  for (const q of alias ? [alias, `${alias} athletics`] : [`${name} athletics`, `${name} sports teams`, name]) {
     const r = await wp({ action: "query", generator: "search", gsrsearch: q, gsrlimit: "3", prop: "pageimages", piprop: "thumbnail|name", pithumbsize: "160", pilicense: "any" });
     const pages = (r?.query?.pages || []).sort((a, b) => (a.index || 0) - (b.index || 0));
     for (const p of pages) {
@@ -51,14 +55,14 @@ for (const [k, g] of todo) {
       // El artículo tiene que ser de esa universidad: todas sus palabras importantes (o la primera, si está cortada) en el título.
       const tw = title.split(" ");
       const has = (w) => tw.some((x) => x.startsWith(w.slice(0, 5)));
-      const okTitle = sig.length > 0 && has(sig[0]) && sig.filter(has).length >= Math.ceil(sig.length / 2);
+      // Todas sus palabras en el título, empezando por la primera ("Thomas Aquinas College" no es "Aquinas College").
+      const okTitle = sig.length > 0 && tw[0].startsWith(sig[0].slice(0, 5)) && sig.every(has) && !/prep|preparatory|high school|academy prep/i.test(p.title);
       if (!okTitle || !p.thumbnail?.source || !LOGO.test(p.pageimage || "")) continue;
       if (/campus|building|hall|aerial|view|entrance|panorama/i.test(p.pageimage || "")) continue;
       logo = p.thumbnail.source; break;
     }
     if (logo) break;
   }
-  if (!logo && old[k]) logo = old[k];
   if (logo) out[k] = logo;
   console.log(logo ? "✓" : "·", g.names[0], "→", name, logo ? decodeURIComponent(logo.split("/").pop()) : "");
 }
