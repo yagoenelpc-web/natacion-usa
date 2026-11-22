@@ -137,7 +137,7 @@ for (let i = 0; i < cs.length; i += 50) {
 }
 // Foto: primero la de su ficha de Wikidata (suele ser un retrato); la del artículo solo si no es de grupo (podio,
 // relevo, varias personas) y el archivo lleva su apellido, para no poner la cara de otro.
-const GROUP = /medal|podium|podio|ceremon|medaill|siegerehrung|relay|staffel|team|group|teammates|[_ ]and[_ ]|&|_y_|_et_|_und_/i;
+const GROUP = /medal|podium|podio|ceremon|medaill|siegerehrung|relay|staffel|team|group|teammates|medalist|メダリスト|[_ ]and[_ ]|&|_y_|_et_|_und_|_en_/i;
 const EVENT = /final|heat|meet|champ|race|wk[_ ]|[_ ]vs[_ ]|games|olymp|\d+ ?m[_ ]|yard/i;
 const okPhoto = (url, name) => {
   if (!url) return false;
