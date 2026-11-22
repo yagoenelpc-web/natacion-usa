@@ -292,7 +292,7 @@ console.log("enlaces de esta temporada por leer:", cand.length);
     const art = (/<article[\s\S]*?<\/article>/i.exec(r.body) || /<main[\s\S]*?<\/main>/i.exec(r.body) || [r.body])[0];
     for (const m of art.matchAll(/href="([^"]+)"/gi)) {
       let href; try { href = new URL(m[1].replace(/&amp;/g, "&"), r.url).href; } catch { continue; }
-      if ((isPdf(href) && /\/documents\//i.test(href) && !/roster|program|heat|psych|schedule|order|entries|media|guide/i.test(href)) || (isHy(href) && !inArchive.has(normalizeMeetUrl(href)))) { const n = cand.length; add(href, t.uni, t.g, t.d, t.o, label(seasonY)); if (cand.length > n) found++; }
+      if ((isPdf(href) && (/\/documents\//i.test(href) || /result|final|score|prelim|day|session/i.test(href.split("/").pop())) && !/roster|program|heat|psych|schedule|order|entries|media|guide|ticket|parking|policy|bag/i.test(href)) || (isHy(href) && !inArchive.has(normalizeMeetUrl(href)))) { const n = cand.length; add(href, t.uni, t.g, t.d, t.o, label(seasonY)); if (cand.length > n) found++; }
     }
     recapDone.add(t.url);
   });
@@ -342,6 +342,8 @@ const seasonOf = (d) => { const [yy, mm] = (d || "").split("-").map(Number); ret
 // Volver a leer los documentos que antes no dieron resultados (tras mejorar el lector).
 if (process.env.RETRY_EMPTY) for (const [u, v] of Object.entries(done)) if (v === 0 && !cand.some((c) => c.url === u)) { delete done[u]; cand.push({ url: u, uni: uniOf(u), g: "", d: "", o: "", season: "" }); }
 // Prueba con enlaces concretos (no guarda).
+// Enlaces añadidos a mano (input "anadir"): "url" o "url|universidad", separados por espacios. Se leen y se guardan.
+if (process.env.ANADIR) for (const tok of process.env.ANADIR.split(/\s+/).filter(Boolean)) { const [u, uni = ""] = tok.split("|"); delete done[u]; const i = cand.findIndex((c) => c.url === u); if (i >= 0) cand.splice(i, 1); cand.unshift({ url: u, uni: uni.replace(/_/g, " "), g: "", d: "", o: "", season: "" }); }
 if (process.env.URLS) { cand.length = 0; for (const u of process.env.URLS.split(/\s+/).filter(Boolean)) cand.push({ url: u, uni: "", g: "", d: "", o: "", season: "" }); }
 console.log("calendarios de años anteriores leídos:", pastDone.size, "de", pastTodo.length, "· enlaces por leer en total:", cand.length);
 

@@ -15,6 +15,9 @@ on:
       debug:
         description: Mostrar muestras del texto de los PDF
         default: "0"
+      anadir:
+        description: Añadir y guardar estos enlaces (url o url|Universidad, separados por espacios)
+        default: ""
       urls:
         description: Probar solo estos enlaces (no guarda)
         default: ""
@@ -49,6 +52,7 @@ jobs:
           DEBUG: ${{ inputs.debug || '0' }}
           FRESH: ${{ (inputs.guardar == 'no') && '1' || '' }}
           URLS: ${{ inputs.urls }}
+          ANADIR: ${{ inputs.anadir }}
           RETRY_EMPTY: ${{ (inputs.reintentar == 'si') && '1' || '' }}
           SEASONS_BACK: ${{ inputs.temporadas || '2' }}
       - run: node scripts/split_nadadores.mjs
