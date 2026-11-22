@@ -69,29 +69,121 @@ for (const u of unis) {
   }
   if (SOLO.length) console.log(u.n, "·", names.join(" | "), "→", found ? "con categoría" : "sin categoría");
 }
-// Profesionales que entrenan ahora con el equipo de la universidad sin estudiar allí (grupos "pro"). Lista revisada a
-// mano con su fuente; se marcan como "entrena aquí". [universidad, página de Wikipedia, fuente]
+// Nadadores que entrenan AHORA con el equipo de la universidad (grupos "pro" y selección). Fuentes de nov. 2026: lista
+// oficial de la selección de EE. UU. 2026-27 (columna "Training Location") y noticias. Se quita a quien ya no está
+// (Dressel se fue a Sporting Jax, Casas dejó Texas). Quien está en la plantilla de esta temporada no sale aquí: es
+// nadador universitario normal y ya tiene su ficha. [universidad, página de Wikipedia, fuente, (Qid), (enlace)]
+const USAS = "https://www.usaswimming.org/docs/default-source/national-teamdocuments/rosters/2026-2027-national-team-media-roster.pdf";
 const PRO = [
-  ["Texas", "Léon Marchand", "https://swimswam.com/leon-marchand-on-training-with-bowman-pro-group-in-austin-its-a-dream-to-be-here/"],
-  ["Texas", "Tyler Ray (swimmer)", "https://swimswam.com/?p=1012413"],
-  ["Texas", "Jack Wilkening", "https://swimswam.com/?p=1012413"],
-  ["Texas", "Jack Aikins", "https://swimswam.com/?p=1012413"],
-  ["Florida", "Caeleb Dressel", "https://swimswam.com/practice-pancakes-florida-pro-group-am-workout-with-dressel-ledecky-hinds/"],
-  ["Florida", "Katie Ledecky", "https://swimswam.com/olympic-champion-katie-ledecky-heads-to-florida-to-train-under-anthony-nesty/"],
-  ["Florida", "Natalie Hinds", "https://swimswam.com/practice-pancakes-florida-pro-group-am-workout-with-dressel-ledecky-hinds/"],
-  ["Florida", "Bobby Finke", "https://sportskeeda.com/swimming/katie-ledecky-explored-training-caeleb-dressel-bobby-finke-like"],
-  ["Virginia", "Isabelle Stadden", "https://swimswam.com/american-backstroker-isabelle-stadden-joins-virginia-pro-group"],
+  ["Texas", "Jillian Cox", USAS],
+  ["Texas", "Piper Enge", USAS],
+  ["Texas", "Erin Gemmell", USAS],
+  ["Texas", "Kate Hurst", USAS],
+  ["Texas", "Simone Manuel", USAS],
+  ["Texas", "Regan Smith (swimmer)", USAS],
+  ["Texas", "Jack Aikins", USAS],
+  ["Texas", "Rowan Cox", USAS],
+  ["Texas", "Carson Foster", USAS],
+  ["Texas", "Nate Germonprez", USAS],
+  ["Texas", "Chris Guiliano", USAS],
+  ["Texas", "Aiden Hammer", USAS],
+  ["Texas", "Luke Hobson", USAS],
+  ["Texas", "Rex Maurer", USAS],
+  ["Texas", "Campbell McKean", USAS],
+  ["Texas", "Will Modglin", USAS],
+  ["Texas", "Tyler Ray (swimmer)", USAS],
+  ["Texas", "Jack Wilkening", USAS],
+  ["Virginia", "Phoebe Bacon", USAS],
+  ["Virginia", "Claire Curzan", USAS],
+  ["Virginia", "Kate Douglass", USAS],
+  ["Virginia", "Katie Grimes", USAS],
+  ["Virginia", "Leah Hayes", USAS],
+  ["Virginia", "Tess Howley", USAS],
+  ["Virginia", "Madi Mintenko", USAS],
+  ["Virginia", "Anna Moesch", USAS],
+  ["Virginia", "Isabelle Stadden", USAS],
+  ["Virginia", "Sophia Umstead", USAS],
+  ["Virginia", "Gretchen Walsh", USAS],
+  ["Virginia", "Alex Walsh", USAS],
+  ["Virginia", "Emma Weber (swimmer)", USAS],
+  ["Virginia", "Thomas Heilman", USAS],
+  ["Virginia", "David King (swimmer)", USAS],
+  ["Virginia", "Maximus Williamson", USAS],
+  ["Florida", "Katie Ledecky", USAS],
+  ["Florida", "Emma Weyant", USAS],
+  ["Florida", "Bobby Finke", USAS],
+  ["Stanford", "Torri Huske", USAS],
+  ["Stanford", "Addie Robillard", USAS],
+  ["Stanford", "Lucy Thomas (swimmer)", USAS],
+  ["Stanford", "Henry McFadden", USAS],
+  ["California", "Rylee Erisman", USAS],
+  ["California", "Jack Alexy", USAS],
+  ["California", "Brooks Curry", USAS],
+  ["California", "Ryan Erisman", USAS],
+  ["California", "Gabriel Jett", USAS],
+  ["California", "Keaton Jones", USAS],
+  ["California", "Ryan Murphy (swimmer)", USAS],
+  ["Indiana", "Liberty Clark", USAS],
+  ["Indiana", "Anna Peplowski", USAS],
+  ["Indiana", "Alexei Avakov", USAS],
+  ["Indiana", "Josh Bey", USAS],
+  ["Indiana", "Finn Brooks", USAS],
+  ["Indiana", "Noah Cakir", USAS],
+  ["Indiana", "Van Mathias", USAS],
+  ["Indiana", "Owen McDonald (swimmer)", USAS],
+  ["Indiana", "Aaron Shackell", USAS],
+  ["NC State", "Katharine Berkoff", USAS],
+  ["NC State", "Leah Shackley", USAS],
+  ["NC State", "Daniel Diehl", USAS],
+  ["NC State", "Quintin McCarty", USAS],
+  ["Michigan", "Hannah Bellard", USAS],
+  ["Michigan", "Brady Kendall", USAS],
+  ["Michigan", "Bella Sims", USAS],
+  ["Michigan", "Josh Brown (swimmer)", USAS],
+  ["Arizona State", "Adam Chaney", USAS],
+  ["Arizona State", "Dylan Gravley", USAS],
+  ["Arizona State", "Ilya Kharun", USAS],
+  ["Arizona State", "Patrick Sammon", USAS],
+  ["Georgia", "Kennedi Dobson", USAS],
+  ["Georgia", "Sean Green (swimmer)", USAS],
+  ["Ohio State", "Mariah Denigan", USAS],
+  ["Ohio State", "Mila Nikanorov", USAS],
+  ["Tennessee", "McKenzie Siroky", USAS],
+  ["Tennessee", "Gabe Nunziata", USAS],
+  ["North Carolina", "Skyler Smith", USAS],
+  ["North Carolina", "David Melnychuk", USAS],
+  ["Wisconsin", "Maggie Wanezek", USAS],
+  ["Wisconsin", "Enzo Solitario", USAS],
+  ["Louisville", "Finnley Conklin", USAS],
+  ["Florida State", "Maddy Huggins", USAS],
+  ["Harvard", "William Mulgrew", USAS],
+  ["Penn", "Watson Nguyen", USAS],
+  ["Minnesota", "Joey Tepper", USAS],
+  // Internacionales (no salen en la lista de EE. UU.), con su fuente.
+  ["Texas", "Léon Marchand", "https://swimswam.com/american-record-holder-shaine-casas-will-no-longer-be-training-at-texas"],
+  ["Texas", "Hubert Kos", "https://swimswam.com/american-record-holder-shaine-casas-will-no-longer-be-training-at-texas"],
+  ["Texas", "Summer McIntosh", "https://swimswam.com/american-record-holder-shaine-casas-will-no-longer-be-training-at-texas"],
+  ["Texas", "Mitchell Schott", "https://swimswam.com/how-did-the-new-bob-bowman-swimmers-perform-at-their-end-of-season-meets"],
+  ["Louisville", "Josh Matheny", "https://swimswam.com/caeleb-dressel-were-exactly-where-we-should-be-for-me-there-needs-to-be-more-intensity/"],
+  ["Virginia", "Aimee Canny", "https://swimswam.com/ledecky-finke-regan-smith-marchand-kos-and-crooks-all-registered-to-race-at-virginia-scm-meet-in-october"],
   // Sin artículo en la Wikipedia inglesa: se usa su ficha de Wikidata y la Wikipedia en español.
-  ["Virginia Tech", "Carles Coll", "https://hokiesports.com/sports/swimming-diving/roster/player/carles-coll-marti", "Q126952996", "https://es.wikipedia.org/wiki/Carles_Coll"],
+  ["Virginia Tech", "Carles Coll", "https://www.marca.com/natacion/2026/11/11/ilusionante-curso-natacion-espanola-comienza-madrid.html", "Q126952996", "https://es.wikipedia.org/wiki/Carles_Coll"],
+  ["Virginia Tech", "Carmen Weiler", "https://www.marca.com/natacion/2026/11/11/ilusionante-curso-natacion-espanola-comienza-madrid.html"],
 ].filter(([u]) => !SOLO.length || SOLO.includes(u));
+// Plantillas de esta temporada: quien está en ellas es universitario, no profesional.
+const plant = (await J("plantillas.json", { plant: {} })).plant || {};
+const nk = (t) => t.replace(/\s*\(.*\)$/, "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z ]+/g, " ").replace(/\s+/g, " ").trim();
+const onRoster = (u, t) => Object.values(plant[u] || {}).some((l) => l.some((e) => Array.isArray(e) && nk(String(e[0])) === nk(t)));
 const proOf = new Map(), extra = new Map();
+let nOut = 0;
 for (const [u, t, , q, link] of PRO) {
+  if (onRoster(u, t)) { nOut++; continue; }
   if (q) extra.set(t, { q, link });
   if (!pages.has(t)) pages.set(t, { g: "", unis: new Set() });
   pages.get(t).unis.add(u);
   proOf.set(t + "|" + u, 1);
 }
-console.log("categorías:", nCats, "· nadadores con página:", pages.size);
+console.log("categorías:", nCats, "· nadadores con página:", pages.size, "· profesionales:", proOf.size, "· en plantilla (no son pro):", nOut);
 // Foto libre, id de Wikidata y descripción corta, de 50 en 50.
 const titles = [...pages.keys()];
 const info = new Map();
@@ -157,9 +249,11 @@ function photo(x, name) {
 }
 for (const [t, p] of pages) {
   if (/^List of /i.test(t)) continue;
-  const x = info.get(t) || {};
+  let x = info.get(t) || {};
   // Solo nadadores (no entrenadores ni otras personas que acaben en la categoría).
-  if (x.desc && !/swim/i.test(x.desc) && ![...p.unis].some((un) => proOf.has(t + "|" + un))) continue;
+  const isPro = [...p.unis].some((un) => proOf.has(t + "|" + un));
+  if (x.desc && !/swim/i.test(x.desc)) { if (!isPro) continue; x = {}; } // página de otra persona: sin enlace ni foto
+
   const name = t.replace(/\s*\(.*\)$/, "");
   const cc = x.q ? country.get(personC.get(x.q)) || "" : "";
   const g = (x.q && personSex.get(x.q)) || p.g || "";
