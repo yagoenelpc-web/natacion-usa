@@ -39,16 +39,27 @@ async function members(cat) {
   return out;
 }
 // Nombre del equipo en Wikipedia: el de su artículo de deportes ("Texas_Longhorns" → "Texas Longhorns").
-const teamName = (u) => { const t = decodeURIComponent((u.wiki || "").split("/wiki/")[1] || "").replace(/_/g, " ").replace(/#.*$/, ""); return t; };
+const teamName = (u) => { try { return decodeURIComponent((u.wiki || "").split("/wiki/")[1] || "").replace(/_/g, " ").replace(/#.*$/, ""); } catch { return ""; } };
 const out = {};
 const pages = new Map(); // título → {g, unis:Set}
 let nCats = 0;
+const catsOf = (b) => [[`Category:${b} men's swimmers`, "M"], [`Category:${b} women's swimmers`, "W"], [`Category:${b} swimmers`, ""]];
+const namesOf = (u) => [...new Set([teamName(u), `${u.n} ${u.nick || ""}`.trim()].filter((x) => x && x.split(" ").length >= 2))];
+// Primero se pregunta de 50 en 50 qué categorías existen y tienen páginas, para no pedir miles de categorías vacías.
+const allCats = [...new Set(unis.flatMap((u) => namesOf(u).flatMap((b) => catsOf(b).map(([c]) => c))))];
+const exists = new Set();
+for (let i = 0; i < allCats.length; i += 50) {
+  const r = await wp({ action: "query", prop: "categoryinfo", titles: allCats.slice(i, i + 50).join("|") });
+  const al = new Map((r?.query?.normalized || []).map((x) => [x.to, x.from]));
+  for (const p of r?.query?.pages || []) if (p.categoryinfo?.pages > 0) exists.add(al.get(p.title) || p.title);
+}
+console.log("categorías posibles:", allCats.length, "· con nadadores:", exists.size);
 for (const u of unis) {
-  const base = teamName(u);
-  const names = [...new Set([base, `${u.n} ${u.nick || ""}`.trim()].filter((x) => x && x.split(" ").length >= 2))];
+  const names = namesOf(u);
   let found = false;
   for (const b of names) {
-    for (const [cat, g] of [[`Category:${b} men's swimmers`, "M"], [`Category:${b} women's swimmers`, "W"], [`Category:${b} swimmers`, ""]]) {
+    for (const [cat, g] of catsOf(b)) {
+      if (!exists.has(cat)) continue;
       const l = await members(cat);
       if (!l.length) continue;
       found = true; nCats++;
