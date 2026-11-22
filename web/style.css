@@ -737,7 +737,7 @@ details.unirec .fbody .recgrid { margin-bottom: 8px; }
 .tcrests em { font-style: normal; font-size: 11px; font-weight: 700; color: var(--muted); background: none; box-shadow: none; margin-left: 4px; }
 .tcard2 .tbody { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .tcard2 b { font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tcard2 small { font-size: 12px; color: var(--muted); }
+.tcard2 small { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tlive { color: #e5484d; font-weight: 700; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tcard2 { background: rgba(22, 32, 54, 0.72); border-color: rgba(255, 255, 255, 0.08); } }
 :root[data-theme="dark"] .tcard2 { background: rgba(22, 32, 54, 0.72); border-color: rgba(255, 255, 255, 0.08); }
