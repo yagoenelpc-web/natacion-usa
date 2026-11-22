@@ -196,6 +196,14 @@ await pool(todo, 6, async (u) => {
       for (const c of [...cands].filter((c) => !/\/news\//i.test(c)).slice(0, 4)) {
         let r = await get(c, true);
         if (!r) continue;
+        // Sidearm: /documents/...pdf es una página que enseña el PDF; el archivo real está en su CDN.
+        if (/\.pdf(\?|$)/i.test(c) && /html/i.test(r.type || "")) {
+          const html = r.body.toString("utf8");
+          const links = [...html.matchAll(/(?:https?:)?\/\/[^"'\s<>()]+?\.pdf(?:\?[^"'\s<>]*)?/gi)].map((m) => (m[0].startsWith("//") ? "https:" + m[0] : m[0]).replace(/&amp;/g, "&"));
+          const file = c.split("/").pop().split("?")[0].toLowerCase();
+          const real = links.find((l) => l.toLowerCase().includes(file) && l !== c) || links.find((l) => /cloudfront|sidearm/i.test(l) && l !== c);
+          if (real) { const r2 = await get(real, true); if (r2) r = { ...r2, url: c }; }
+        }
         let text = "";
         if (/pdf/i.test(r.type) || r.body.slice(0, 4).toString() === "%PDF") text = await pdfText(r.body);
         else {
@@ -204,7 +212,9 @@ await pool(todo, 6, async (u) => {
           // Página que solo enlaza a otras (PDF o subpáginas de récords del equipo).
           if ((text.match(/\d{1,2}:\d{2}\.\d{2}|\b\d{2}\.\d{2}\b/g) || []).length < 10) {
             const subs = [...html.matchAll(/href="([^"]+)"[^>]*>([^<]{0,80})</gi)].filter(([, h, t]) => /record|top|all-?time/i.test(t + h) && !/national|ncaa|conference|opponent|pool|year.?by|champion|american/i.test(t + h)).map(([, h]) => new URL(h.replace(/&amp;/g, "&"), r.url).href).filter((h) => h.startsWith(origin) || /\.pdf/i.test(h));
-            for (const s of [...new Set(subs)].slice(0, 3)) {
+            // PDF incrustados en la página (visor de Sidearm, iframe o enlace "Download").
+            for (const m of html.matchAll(/(?:https?:)?\/\/[^"'\s<>()]+?\.pdf(?:\?[^"'\s<>]*)?/gi)) { const l = (m[0].startsWith("//") ? "https:" + m[0] : m[0]).replace(/&amp;/g, "&"); if (/record|swim|book|top|all.?time/i.test(l)) subs.unshift(l); }
+            for (const s of [...new Set(subs)].slice(0, 4)) {
               const r2 = await get(s, true);
               if (!r2) continue;
               const t2 = /pdf/i.test(r2.type) || r2.body.slice(0, 4).toString() === "%PDF" ? await pdfText(r2.body) : dec(r2.body.toString("utf8"));
@@ -214,7 +224,7 @@ await pool(todo, 6, async (u) => {
         }
         const rec = parseRecords(text, g);
         const n = Object.keys(rec.M).length + Object.keys(rec.W).length;
-        if (SOLO.length && process.env.TEXTO) console.log("=== TEXTO", r.url, "\n" + text.split("\n").filter((x) => x.trim()).slice(0, 70).join("\n"));
+        if (SOLO.length && process.env.TEXTO) console.log("=== TEXTO", r.url, "\n" + text.split("\n").filter((x) => /\d{1,2}[:.]\d{2}/.test(x)).slice(0, 40).join("\n"));
         if (n > (best[u.n]?.[1] ?? -1)) best[u.n] = [r.url, n];
         if (SOLO.length) console.log(u.n, g, c, "→", r.url, "pruebas:", n);
         if (n >= 6) {
