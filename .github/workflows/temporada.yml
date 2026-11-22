@@ -3,19 +3,37 @@ name: Competiciones y nadadores
 on:
   schedule:
     - cron: "23 * * * *"
+    # Días de competición: también a las y 03 y a las y 43 (solo sigue si hay competiciones en directo).
+    - cron: "3,43 * * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
 
-concurrency:
-  group: datos-app
-  cancel-in-progress: false
-
 jobs:
+  # Fuera del grupo de datos: así las pasadas sin competiciones no cancelan otras actualizaciones en espera.
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.gate.outputs.go }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: ¿Hay competiciones en directo?
+        id: gate
+        run: |
+          if [ "${{ github.event.schedule }}" != "3,43 * * * *" ]; then echo "go=1" >> "$GITHUB_OUTPUT"; exit 0; fi
+          git fetch -q --depth=1 origin datos
+          n=$(git show FETCH_HEAD:web/data/calendario.json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log((JSON.parse(s).live||[]).length)}catch{console.log(0)}})')
+          echo "competiciones en directo: $n"
+          if [ "$n" -gt 0 ]; then echo "go=1" >> "$GITHUB_OUTPUT"; else echo "go=0" >> "$GITHUB_OUTPUT"; fi
   temporada:
+    needs: gate
+    if: needs.gate.outputs.go == '1'
     runs-on: ubuntu-latest
     timeout-minutes: 50
+    concurrency:
+      group: datos-app
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
