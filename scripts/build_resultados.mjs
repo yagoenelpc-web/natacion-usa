@@ -125,11 +125,80 @@ function parseAltMeet(text) {
   }
   return { name, start, end, events: events.filter((e) => e.results.length) };
 }
+// Informe de dual de HY-TEK a dos lados ("Women FIU vs Vanderbilt": equipo local a la izquierda, visitante a la derecha,
+// con "Pl Pts | Pts Pl" en medio). Cada prueba: etiqueta en la primera columna (Women / 400 / MR), nadadores de los dos
+// equipos en la misma línea y, al acabar, el marcador acumulado.
+function parseDualFormat(text) {
+  const lines = text.replace(/\f/g, "\n").split(/\r?\n/);
+  const T1 = /^x?((\d{1,2}:)?\d{1,2}\.\d{2}|DQ|DFS|NS|SCR|DNF)$/i;
+  const STK = { mr: "Medley Relay", fr: "Freestyle Relay", free: "Freestyle", back: "Backstroke", breast: "Breaststroke", fly: "Butterfly", im: "IM", medley: "Medley Relay" };
+  let name = "", start = "", end = "", unit = /\b(LCM|SCM|Meters?)\b/.test(text.slice(0, 3000)) ? "Meter" : "Yard";
+  const dm = /(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+to\s+(\d{1,2})\/(\d{1,2})\/(\d{4}))?/;
+  const events = [];
+  let left = "", right = "", mid = 0, ev = null, label = [], lastL = null, lastR = null;
+  const iso = (m, d, y) => `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  const flush = () => { ev = null; label = []; lastL = lastR = null; };
+  for (const raw of lines) {
+    const l = raw.replace(/\s+$/, "");
+    if (!l.trim()) continue;
+    if (/HY-TEK/.test(l)) continue;
+    if (!name && dm.test(l) && / - /.test(l)) { const m = dm.exec(l); name = l.trim().split(" - ")[0].trim(); start = iso(m[1], m[2], m[3]); end = m[4] ? iso(m[4], m[5], m[6]) : start; continue; }
+    if (/^\s*(Women|Men|Girls|Boys)\s+.+\s+vs\.?\s+/i.test(l) && !/\d[:.]\d\d/.test(l)) { flush(); continue; }
+    const hp = /\bPl\s+Pts\s+Pts\s+Pl\b/.exec(l);
+    if (hp) { mid = hp.index + hp[0].length / 2; continue; }
+    // Línea de los dos equipos (justo antes de "Pl Pts"): dos nombres separados por mucho espacio.
+    const two = /^\s{4,}(\S.*?\S)\s{6,}(\S.*?)\s*$/.exec(l);
+    if (two && !/\d[:.]\d\d|\bPl\b/.test(l) && !label.length) { left = two[1]; right = two[2]; continue; }
+    if (!mid) continue;
+    if (/^\s*\d+(\.\d)?\s+\d+(\.\d)?\s*$/.test(l) && /^\s{20,}/.test(l)) { // marcador acumulado: fin de la prueba
+      const [x, y] = l.trim().split(/\s+/);
+      if (ev) ev.run = [x, y, left, right];
+      flush(); continue;
+    }
+    const toks = [...l.matchAll(/\S+(?: \S+)*/g)].map((m) => ({ s: m.index, t: m[0] }));
+    if (toks[0] && toks[0].s < 11) {
+      const lt = toks.shift().t;
+      if (/^(Women|Men|Girls|Boys)$/i.test(lt)) { flush(); ev = { title: "", relay: false, results: [], scores: [] }; events.push(ev); }
+      label.push(lt);
+      if (ev && label.length === 3) {
+        const g = /^(Women|Girls)/i.test(label[0]) ? "Women" : /^(Men|Boys)/i.test(label[0]) ? "Men" : "";
+        const dist = /^\d{2,4}$/.test(label[1]) ? label[1] : "";
+        const st = STK[label[2].toLowerCase()];
+        if (g && dist && st) { ev.title = `${g} ${dist} ${unit} ${st}`; ev.relay = /Relay/.test(st); }
+      }
+    }
+    if (!ev) continue;
+    const ti = toks.findIndex((x) => T1.test(x.t) && x.s < mid), tj = toks.findIndex((x) => T1.test(x.t) && x.s > mid);
+    const row = (time, nm, pl, pts, team) => ({ p: /^\d+$/.test(pl || "") && !/^(DQ|DFS|NS|SCR|DNF)$/i.test(time) ? pl : "--", n: nm, t: team, y: "", m: time, pv: "", pts: pts || "", l: "", sw: nm.includes(",") ? nm.split(/,\s*/) : [] });
+    if (ti >= 0) { const nm = toks[ti - 1]?.t || ""; const after = toks.slice(ti + 1).filter((x) => x.s < mid).map((x) => x.t); lastL = row(toks[ti].t, nm, after[0], after[1], left); ev.results.push(lastL); }
+    if (tj >= 0) { const nm = toks[tj + 1]?.t || ""; const before = toks.slice(0, tj).filter((x) => x.s > mid).map((x) => x.t); lastR = row(toks[tj].t, nm, before[before.length - 1], before.length > 1 ? before[before.length - 2] : "", right); ev.results.push(lastR); }
+    // Relevistas en la línea siguiente (sin tiempo).
+    if (ti < 0 && tj < 0) {
+      const lt = toks.filter((x) => x.s < mid && /,/.test(x.t)), rt = toks.filter((x) => x.s > mid && /,/.test(x.t));
+      if (lastL && lt[0]) lastL.sw.push(...lt[0].t.split(/,\s*/));
+      if (lastR && rt[0]) lastR.sw.push(...rt[0].t.split(/,\s*/));
+    }
+  }
+  // Puestos de la prueba por tiempo (el informe da el puesto de cada lado, pero se vuelve a ordenar por si acaso).
+  for (const e of events) for (const r of e.results) { if (e.relay) { r.n = r.t; } else delete r.sw; }
+  const pn = (r) => (/^\d+$/.test(r.p) ? +r.p : 999);
+  for (const e of events) e.results.sort((a, b) => pn(a) - pn(b));
+  // Resultado del dual: el marcador tras la última prueba de cada sexo.
+  for (const g of ["Women", "Men"]) {
+    const last = events.filter((e) => e.title.startsWith(g) && e.run).pop();
+    if (!last) continue;
+    const [x, y, L, R] = last.run;
+    last.scores = [[L, x], [R, y]].sort((a, b) => b[1] - a[1]).map(([t, pts], i) => ({ p: i + 1, t, pts, g: g === "Women" ? "W" : "M" }));
+  }
+  for (const e of events) delete e.run;
+  return { name, start, end, events: events.filter((e) => e.title && e.results.length >= 2) };
+}
 function parsePdfMeet(text, url) {
   // Cabeceras sin espacios al sacar el texto del PDF: "Event1Women400YardMedleyRelay" → "Event 1 Women 400 Yard Medley Relay".
   // Algunos PDF usan caracteres de control en lugar de espacios.
   text = text.replace(/[\x01-\x08\x0B\x0E-\x1F\u00A0]/g, " ");
   text = text.replace(/\b(Seed|Finals|Prelims?|Swim-?off)Time\b/g, "$1 Time").replace(/^(\s*\(?)Event\s*(\d+)\s*((?:Women|Men|Girls|Boys|Mixed)\S*.*)$/gm, (m, a, n, rest) => /\s{2,}\S/.test(rest.trim()) && !/^(Women|Men|Girls|Boys|Mixed)\d/.test(rest) ? m : `${a}Event ${n} ${rest.replace(/([a-z])([A-Z0-9])/g, "$1 $2").replace(/(\d)([A-Za-z])/g, "$1 $2").replace(/\s+/g, " ").trim()}`);
+  if (/HY-TEK/.test(text.slice(0, 3000)) && /\bPl\s+Pts\s+Pts\s+Pl\b/.test(text)) { const du = parseDualFormat(text); if (du.events.length) return du; }
   if (/^\s*Event\s*#\s*\d+\s*-\s*\d/m.test(text) && !/^\s*\(?Event\s+\d+\s+(Women|Men|Girls|Boys)/m.test(text)) { const alt = parseAltMeet(text); if (alt.events.length) return alt; }
   // Programas, psych sheets y horarios no son resultados (llevan marcas de inscripción).
   const kind = /Meet Program|Psych Sheet|Heat Sheet|Session Report|Entry List|Entries -|Timeline|Order of Events/i.exec(text.slice(0, 3000));
