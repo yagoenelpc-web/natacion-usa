@@ -11,8 +11,10 @@ for (const u of (await J("unis.json", { unis: [] })).unis) for (const k of ["web
 for (const r of Object.values((await J("records.json", { u: {} })).u || {})) if (r.src) urls.add(r.src);
 const lim = new Date(Date.now() - 45 * 864e5).toISOString().slice(0, 10);
 for (const m of (await J("encuentros.json", { meets: [] })).meets || []) if ((m.d || "") >= lim && /^https?:/.test(m.src || "")) urls.add(m.src);
-const old = await J("enlaces.json", { fix: {}, bad: {}, n: {} });
-const out = { fix: {}, bad: {}, n: {} };
+const old = await J("enlaces.json", { fix: {}, bad: {}, n: {}, d: {} });
+old.d ||= {}; // fecha del último fallo: dos fallos el mismo día cuentan como uno
+const hoy = new Date().toISOString().slice(0, 10);
+const out = { fix: {}, bad: {}, n: {}, d: {} };
 const list = [...urls];
 console.log("enlaces:", list.length);
 // Mismo sitio, solo cambia http/https, www o la barra final: no hace falta guardarlo.
@@ -37,7 +39,9 @@ await Promise.all(Array.from({ length: 16 }, async () => {
     const u = list[i++];
     const r = await check(u);
     if (r.dead) {
-      out.n[u] = (old.n[u] || 0) + 1;
+      const prev = old.d[u] ? old.n[u] || 0 : 0;
+      out.n[u] = old.d[u] === hoy ? Math.max(prev, 1) : prev + 1;
+      out.d[u] = hoy;
       if (out.n[u] >= 2) { out.bad[u] = 1; nBad++; }
     } else if (r.final && !same(r.final, u) && !/login|signin|404|not-?found|error|splash/i.test(r.final)) { out.fix[u] = r.final; nFix++; }
   }
