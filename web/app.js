@@ -101,7 +101,7 @@ const EN = {
   "puntos": "points",
   "No hay campeonatos con resultados ahora mismo.": "No meets with results right now.",
   "Buscar universidad": "Search university",
-  "Convertir tiempo": "Convert time", "Buscar prueba: espalda, 200 estilos…": "Search event: back, 200 IM…", "Ninguna prueba coincide.": "No events match.", "{n} inscritos · aún sin nadar": "{n} entries · not swum yet", "Aún no hay resultados de esta prueba. Esta es la lista de inscritos con su marca de inscripción; se actualizará sola cuando la publiquen.": "No results for this event yet. This is the entry list with seed times; it will update by itself once results are posted.", "Más encuentros con resultados": "More dual meets with results", "Su universidad está compitiendo ahora: es probable que {n} esté nadando aquí.": "Their school is competing now, so {n} is probably swimming here.", "Próxima competición de su universidad": "Their school's next meet", "¿Dónde compite su universidad?": "Where is their school competing?", "Equipo masculino": "Men's team", "Equipo femenino": "Women's team", "Otros nadadores": "Other swimmers", "nadadores": "swimmers", "Buscar competición por nombre…": "Search meets by name…", "Resultados de la búsqueda": "Search results", "No hay ninguna competición con ese nombre.": "No meets with that name.", "Ficha en la web de la universidad": "Profile on the school website", "Su universidad no publica una biografía que se pueda leer.": "The school doesn't publish a readable bio.", "Entrenador": "Coach", "Resultados originales en la web de la universidad": "Original results on the school website", "Resultados completos guardados": "Saved full results", "Temporada": "Season", "Aún no tiene marcas en los resultados guardados.": "No times in the saved results yet.", "Mis favoritas": "My favorites", "Mis nadadores": "My swimmers", "Marca con ☆ a tus nadadores y saldrán aquí.": "Tap ☆ on your swimmers and they'll show up here.", "Aún no tienes universidades favoritas. Toca ☆ en cualquiera para guardarla.": "No favorite schools yet. Tap ☆ on any school to save it.", "Últimas competiciones": "Latest meets", "Cerrar": "Close", "Libre": "Free", "Espalda": "Back", "Braza": "Breast", "Mariposa": "Fly", "Estilos": "IM", "Yardas (25 yd)": "Yards (25 yd)", "Piscina corta (25 m)": "Short course (25 m)", "Piscina larga (50 m)": "Long course (50 m)", "Conversión aproximada con los factores habituales (yardas ×1,11 y virajes de 25 m). Úsala como orientación.": "Approximate conversion using the usual factors (yards ×1.11 and 25 m turns). Use it as a guide.",
+  "Convertir tiempo": "Convert time", "Buscar prueba: espalda, 200 estilos…": "Search event: back, 200 IM…", "Ninguna prueba coincide.": "No events match.", "{n} inscritos · aún sin nadar": "{n} entries · not swum yet", "Aún no hay resultados de esta prueba. Esta es la lista de inscritos con su marca de inscripción; se actualizará sola cuando la publiquen.": "No results for this event yet. This is the entry list with seed times; it will update by itself once results are posted.", "Más encuentros con resultados": "More dual meets with results", "Su universidad está compitiendo ahora: es probable que {n} esté nadando aquí.": "Their school is competing now, so {n} is probably swimming here.", "Próxima competición de su universidad": "Their school's next meet", "¿Dónde compite su universidad?": "Where is their school competing?", "Equipo masculino": "Men's team", "Equipo femenino": "Women's team", "Otros nadadores": "Other swimmers", "nadadores": "swimmers", "Buscar competición por nombre…": "Search meets by name…", "Resultados de la búsqueda": "Search results", "No hay ninguna competición con ese nombre.": "No meets with that name.", "Ficha en la web de la universidad": "Profile on the school website", "Su universidad no publica una biografía que se pueda leer.": "The school doesn't publish a readable bio.", "Entrenador": "Coach", "Resultados originales en la web de la universidad": "Original results on the school site", "Resultados en la web oficial": "Results on the official site", "Resultados completos guardados": "Saved full results", "Temporada": "Season", "Aún no tiene marcas en los resultados guardados.": "No times in the saved results yet.", "Mis favoritas": "My favorites", "Mis nadadores": "My swimmers", "Marca con ☆ a tus nadadores y saldrán aquí.": "Tap ☆ on your swimmers and they'll show up here.", "Aún no tienes universidades favoritas. Toca ☆ en cualquiera para guardarla.": "No favorite schools yet. Tap ☆ on any school to save it.", "Últimas competiciones": "Latest meets", "Cerrar": "Close", "Libre": "Free", "Espalda": "Back", "Braza": "Breast", "Mariposa": "Fly", "Estilos": "IM", "Yardas (25 yd)": "Yards (25 yd)", "Piscina corta (25 m)": "Short course (25 m)", "Piscina larga (50 m)": "Long course (50 m)", "Conversión aproximada con los factores habituales (yardas ×1,11 y virajes de 25 m). Úsala como orientación.": "Approximate conversion using the usual factors (yards ×1.11 and 25 m turns). Use it as a guide.",
   "Compitiendo ahora": "Competing now", "Última competición": "Last meet", "Próxima competición": "Next meet", "¿Dónde compite?": "Where are they competing?", "Ahora mismo no está compitiendo.": "Not competing right now.", "Ver resultados aquí": "See results here", "Ver en la web de la universidad": "See on the school's site", "en casa": "at home",
   "Todas": "All", "Hombres": "Men", "Mujeres": "Women", "Saltos": "Diving", "Todos": "All",
   "Conferencia": "Conference", "Estado": "State", "Equipos": "Teams", "Filtros": "Filters",
@@ -757,7 +757,19 @@ function scheduleRefresh(fn) {
 }
 function setTab(name) {
   document.querySelectorAll(".tabbar a").forEach((a) => a.classList.toggle("on", a.dataset.tab === name));
+  movePill();
 }
+// Pastilla que se desliza hasta la pestaña elegida (cristal líquido).
+function movePill() {
+  const bar = document.querySelector(".tabbar");
+  if (!bar) return;
+  let pill = bar.querySelector(".tabpill");
+  if (!pill) { pill = document.createElement("i"); pill.className = "tabpill"; bar.prepend(pill); }
+  const on = bar.querySelector("a.on");
+  pill.style.opacity = on ? "1" : "0";
+  if (on) { pill.style.width = on.offsetWidth + "px"; pill.style.transform = `translateX(${on.offsetLeft}px)`; }
+}
+window.addEventListener("resize", movePill);
 
 // ---------- vistas ----------
 const yrLabel = (y) => ({ FR: T("1º año"), SO: T("2º año"), JR: T("3º año"), SR: T("4º año"), GR: T("Posgrado"), "5Y": T("5º año") }[y] || "");
@@ -1148,7 +1160,7 @@ async function meetView(id, tab = "pruebas", silent = false) {
     body = (meet.sessions.some((x) => x.events.length) ? evSearchBox(id) : "") + meet.sessions
       .map(
         (s) => `<div class="session"><h3>${esc(s.title.replace("Session", T("Sesión")))}<span>${esc(fmtDay(s.day))}</span></h3>
-        ${s.events.map((e) => `<a class="erow" data-ev="${esc(e.url)}" data-q="${esc(evWords(e.name))}" href="#/m/${enc(id)}/e/${enc(eventKey(e.url))}"><span class="num">${e.number}</span><span class="ename">${esc(englishToSpanish(e.name))}<small class="win"></small></span>${e.relay ? `<span class="tag">${T("Relevo")}</span>` : ""}<span class="chev">›</span></a>`).join("")}
+        ${s.events.map((e) => `<a class="erow" data-ev="${esc(e.url)}" data-q="${esc(evWords(e.name))}" href="#/m/${enc(id)}/e/${enc(eventKey(e.url))}"><span class="num">${e.number}</span><span class="ename">${esc(englishToSpanish(e.name))}<small class="win"></small></span>${e.relay && !/relevo|relay/i.test(englishToSpanish(e.name)) ? `<span class="tag">${T("Relevo")}</span>` : ""}<span class="chev">›</span></a>`).join("")}
       </div>`
       )
       .join("") || `<div class="card muted">${T("Todavía no hay pruebas publicadas.")}</div>`;
@@ -1172,7 +1184,7 @@ async function meetView(id, tab = "pruebas", silent = false) {
     ${standings && tab === "pruebas" && standings.scores[0] ? `<a class="leader" href="#/m/${enc(id)}/clasificacion">${crest(standings.scores[0].t, 28)}<span>${T("Lidera {t} con {p} pts", { t: `<b>${esc(teamDisp(standings.scores[0].t))}</b>`, p: esc(standings.scores[0].pts) })}</span><span class="chev">›</span></a>` : ""}
   </section>
   ${meetButtons(meet.name)}
-  ${fixUrl(meet.src) ? `<a class="article" href="${esc(fixUrl(meet.src))}" target="_blank" rel="noopener">📄 ${T("Resultados originales en la web de la universidad")} ↗</a>` : ""}
+  ${fixUrl(meet.src) ? `<a class="article" href="${esc(fixUrl(meet.src))}" target="_blank" rel="noopener">📄 ${T("Resultados en la web oficial")} ↗</a>` : ""}
   ${(store.get("s:" + id) || {}).article ? `<a class="article" href="${esc(store.get("s:" + id).article)}" target="_blank" rel="noopener">${T("Crónica en SwimSwam")} ↗</a>` : ""}
   ${live && meet.lastEventUrl ? `<a class="lastev" href="#/m/${enc(id)}/e/${enc(eventKey(meet.lastEventUrl))}">⚡ ${T("Última prueba terminada")}</a>` : ""}
   <nav class="seg">${tabs.map(([k, l]) => `<a class="${k === tab ? "on" : ""}" href="#/m/${enc(id)}${k === "pruebas" ? "" : "/" + k}">${l}</a>`).join("")}</nav>
@@ -2249,8 +2261,16 @@ document.addEventListener("click", (e) => {
 document.addEventListener("touchmove", (e) => e.touches.length > 1 && e.preventDefault(), { passive: false });
 // Navegación como una app de iOS: cambio de pantalla suave y, al volver atrás, la lista donde la dejaste.
 const scrollPos = new Map();
+let tabNav = false;
+document.querySelector(".tabbar")?.addEventListener("click", () => { tabNav = true; });
 let lastScroll = 0;
-window.addEventListener("scroll", () => { lastScroll = window.scrollY; }, { passive: true });
+window.addEventListener("scroll", () => {
+  const y = window.scrollY;
+  // Como en iOS: al bajar la barra de pestañas se encoge, al subir vuelve.
+  if (y > lastScroll + 8 && y > 140) document.body.classList.add("min");
+  else if (y < lastScroll - 8 || y < 60) document.body.classList.remove("min");
+  lastScroll = y;
+}, { passive: true });
 function restoreScroll() {
   const want = scrollPos.get(location.hash || "#/");
   if (!want) return;
@@ -2260,7 +2280,14 @@ function restoreScroll() {
   }, 50);
 }
 window.addEventListener("hashchange", (e) => {
-  try { scrollPos.set(new URL(e.oldURL).hash || "#/", lastScroll); } catch {}
+  let from = "#/";
+  try { from = new URL(e.oldURL).hash || "#/"; scrollPos.set(from, lastScroll); } catch {}
+  // Dirección del movimiento: más profundo = entra desde la derecha; menos = atrás; otra pestaña = fundido.
+  const depth = (h) => h.replace(/^#\/?/, "").split("/").filter(Boolean).length;
+  const to = location.hash || "#/", d0 = depth(from), d1 = depth(to);
+  document.documentElement.dataset.nav = tabNav ? "tab" : d1 > d0 ? "fwd" : d1 < d0 ? "back" : "tab";
+  tabNav = false;
+  document.body.classList.remove("min");
   const run = () => { route(); restoreScroll(); };
   if (document.startViewTransition && !matchMedia("(prefers-reduced-motion: reduce)").matches) document.startViewTransition(run);
   else run();

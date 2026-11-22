@@ -758,11 +758,66 @@ details.unirec .fbody .recgrid { margin-bottom: 8px; }
 #cuenta .pill { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 99px; background: var(--brand); color: #fff; vertical-align: 1px; }
 .wsub{font-size:.95rem;font-weight:700;margin:14px 4px 8px;display:flex;gap:6px;align-items:center}.wsub:first-child{margin-top:4px}
 
-/* Cambio de pantalla suave (View Transitions): la cabecera y la barra de pestañas se quedan quietas. */
+/* Cambio de pantalla estilo iOS: hacia dentro entra desde la derecha, al volver atrás desde la izquierda,
+   entre pestañas un fundido. La cabecera y la barra de pestañas se quedan quietas. */
 header.top { view-transition-name: topbar; }
 .tabbar { view-transition-name: tabbar; }
-::view-transition-old(root) { animation: vt-out .16s ease both; }
-::view-transition-new(root) { animation: vt-in .24s cubic-bezier(.2, .8, .2, 1) both; }
-@keyframes vt-out { to { opacity: 0; } }
-@keyframes vt-in { from { opacity: 0; transform: translateY(6px); } }
-@media (prefers-reduced-motion: reduce) { ::view-transition-old(root), ::view-transition-new(root) { animation: none; } }
+::view-transition-group(root) { animation-duration: .38s; }
+::view-transition-old(root) { animation: vt-fade-out .2s ease both; }
+::view-transition-new(root) { animation: vt-fade-in .3s cubic-bezier(.2, .8, .2, 1) both; }
+html[data-nav="fwd"]::view-transition-old(root) { animation: vt-out-left .34s cubic-bezier(.32, .72, 0, 1) both; }
+html[data-nav="fwd"]::view-transition-new(root) { animation: vt-in-right .38s cubic-bezier(.32, .72, 0, 1) both; }
+html[data-nav="back"]::view-transition-old(root) { animation: vt-out-right .34s cubic-bezier(.32, .72, 0, 1) both; }
+html[data-nav="back"]::view-transition-new(root) { animation: vt-in-left .38s cubic-bezier(.32, .72, 0, 1) both; }
+@keyframes vt-fade-out { to { opacity: 0; } }
+@keyframes vt-fade-in { from { opacity: 0; transform: scale(.985); } }
+@keyframes vt-out-left { to { opacity: 0; transform: translateX(-22%); } }
+@keyframes vt-in-right { from { opacity: 0; transform: translateX(28%); } }
+@keyframes vt-out-right { to { opacity: 0; transform: translateX(22%); } }
+@keyframes vt-in-left { from { opacity: 0; transform: translateX(-28%); } }
+@media (prefers-reduced-motion: reduce) { ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; } }
+
+/* Barra de pestañas de cristal líquido: más transparente, con brillo en el borde, una pastilla que se desliza
+   hasta la pestaña elegida y que se encoge al bajar por la página. */
+.tabbar {
+  width: min(420px, calc(100% - 20px)); gap: 0; padding: 5px;
+  background: color-mix(in srgb, var(--glass-strong) 58%, transparent);
+  -webkit-backdrop-filter: blur(28px) saturate(210%) brightness(1.04); backdrop-filter: blur(28px) saturate(210%) brightness(1.04);
+  border: .5px solid rgba(255, 255, 255, .6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8), inset 0 -1px 0 rgba(255, 255, 255, .25), 0 12px 32px rgba(10, 30, 70, .16), 0 1px 3px rgba(10, 30, 70, .08);
+  transform-origin: 50% 100%;
+  transition: transform .5s cubic-bezier(.3, 1.25, .45, 1);
+}
+.tabbar a { position: relative; z-index: 1; min-width: 0; gap: 2px; padding: 6px 2px 5px; font-size: 10px; font-weight: 600; letter-spacing: -.01em; background: none !important; transition: color .25s, transform .35s cubic-bezier(.3, 1.5, .5, 1); }
+.tabbar a em { display: block; max-width: 100%; max-height: 14px; line-height: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity .2s, max-height .35s cubic-bezier(.3, 1.2, .5, 1); }
+.tabbar a span { font-size: 21px; transition: transform .4s cubic-bezier(.3, 1.6, .5, 1), filter .25s, opacity .25s; }
+.tabbar a.on span { transform: scale(1.08); }
+.tabbar a:active { transform: scale(.9); }
+.tabpill {
+  position: absolute; z-index: 0; top: 5px; bottom: 5px; left: 0; width: 0; border-radius: 999px; pointer-events: none;
+  background: rgba(10, 100, 224, .12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), inset 0 0 0 .5px rgba(10, 100, 224, .14);
+  transition: transform .55s cubic-bezier(.3, 1.25, .45, 1), width .55s cubic-bezier(.3, 1.25, .45, 1), opacity .2s;
+}
+body.min .tabbar { transform: translateX(-50%) translateY(4px) scale(.88); }
+body.min .tabbar a em { opacity: 0; max-height: 0; }
+:root[data-theme="dark"] .tabbar { border-color: rgba(255, 255, 255, .14); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 12px 32px rgba(0, 0, 0, .45); }
+:root[data-theme="dark"] .tabpill { background: rgba(120, 170, 255, .18); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tabbar { border-color: rgba(255, 255, 255, .14); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16), 0 12px 32px rgba(0, 0, 0, .45); }
+  :root:not([data-theme="light"]) .tabpill { background: rgba(120, 170, 255, .18); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14); }
+}
+@media (prefers-reduced-motion: reduce) { .tabbar, .tabpill, .tabbar a, .tabbar a span { transition: none; } }
+/* Cada pestaña ocupa lo que necesita su texto: "Universidades" y "Campeonatos" no se tocan en móviles estrechos. */
+.tabbar a { flex: 1 1 auto; padding-left: 8px; padding-right: 8px; }
+.tabbar { background: color-mix(in srgb, var(--glass-strong) 74%, transparent); -webkit-backdrop-filter: blur(30px) saturate(200%); backdrop-filter: blur(30px) saturate(200%); }
+/* Fila de escudos que se desliza: se difumina en el borde en vez de cortarse, sin barra de desplazamiento. */
+.mhero .strip { -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); scrollbar-width: none; }
+.mhero .strip::-webkit-scrollbar { display: none; }
+/* Botones SwimCloud / USA Swimming / Meet Mobile: caben enteros en móviles estrechos. */
+.ext { gap: 6px; }
+.ext .extbtn, .nowcard .extbtn { font-size: 11.5px; letter-spacing: -.02em; overflow: hidden; text-overflow: ellipsis; padding: 10px 6px; }
+/* Temporada y Chicos/Chicas en una sola fila, mitad y mitad, en cualquier móvil. */
+.ctrlbar { flex-wrap: nowrap; }
+.ctrlbar .mini-seg { flex: 1 1 0; min-width: 0; }
+.ctrlbar .mini-seg button, .ctrlbar .mini-seg a { flex: 1 1 0; min-width: 0; text-align: center; padding: 6px 4px; font-size: 12.5px; white-space: nowrap; transition: background .3s cubic-bezier(.3, 1.2, .5, 1), color .2s; }

@@ -1,7 +1,7 @@
 // Auditoría automática de los datos antes de guardarlos (va en temporada.yml, antes de split_nadadores).
 // Corrige sola lo que es seguro (marcas imposibles, yardas puestas como metros, tiempos mal escritos)
 // y apunta el resto en web/data/auditoria.json con un historial de 30 días para ver si mejora o empeora.
-import { readFile, writeFile, appendFile } from "node:fs/promises";
+import { readFile, writeFile, appendFile, readdir } from "node:fs/promises";
 
 const J = async (f, d) => { try { return JSON.parse(await readFile("web/data/" + f, "utf8")); } catch { return d; } };
 const secs = (t) => { const m = /^(?:(\d+):)?(\d{1,2}(?:\.\d{1,2})?)$/.exec(String(t || "").trim()); return m ? (+m[1] || 0) * 60 + +m[2] : Infinity; };
@@ -92,6 +92,34 @@ for (const [div, x] of Object.entries(rec.ncaa || {})) for (const [ev, w] of Obj
 
 const EVS = ["50 Y Free", "100 Y Free", "200 Y Free", "500 Y Free", "1000 Y Free", "1650 Y Free", "100 Y Back", "200 Y Back", "100 Y Breast", "200 Y Breast", "100 Y Fly", "200 Y Fly", "200 Y IM", "400 Y IM"];
 for (const div of ["D1", "D2", "D3"]) for (const g of ["M", "W"]) for (const ev of EVS) if (!rec.ncaa?.[div]?.[g]?.[ev]) warn("falta un récord NCAA", `${div} ${g} ${ev}`);
+
+// Pruebas repetidas dentro de una competición (la misma prueba leída de dos fuentes, p. ej. la web de SMU y el PDF
+// de Arkansas): mismo título y mismo tiempo del ganador. Se queda la que tiene más resultados y más datos.
+if (!DESPUES) {
+  const winT = (e) => String((e.res || []).find((r) => String(r[0]) === "1")?.[4] || e.res?.[0]?.[4] || "").replace(/^[xX*]/, "").replace(/[^0-9:.]+$/, "");
+  const rich = (e) => (e.res || []).length * 100 + (e.res || []).reduce((a, r) => a + r.filter((v) => v !== "" && v != null).length, 0);
+  for (const f of await readdir("web/data/m").catch(() => [])) {
+    let x; try { x = JSON.parse(await readFile("web/data/m/" + f, "utf8")); } catch { continue; }
+    if (!Array.isArray(x.ev) || x.ev.length < 2) continue;
+    const best = new Map(), order = [];
+    for (const e of x.ev) {
+      const k = plain(String(e.ti).replace(/\s+(Prelims|Finals)$/i, "")) + "|" + winT(e);
+      if (!winT(e)) { order.push(e); continue; }
+      const o = best.get(k);
+      if (!o) { best.set(k, e); order.push(e); continue; }
+      fix("prueba repetida en una competición", `${x.n} · ${e.ti}`);
+      if (rich(e) > rich(o)) { if (/ (Prelims|Finals)$/.test(o.ti) && !/ (Prelims|Finals)$/.test(e.ti)) e.ti = o.ti; order[order.indexOf(o)] = e; best.set(k, e); }
+    }
+    // Misma prueba dos veces con distinto ganador: eliminatorias y final. La que da puntos es la final.
+    let named = 0;
+    const byTi = new Map();
+    for (const e of order) if (!/prelim|final|time trial|swim-?off/i.test(e.ti || "")) (byTi.get(plain(e.ti)) || byTi.set(plain(e.ti), []).get(plain(e.ti))).push(e);
+    const pts = (e) => !!e.sc || (e.res || []).some((r) => r[6] && /^\d/.test(String(r[6])));
+    for (const l of byTi.values()) if (l.length === 2 && pts(l[0]) !== pts(l[1])) { for (const e of l) e.ti += pts(e) ? " Finals" : " Prelims"; named++; }
+    if (named) fix("eliminatorias y final separadas", `${x.n} (${named})`);
+    if (order.length !== x.ev.length || named) { x.ev = order; await writeFile("web/data/m/" + f, JSON.stringify(x)); }
+  }
+}
 
 // Competiciones repetidas: mismo día, mismos equipos y nombres casi iguales.
 const byDay = new Map();
