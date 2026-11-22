@@ -183,10 +183,42 @@ const sportPages = (u) => {
   if (!l.length && u.web && !/splash|portada/.test(u.web)) { const o = u.web.replace(/\/+$/, ""); for (const [g, s] of SLUGS) l.push([g, `${o}/sports/${s}`]); }
   return [...new Map(l.map((x) => [x[1], x])).values()];
 };
-const todo = unis.filter((u) => (!SOLO.length || SOLO.includes(u.n)) && sportPages(u).length);
+const todo = unis.filter((u) => (!SOLO.length || SOLO.includes(u.n)) && (sportPages(u).length || (u.web && !/splash|portada/.test(u.web))));
 await pool(todo, 6, async (u) => {
   const res = { M: {}, W: {} };
   let src = "";
+  // Prueba enlaces candidatos (páginas o PDF de récords) hasta dar con una tabla buena.
+  const tryCands = async (cands, g, origin) => {
+      for (const c of [...cands].filter((c) => !/\/news\//i.test(c)).slice(0, 4)) {
+        let r = await get(c, true);
+        if (!r) continue;
+        let text = "";
+        if (/pdf/i.test(r.type) || r.body.slice(0, 4).toString() === "%PDF") text = await pdfText(r.body);
+        else {
+          const html = r.body.toString("utf8");
+          text = dec(html);
+          // Página que solo enlaza a otras (PDF o subpáginas de récords del equipo).
+          if ((text.match(/\d{1,2}:\d{2}\.\d{2}|\b\d{2}\.\d{2}\b/g) || []).length < 10) {
+            const subs = [...html.matchAll(/href="([^"]+)"[^>]*>([^<]{0,80})</gi)].filter(([, h, t]) => /record|top|all-?time/i.test(t + h) && !/national|ncaa|conference|opponent|pool|year.?by|champion|american/i.test(t + h)).map(([, h]) => new URL(h.replace(/&amp;/g, "&"), r.url).href).filter((h) => h.startsWith(origin) || /\.pdf/i.test(h));
+            for (const s of [...new Set(subs)].slice(0, 3)) {
+              const r2 = await get(s, true);
+              if (!r2) continue;
+              const t2 = /pdf/i.test(r2.type) || r2.body.slice(0, 4).toString() === "%PDF" ? await pdfText(r2.body) : dec(r2.body.toString("utf8"));
+              if ((t2.match(/\d{1,2}:\d{2}\.\d{2}|\b\d{2}\.\d{2}\b/g) || []).length >= 10) { text = t2; r = r2; break; }
+            }
+          }
+        }
+        const rec = parseRecords(text, g);
+        const n = Object.keys(rec.M).length + Object.keys(rec.W).length;
+        if (SOLO.length) console.log(u.n, g, c, "→", r.url, "pruebas:", n);
+        if (n >= 6) {
+          for (const gg of ["M", "W"]) for (const [e, v] of Object.entries(rec[gg])) res[gg][e] ||= v;
+          src ||= r.url;
+          return true;
+        }
+      }
+    return false;
+  };
   for (const [g, sp] of sportPages(u)) {
     if (Object.keys(res.M).length >= 8 && Object.keys(res.W).length >= 8) break;
     const page = await get(sp);
@@ -197,34 +229,15 @@ await pool(todo, 6, async (u) => {
     for (const m of page.body.matchAll(/"title":"([^"]*Records?[^"]*)"[^{}]*?"url":"([^"]+)"/gi)) if (!/national|ncaa|conference|pool|facility/i.test(m[1])) cands.add(new URL(m[2], origin).href);
     for (const m of page.body.matchAll(/<a[^>]+href="([^"]+)"[^>]*>([^<]{0,60}Records?[^<]{0,30})<\/a>/gi)) if (!/national|ncaa|conference/i.test(m[2])) cands.add(new URL(m[1].replace(/&amp;/g, "&"), origin).href);
     if (!cands.size) for (const x of ["records", "records/records", "history"]) cands.add(`${sp.replace(/\/+$/, "")}/${x}`);
-    for (const c of [...cands].filter((c) => !/\/news\//i.test(c)).slice(0, 3)) {
-      let r = await get(c, true);
-      if (!r) continue;
-      let text = "";
-      if (/pdf/i.test(r.type) || r.body.slice(0, 4).toString() === "%PDF") text = await pdfText(r.body);
-      else {
-        const html = r.body.toString("utf8");
-        text = dec(html);
-        // Página que solo enlaza a otras (PDF o subpáginas de récords del equipo).
-        if ((text.match(/\d{1,2}:\d{2}\.\d{2}|\b\d{2}\.\d{2}\b/g) || []).length < 10) {
-          const subs = [...html.matchAll(/href="([^"]+)"[^>]*>([^<]{0,80})</gi)].filter(([, h, t]) => /record|top|all-?time/i.test(t + h) && !/national|ncaa|conference|opponent|pool|year.?by|champion|american/i.test(t + h)).map(([, h]) => new URL(h.replace(/&amp;/g, "&"), r.url).href).filter((h) => h.startsWith(origin) || /\.pdf/i.test(h));
-          for (const s of [...new Set(subs)].slice(0, 3)) {
-            const r2 = await get(s, true);
-            if (!r2) continue;
-            const t2 = /pdf/i.test(r2.type) || r2.body.slice(0, 4).toString() === "%PDF" ? await pdfText(r2.body) : dec(r2.body.toString("utf8"));
-            if ((t2.match(/\d{1,2}:\d{2}\.\d{2}|\b\d{2}\.\d{2}\b/g) || []).length >= 10) { text = t2; r = r2; break; }
-          }
-        }
-      }
-      const rec = parseRecords(text, g);
-      const n = Object.keys(rec.M).length + Object.keys(rec.W).length;
-      if (SOLO.length) console.log(u.n, g, c, "→", r.url, "pruebas:", n);
-      if (n >= 6) {
-        for (const gg of ["M", "W"]) for (const [e, v] of Object.entries(rec[gg])) res[gg][e] ||= v;
-        src ||= r.url;
-        break;
-      }
-    }
+    await tryCands(cands, g, origin);
+  }
+  // Sin suerte en el menú: se pregunta al buscador por la página o el PDF de récords de natación de esa web.
+  if (Object.keys(res.M).length + Object.keys(res.W).length < 12 && u.web && !/splash|portada/.test(u.web)) {
+    const host = new URL(u.web).hostname.replace(/^www\./, "");
+    const s = await get(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(`site:${host} swimming records`)}`);
+    const links = [...(s?.body || "").matchAll(/uddg=([^&'"]+)/g)].map((m) => { try { return decodeURIComponent(m[1]); } catch { return ""; } }).filter((l) => l.includes(host) && /record/i.test(l) && !/\/news\/|national|ncaa|conference|track|field/i.test(l));
+    if (SOLO.length) console.log(u.n, "buscador:", links.slice(0, 4).join(" "));
+    if (links.length) await tryCands(new Set([...new Set(links)].slice(0, 4)), "", new URL(u.web).origin);
   }
   const n = Object.keys(res.M).length + Object.keys(res.W).length;
   if (n >= 6) out[u.n] = { src, M: res.M, W: res.W };
