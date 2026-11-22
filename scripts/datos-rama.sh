@@ -19,7 +19,7 @@ case "$1" in
     git add web/data
     if git diff --cached --quiet; then echo "sin cambios"; exit 0; fi
     git commit -q -m "Datos actualizados $(date -u +%F\ %H:%M)"
-    for i in 1 2 3; do git push -q origin HEAD:refs/heads/datos && break; sleep 5; git fetch -q origin datos && git rebase -q -X ours origin/datos; done
+    for i in 1 2 3; do git push -q origin HEAD:refs/heads/datos && break; sleep 5; git fetch -q origin datos && git rebase -q origin/datos; done
     echo "datos guardados" ;;
   subir-uno)
     f="$2"; tmp=$(mktemp -d); cp "$f" "$tmp/f"
