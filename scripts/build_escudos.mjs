@@ -38,14 +38,14 @@ console.log("equipos sin escudo:", todo.length);
 const out = {};
 const LOGO = /logo|wordmark|athletic|emblem|crest|shield|seal|lockup|insignia/i;
 // Nombres que confunden al buscador: se busca directamente su equipo de deportes. Los ambiguos no se buscan.
-const ALIAS = { "south": "Sewanee Tigers", "ofthe south sewanee": "Sewanee Tigers", "ofthe south sewanne": "Sewanee Tigers", "evansvile": "Evansville Purple Aces", "suny maritime": "Maritime College", "regina cougar sw": "Regina Cougars", "amercan": "American Eagles", "harding": "Harding Bisons", "felician": "Felician Golden Falcons", "aquinas": "Aquinas Saints", "united states military academy": "Army Black Knights", "us military academy": "Army Black Knights", "pennwest edinboro": "Edinboro Fighting Scots", "pennwest california": "California Vulcans", "suny purchase": "Purchase College", "st josephs maine": "Saint Joseph's College of Maine", "meridian community": "Meridian Community College" };
+const ALIAS = { "south": "Sewanee Tigers", "ofthe south sewanee": "Sewanee Tigers", "ofthe south sewanne": "Sewanee Tigers", "evansvile": "Evansville Purple Aces", "suny maritime": "Maritime College", "regina cougar sw": "Regina Cougars", "amercan": "American Eagles", "harding": "Harding Bisons", "felician": "Felician Golden Falcons", "aquinas": "Aquinas Saints", "united states military academy": "Army Black Knights", "us military academy": "Army Black Knights", "pennwest edinboro": "Edinboro Fighting Scots", "pennwest california": "California Vulcans", "suny purchase": "Purchase College", "st josephs maine": "Saint Joseph's College of Maine", "meridian community": "Meridian Community College", "us naval academy": "Navy Midshipmen", "us coast guard academy": "Coast Guard Bears", "cal state bakersfield": "Cal State Bakersfield Roadrunners", "ottawa arizona": "Ottawa Arizona Spirit", "fashion institute tech": "Fashion Institute of Technology" };
 const DENY = new Set(["york", "baltimore maryland", "new york a", "state new york a"]);
 for (const [k, g] of todo) {
   // Nombre limpio para buscar: sin código de zona ni "Swim Team"; los cortados a 30 letras los arregla el buscador.
   const name = g.names.sort((a, b) => b.length - a.length)[0].replace(/-[A-Z]{2}$/, "").replace(/^FY\s+/, "").replace(/\b(Swim(ming)?( Team)?|Varsity|Men'?s Swim)\b.*$/i, "").replace(/^U\.?S\.? /, "United States ").replace(/^U of /, "University of ").trim();
   if (DENY.has(k)) { console.log("· (ambiguo)", g.names[0]); continue; }
   const alias = ALIAS[k];
-  const sig = escudoKey(alias || k).split(" ").filter((w) => w.length >= 4);
+  const sig = escudoKey(alias || k).split(" ").filter((w) => w.length >= 2 && !/^\d+$/.test(w));
   let logo = "";
   for (const q of alias ? [alias, `${alias} athletics`] : [`${name} athletics`, `${name} sports teams`, name]) {
     const r = await wp({ action: "query", generator: "search", gsrsearch: q, gsrlimit: "3", prop: "pageimages", piprop: "thumbnail|name", pithumbsize: "160", pilicense: "any" });
