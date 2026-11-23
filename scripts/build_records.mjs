@@ -212,6 +212,7 @@ const diag = { "sin web del deporte": unis.filter((u) => !sportPages(u).length).
 const best = {}, fromArchive = [];
 let cdxChain = Promise.resolve(), archTried = 0;
 const T0 = Date.now();
+const keepAlive = setInterval(() => {}, 1000); // ver build_resultados: evita que Node acabe a medias con descargas colgadas
 await pool(todo, 6, async (u) => {
   const res = { M: {}, W: {} };
   let src = "";
@@ -467,3 +468,4 @@ await writeFile("web/data/records.json", JSON.stringify({ updated: new Date().to
 console.log("récords de universidades:", Object.keys(out).length, "de", todo.length);
 console.log("· recuperadas del Archivo de Internet:", fromArchive.length, fromArchive.join(", "));
 for (const [k, l] of Object.entries(diag)) console.log(`· ${k}: ${l.length}\n   ${l.slice(0, 60).join("\n   ")}`);
+clearInterval(keepAlive);

@@ -19,6 +19,9 @@ const MAX_MIN = +(process.env.MAX_MIN || 40);
 const SEASONS_BACK = +(process.env.SEASONS_BACK || 2);
 const DEBUG = +(process.env.DEBUG || 0);
 const timeUp = () => Date.now() - T0 > MAX_MIN * 60e3;
+// Mantiene vivo el proceso mientras haya descargas colgadas: los temporizadores de AbortSignal.timeout no lo hacen y,
+// sin esto, Node puede acabar a medias ("exit code 13") con una descarga que nunca responde.
+const keepAlive = setInterval(() => {}, 1000);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const readJSON = async (f, d) => { try { return JSON.parse(await readFile(f, "utf8")); } catch { return d; } };
 async function get(url, bin = false) {
@@ -711,3 +714,4 @@ await writeFile("web/data/encuentros.json", JSON.stringify({ v: VER, updated: ne
 console.log("nadadores:", list.length, "marcas nuevas o mejoradas:", marks, "· con marcas:", list.filter((s) => Object.keys(s.b).length).length);
 console.log("ejemplos:", meets.slice(0, 15).map((m) => `${m.d} ${m.n} [${m.u.join(", ")}] ${m.ev} pruebas`).join("\n"));
 await rm(TMP, { recursive: true, force: true });
+clearInterval(keepAlive);
