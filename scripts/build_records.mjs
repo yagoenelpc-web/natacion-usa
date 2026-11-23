@@ -210,7 +210,8 @@ const todo = unis.filter((u) => (!SOLO.length || SOLO.includes(u.n)) && sportPag
 // Diagnóstico: por qué no salen los récords de cada universidad (se imprime al final).
 const diag = { "sin web del deporte": unis.filter((u) => !sportPages(u).length).map((u) => u.n), "web del deporte no carga": [], "sin enlace de récords": [], "página de récords sin tabla legible": [], "récords quitados al limpiar": [] };
 const best = {}, fromArchive = [];
-let cdxChain = Promise.resolve();
+let cdxChain = Promise.resolve(), archTried = 0;
+const T0 = Date.now();
 await pool(todo, 6, async (u) => {
   const res = { M: {}, W: {} };
   let src = "";
@@ -278,7 +279,7 @@ await pool(todo, 6, async (u) => {
   }
   // La web no carga o no enlaza los récords: copias guardadas en el Archivo de Internet (Wayback Machine) de páginas o
   // PDF de récords de natación de ese mismo dominio.
-  if (Object.keys(res.M).length + Object.keys(res.W).length < 6 && (!loaded || !hadCands)) {
+  if (Object.keys(res.M).length + Object.keys(res.W).length < 6 && (!loaded || !hadCands) && Date.now() - T0 < 30 * 60e3 && archTried++ < 80) {
     const hosts = [...new Set(sportPages(u).map(([, sp]) => { try { return new URL(sp).hostname.replace(/^www\./, ""); } catch { return ""; } }).filter(Boolean))];
     for (const h of hosts.slice(0, 2)) {
       const q = `https://web.archive.org/cdx/search/cdx?url=${h}/*&output=json&fl=original,timestamp&filter=statuscode:200&filter=original:.*(swim|sd|record).*&collapse=urlkey&limit=1500`;
