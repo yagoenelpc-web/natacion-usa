@@ -565,7 +565,7 @@ async function loadMeetIndex(id) {
   if (isStored(id)) {
     const d = await loadStored(id);
     const events = d.ev.map((e, i) => ({ number: e.no, name: e.ti, url: `${id}/${i}`, round: roundOf(e.ti), relay: !!e.r }));
-    const meet = { url: id + "/", id, name: d.n, start: d.d || null, end: d.e || d.d || null, lastEventUrl: null, sessions: [{ title: "Session", day: "", events }], status: "done", src: d.src, host: (d.u || [])[0] || "", stored: true };
+    const meet = { url: id + "/", id, name: d.n, start: d.d || null, end: d.e || d.d || null, lastEventUrl: null, sessions: [{ title: "Session", day: "", events }], status: "done", src: d.src, host: (d.u || [])[0] || "", stored: true, q: d.q || 0 };
     meet.org = isDual(d.n) || (d.u || []).length ? (/(champ|conference|league)/i.test(d.n) ? organization(d.n) : "dual") : organization(d.n);
     return meet;
   }
@@ -842,6 +842,7 @@ async function recordsView(div = "D1", g = "M") {
   ${seg([["M", "♂ " + T("Chicos")], ["W", "♀ " + T("Chicas")]], g, (k) => `#/rec/${div}/${k}`)}
   ${list.length ? `<div class="recgrid">${list.map(([ev, r]) => recTile(ev, r)).join("")}</div>` : `<div class="card muted">${T("Sin récords para esta división.")}</div>`}
   ${nUni ? `<a class="btn wide alt" href="#/rec/unis">🎓 ${T("Récords de cada universidad")} <span class="count">${nUni}</span></a>` : ""}
+  <a class="btn wide alt" href="#/top/Y/${g}/100%20Y%20Free/${div}/0">⏱️ ${T("Mejores tiempos de la temporada")}</a>
   </div>
   <p class="foot">${T("Récords oficiales de la NCAA (NCAA.org), puestos al día con los resultados del último campeonato. Toca un tiempo para convertirlo a metros.")} ${R.updated ? T("Actualizado: {d}.", { d: fmtDate(R.updated) }) : ""}</p>`;
   // Buscador: todos los récords (NCAA de las tres divisiones y de cada universidad) de un nadador o relevista.
@@ -1129,11 +1130,12 @@ const evQuery = {};
 function evSearchBox(id) {
   const q = evQuery[id] || "";
   const chips = [["Libre", "libre"], ["Espalda", "espalda"], ["Braza", "braza"], ["Mariposa", "mariposa"], ["Estilos", "estilos"], ["Relevo", "relevo"], ["Mujeres", "mujeres"], ["Hombres", "hombres"]];
-  return `<div class="evsearch"><input id="evq" class="msearch" type="search" enterkeyhint="search" autocomplete="off" placeholder="🔎 ${esc(T("Buscar prueba: espalda, 200 estilos…"))}" value="${esc(q)}"><div class="chips">${chips.map(([l, k]) => `<button type="button" class="chip${q === k ? " on" : ""}" data-k="${k}">${esc(T(l))}</button>`).join("")}</div><p id="evnone" class="card muted" hidden>${T("Ninguna prueba coincide.")}</p></div>`;
+  return `<div class="evsearch"><input id="evq" class="msearch" type="search" enterkeyhint="search" autocomplete="off" placeholder="🔎 ${esc(T("Buscar prueba, nadador o equipo…"))}" value="${esc(q)}"><div id="pshits"></div><div class="chips">${chips.map(([l, k]) => `<button type="button" class="chip${q === k ? " on" : ""}" data-k="${k}">${esc(T(l))}</button>`).join("")}</div><p id="evnone" class="card muted" hidden>${T("Ninguna prueba coincide.")}</p></div>`;
 }
-function setupEvSearch(id) {
+function setupEvSearch(id, meet) {
   const box = document.getElementById("evq");
   if (!box) return;
+  const chipWords = new Set([...document.querySelectorAll(".evsearch .chip")].map((c) => c.dataset.k));
   const apply = () => {
     const words = foldTxt(box.value).split(/\s+/).filter(Boolean);
     evQuery[id] = box.value.trim();
@@ -1146,6 +1148,12 @@ function setupEvSearch(id) {
     }
     document.getElementById("evnone").hidden = shown > 0;
     for (const c of document.querySelectorAll(".evsearch .chip")) c.classList.toggle("on", foldTxt(box.value).trim() === c.dataset.k);
+    // Además de pruebas: nadadores y universidades de esta competición.
+    const q = box.value.trim(), out = document.getElementById("pshits");
+    if (meet && out) {
+      if (chipWords.has(foldTxt(q)) || /^\d/.test(q)) { out.innerHTML = ""; peopleTok++; }
+      else meetPeopleSearch(id, meet, q, out).then((n) => { if (n && !shown) document.getElementById("evnone").hidden = true; });
+    }
   };
   box.addEventListener("input", apply);
   for (const c of document.querySelectorAll(".evsearch .chip")) c.addEventListener("click", () => { box.value = foldTxt(box.value).trim() === c.dataset.k ? "" : c.dataset.k; apply(); });
@@ -1197,12 +1205,13 @@ async function meetView(id, tab = "pruebas", silent = false) {
     ${standings && tab === "pruebas" && standings.scores[0] ? `<a class="leader" href="#/m/${enc(id)}/clasificacion">${crest(standings.scores[0].t, 28)}<span>${T("Lidera {t} con {p} pts", { t: `<b>${esc(teamDisp(standings.scores[0].t))}</b>`, p: esc(standings.scores[0].pts) })}</span><span class="chev">›</span></a>` : ""}
   </section>
   ${meetButtons(meet.name)}
+  ${meet.q ? `<div class="card warn">⚠️ ${T("Esta hoja de resultados no se ha podido leer bien (está a dos columnas o mezcla pruebas). Algunos tiempos pueden estar en la prueba equivocada: mira la web oficial. Estos tiempos no cuentan para rankings ni mejores marcas.")}</div>` : ""}
   ${fixUrl(meet.src) ? `<a class="article" href="${esc(fixUrl(meet.src))}" target="_blank" rel="noopener">📄 ${T("Resultados en la web oficial")} ↗</a>` : ""}
   ${(store.get("s:" + id) || {}).article ? `<a class="article" href="${esc(store.get("s:" + id).article)}" target="_blank" rel="noopener">${T("Crónica en SwimSwam")} ↗</a>` : ""}
   ${live && meet.lastEventUrl ? `<a class="lastev" href="#/m/${enc(id)}/e/${enc(eventKey(meet.lastEventUrl))}">⚡ ${T("Última prueba terminada")}</a>` : ""}
   <nav class="seg">${tabs.map(([k, l]) => `<a class="${k === tab ? "on" : ""}" href="#/m/${enc(id)}${k === "pruebas" ? "" : "/" + k}">${l}</a>`).join("")}</nav>
   ${body}`;
-  if (tab === "pruebas") { fillWinners(meet, live); setupEvSearch(id); }
+  if (tab === "pruebas") { fillWinners(meet, live); setupEvSearch(id, meet); }
   if (live) scheduleRefresh((s) => meetView(id, tab, s));
 }
 
@@ -1518,6 +1527,13 @@ async function rankView(kind, key, g, sk) {
   const base = `#/rank/${kind}/${enc(key)}`;
   const seasonSeg = S.seasons.prev.meets ? `<div class="mini-seg seasonseg">${["prev", "cur"].map((k) => `<a href="${base}/${g}/${k}" class="${k === sk ? "on" : ""}" data-season="${k}">${esc(S.seasons[k].label)}</a>`).join("")}</div>` : "";
   const row = (r) => `<a class="rkrow" href="#/uni/${enc(r.u.n)}"><span class="rkpos ${r.pos <= 3 ? "p" + r.pos : ""}">${r.pos}</span>${crest(r.u.n, 34)}<span class="uinfo"><b>${esc(r.u.n)}</b><span class="rkbar ${r.real ? "real" : ""}"><i style="width:${Math.max(4, (r.p / (r.real ? top : topE)) * 100).toFixed(1)}%"></i></span></span><span class="rkpts"><b>${r.p}</b><small>${r.real ? (r.u.div === "NAIA" ? "NAIA" : "NCAA") : "pts"}</small></span></a>`;
+  // Ranking de entrenadores (CSCAA): su web no lo publica como texto; se enlazan los titulares de SwimSwam y Swimming World.
+  let cscaaHtml = "";
+  if (kind === "div") {
+    const P = await loadData("cscaa").catch(() => null);
+    const ps = (P?.p || []).filter((x) => x.div === key || (!x.div && key === "D1")).slice(0, 3);
+    if (ps.length) cscaaHtml = `<div class="cscaa"><h3>${T("Ranking de los entrenadores (CSCAA)")}</h3>${ps.map((x) => `<a class="article" href="${esc(x.u)}" target="_blank" rel="noopener">📰 ${esc(x.t)}<small>${esc(x.src)} · ${esc(fmtDate(x.d))}</small> ↗</a>`).join("")}</div>`;
+  }
   const firstEst = ranked.findIndex((r) => !r.real);
   const rows = ranked.map((r, i) => (i === firstEst && i > 0 ? `<div class="rksep">${T("Sin puntos en el campeonato nacional · estimación con sus tiempos")}</div>` : "") + row(r)).join("");
   $app.innerHTML = `
@@ -1527,6 +1543,8 @@ async function rankView(kind, key, g, sk) {
     ${seasonSeg}
   </section>
   <nav class="seg"><a href="${base}/M/${sk}" class="${g === "M" ? "on" : ""}">♂ ${T("Chicos")}</a><a href="${base}/W/${sk}" class="${g === "W" ? "on" : ""}">♀ ${T("Chicas")}</a></nav>
+  <a class="btn wide alt" href="#/top/Y/${g}/100%20Y%20Free/${enc(kind === "div" ? key : "c:" + key)}/${sk === "prev" ? 1 : 0}">⏱️ ${T("Mejores tiempos por prueba")}</a>
+  ${cscaaHtml}
   ${ranked.length ? `<div class="glist">${rows}</div>` : `<div class="card muted">${T("Aún no hay tiempos de esta temporada para estos equipos.")}</div>`}
   ${missing.length ? `<h2>${T("Sin tiempos guardados")} <span class="count">${missing.length}</span></h2><div class="glist">${missing.map((u) => `<a class="rkrow dim" href="#/uni/${enc(u.n)}"><span class="rkpos">–</span>${crest(u.n, 30)}<span class="uinfo"><b>${esc(u.n)}</b></span><span class="chev">›</span></a>`).join("")}</div>` : ""}
   <p class="foot">${T("Temporada {s}.", { s: label })} ${sk === "prev" ? T("Primero, la clasificación real del campeonato nacional de esa temporada.") + " " : ""}${T("Ranking orientativo con todos los resultados guardados de la temporada: los 3 mejores tiempos de cada equipo en cada prueba individual de yardas y su mejor relevo, puntuando como un campeonato NCAA (20, 17, 16… a los 16 primeros; los relevos, doble).")}${updated ? ` ${T("Actualizado")}: ${esc(updated)}.` : ""}</p>`;
@@ -2230,6 +2248,155 @@ async function favTeamView(team) {
 }
 
 // ---------- enrutado ----------
+// ── Buscar nadador o equipo dentro de una competición, y lo que nadó cada uno en ella ──
+Object.assign(EN, {
+  "Buscar prueba, nadador o equipo…": "Search event, swimmer or team…", "Esta hoja de resultados no se ha podido leer bien (está a dos columnas o mezcla pruebas). Algunos tiempos pueden estar en la prueba equivocada: mira la web oficial. Estos tiempos no cuentan para rankings ni mejores marcas.": "This results sheet couldn't be read reliably (two columns or mixed events). Some times may be under the wrong event: check the official site. These times don't count for rankings or best times.", "Nadadores": "Swimmers", "Universidades": "Schools", "Buscando en los resultados…": "Searching the results…",
+  "{n} pruebas": "{n} events", "{n} nadadas": "{n} swims", "podios": "podiums", "mejores marcas": "best times", "Mejor marca personal": "Personal best", "Récord NCAA": "NCAA record",
+  "Récord de la universidad": "School record", "Mínima A {d}": "{d} A cut", "Mínima B {d}": "{d} B cut", "Mínima {d}": "{d} cut", "Relevo": "Relay", "{n}.º relevista": "leg {n}",
+  "antes": "before", "No hay resultados de este nadador en esta competición.": "No results for this swimmer at this meet.", "Ver su ficha": "See profile", "Todo lo de {t}": "All of {t}",
+  "Mejor marca personal: es su mejor tiempo en todos los resultados guardados en la app.": "Personal best: their fastest time in all results saved in the app.",
+  "Mínimas oficiales 2026-27 de NCAA D-II, D-III y NAIA (en yardas). La NCAA D-I y USA Swimming (US Open, Trials) no publican mínimas que se puedan leer.": "Official 2026-27 NCAA D-II, D-III and NAIA cuts (yards). NCAA D-I and USA Swimming (US Open, Trials) don't publish readable cuts.",
+  "Mejores tiempos": "Top times", "Mejores tiempos de la temporada": "Season top times", "Los más rápidos del país en cada prueba": "The fastest in the country in each event", "Yardas": "Yards", "Metros": "Meters",
+  "Todas": "All", "Esta temporada": "This season", "Temporada anterior": "Last season", "Conferencia": "Conference", "Todas las conferencias": "All conferences", "Prueba": "Event",
+  "Aún no hay tiempos de esta prueba.": "No times for this event yet.", "Mínimas 2026-27": "2026-27 cuts", "pc": "SC", "pl": "LC",
+  "Sacado de todas las competiciones guardadas en la app (resultados oficiales de las universidades). Un tiempo por nadador. No incluye lo que solo está en SwimCloud o Meet Mobile, que no se pueden leer.": "Taken from every meet saved in the app (official school results). One time per swimmer. Doesn't include results only on SwimCloud or Meet Mobile, which can't be read.",
+  "Mejores tiempos por prueba": "Top times by event", "Ranking de los entrenadores (CSCAA)": "Coaches' poll (CSCAA)", "Chicos": "Men", "Chicas": "Women", "Nadadores y equipos de esta competición": "Swimmers and teams at this meet",
+});
+const meetAll = new Map();
+function loadMeetAll(id, meet) {
+  const live = meet.status === "live";
+  const k = id + (live ? "|" + Math.floor(Date.now() / 60000) : "");
+  if (!meetAll.has(k)) meetAll.set(k, pool(uniqueEvents(meet), 4, (e) => loadEvent(e.url, live).catch(() => null)).then((evs) => evs.filter(Boolean)));
+  return meetAll.get(k);
+}
+// Nombre comparable: "Graham, Rian W" y "Rian Graham" → "rian graham".
+const pKey = (n) => foldTxt(flipName(String(n || "").replace(/\s+(FR|SO|JR|SR|GR|5Y)$/i, "").replace(/\s*\(\w+\)$/, ""))).replace(/\s+[a-z]\.?(?=\s|$)/g, "").replace(/[^a-z' -]/g, "").replace(/\s+/g, " ").trim();
+const samePerson = (a, b) => { if (!a || !b) return false; if (a === b) return true; const x = a.split(" "), y = b.split(" "); return x[x.length - 1] === y[y.length - 1] && (x[0].startsWith(y[0]) || y[0].startsWith(x[0])) && Math.min(x[0].length, y[0].length) >= 2; };
+const evKeyOf = (title) => { const t = String(title || ""); const c = /\byard/i.test(t) ? "Y" : /\bmeter|\bmetre/i.test(t) ? "M" : ""; const d = /(\d{2,4})\s+(Yard|Meter|Metre)/i.exec(t)?.[1]; const rel = /relay/i.test(t); const s = rel ? (/medley/i.test(t) ? "Medley Relay" : "Free Relay") : /individual medley|\bIM\b/i.test(t) ? "IM" : /free/i.test(t) ? "Free" : /back/i.test(t) ? "Back" : /breast/i.test(t) ? "Breast" : /butterfly|\bfly\b/i.test(t) ? "Fly" : ""; return c && d && s ? `${d} ${c} ${s}` : ""; };
+const sexOf = (title) => (/^(Women|Girls)\b/i.test(title || "") ? "W" : /^(Men|Boys)\b/i.test(title || "") ? "M" : "");
+let peopleTok = 0;
+async function meetPeopleSearch(id, meet, q, out) {
+  const tok = ++peopleTok;
+  const words = foldTxt(q).split(/\s+/).filter(Boolean);
+  if (q.length < 3 || !words.length) { out.innerHTML = ""; return 0; }
+  if (!meetAll.has(id)) out.innerHTML = `<p class="sub pad">${T("Buscando en los resultados…")}</p>`;
+  const [evs, sw] = await Promise.all([loadMeetAll(id, meet), loadSwimmers().catch(() => [])]);
+  if (tok !== peopleTok) return 0;
+  const people = new Map(), teams = new Map();
+  for (const ev of evs) for (const r of ev.results) {
+    if (!r.t) continue;
+    const td = teamDisp(r.t);
+    const tm = teams.get(td) || teams.set(td, { t: r.t, d: td, n: 0 }).get(td);
+    tm.n++;
+    if (ev.relay || !r.n) continue;
+    const k = pKey(r.n) + "|" + td;
+    const p = people.get(k) || people.set(k, { n: flipName(r.n).replace(/\s+[A-Z]\.?(?=\s|$)/g, ""), t: r.t, k: pKey(r.n), c: 0 }).get(k);
+    p.c++;
+  }
+  const ps = [...people.values()].filter((p) => words.every((w) => p.k.split(/[\s-]+/).some((t) => t.startsWith(w)))).sort((a, b) => b.c - a.c).slice(0, 12);
+  const ts = [...teams.values()].filter((t) => words.every((w) => foldTxt(t.d + " " + t.t).includes(w))).slice(0, 6);
+  out.innerHTML = ps.length || ts.length ? `<div class="pshits">${ps.length ? `<h3>${T("Nadadores")}</h3><div class="list">${ps.map((p) => { const x = findSwimmer(sw, p.n, p.t); return `<a class="urow" href="#/m/${enc(id)}/s/${enc(p.n)}/${enc(p.t)}">${x ? face(x, 38) : avatarHtml(p.n, "", 38)}<span class="uinfo"><b>${esc(x ? x.n : p.n)}</b><small>${crest(p.t, 14)} ${esc(teamDisp(p.t))} · ${T("{n} nadadas", { n: p.c })}</small></span><span class="chev">›</span></a>`; }).join("")}</div>` : ""}${ts.length ? `<h3>${T("Universidades")}</h3><div class="list">${ts.map((t) => `<a class="urow" href="#/m/${enc(id)}/t/${enc(t.t)}">${crest(t.t, 34)}<span class="uinfo"><b>${esc(t.d)}</b><small>${T("{n} nadadas", { n: t.n })}</small></span><span class="chev">›</span></a>`).join("")}</div>` : ""}</div>` : "";
+  return ps.length + ts.length;
+}
+async function swimmerMeetView(id, name, team) {
+  setTab("home");
+  loading();
+  await Promise.all([loadLogos().catch(() => {}), loadUnis().catch(() => {}), loadBrands().catch(() => {})]);
+  let meet;
+  try { meet = await loadMeetIndex(id); } catch { return errorView("No se pudo abrir este campeonato."); }
+  const live = meet.status === "live";
+  const [evs, sw, R, C] = await Promise.all([loadMeetAll(id, meet), loadSwimmers().catch(() => []), loadRecs().catch(() => null), loadData("cortes").catch(() => null)]);
+  const me = pKey(name), td = teamDisp(team);
+  const swims = [];
+  for (const ev of evs) for (const r of ev.results) {
+    if (!r.t || (teamDisp(r.t) !== td && !sameTeam(r.t, team))) continue;
+    if (ev.relay) { const i = (r.sw || []).findIndex((l) => samePerson(pKey(l), me)); if (i >= 0) swims.push({ ev, r, leg: i + 1 }); }
+    else if (r.n && samePerson(pKey(r.n), me)) swims.push({ ev, r });
+  }
+  swims.sort((a, b) => (a.ev.number ?? 0) - (b.ev.number ?? 0));
+  const x = findSwimmer(sw, name, team);
+  if (x) { sw.mi ||= {}; await loadSwimmerDetail(x, sw).catch(() => {}); }
+  const u = findUni(meetTeamAlias[team] || team) || x?.u;
+  const div = u?.div || "";
+  const g0 = x?.g || sexOf(swims[0]?.ev.title);
+  setTitle(x ? x.n : flipName(name));
+  let pts = 0, pods = 0, pbs = 0;
+  const cards = swims.map(({ ev, r, leg }) => {
+    const st = statOf(r.m), s = tSecs(tShow(r.m)), k = evKeyOf(ev.title), g = sexOf(ev.title) || g0;
+    const badges = [];
+    if (!st && s < Infinity && k) {
+      if (!leg && x?.b?.[k] && s <= tSecs(x.b[k][0]) + 0.001) { badges.push(`<span class="bdg pb">⭐ ${T("Mejor marca personal")}</span>`); pbs++; }
+      const nrec = R?.ncaa?.[div]?.[g]?.[k];
+      if (nrec && s <= tSecs(nrec.t) + 0.001) badges.push(`<span class="bdg rec">🏆 ${T("Récord NCAA")}</span>`);
+      const [ut, hist] = u ? recOf(R, u.n) : [null, false];
+      const urec = !hist && ut?.[g]?.[k];
+      if (urec && s <= tSecs(urec.t) + 0.001) badges.push(`<span class="bdg rec">🎓 ${T("Récord de la universidad")}</span>`);
+      const cut = C?.cuts?.[div]?.[g]?.[k];
+      if (cut) { const dl = div === "NAIA" ? "NAIA" : div.replace("D", "D-"); if (cut[0] && s <= tSecs(cut[0])) badges.push(`<span class="bdg cut a">${cut[1] ? T("Mínima A {d}", { d: dl }) : T("Mínima {d}", { d: dl })}</span>`); else if (cut[1] && s <= tSecs(cut[1])) badges.push(`<span class="bdg cut">${T("Mínima B {d}", { d: dl })}</span>`); }
+    }
+    if (+r.pts) pts += +r.pts;
+    if (["1", "2", "3"].includes(r.p) && (!r.s || /Final/i.test(r.s)) && !/prelim/i.test(ev.title)) pods++;
+    const place = st ? `<span class="place dq">–</span>` : /^\d+$/.test(r.p) ? `<span class="place p${r.p}">${r.p}</span>` : `<span class="place dq">${esc(r.p || "–")}</span>`;
+    const sub = [r.s ? (lang() === "en" ? r.s : SECTION_ES[r.s] || r.s) : "", leg ? `${T("Relevo")} ${esc(r.l || "")} · ${T("{n}.º relevista", { n: leg })}` : ""].filter(Boolean).join(" · ");
+    const splits = r.sp && r.sp.length ? `<div class="splits">${r.sp.map((v, i) => `<span><small>${(i + 1) * (r.sp.length > 8 ? 25 : 50)}</small>${esc(v)}</span>`).join("")}</div>` : "";
+    const legs = leg && r.sw?.length ? `<div class="swimmers">${r.sw.map((l, i) => i + 1 === leg ? `<b>${esc(flipName(l))}</b>` : esc(flipName(l))).join(" · ")}</div>` : "";
+    return `<a class="smcard" href="#/m/${enc(id)}/e/${enc(eventKey(ev.url))}"><div class="smtop">${place}<span class="who"><strong>${esc(englishToSpanish(ev.title))}</strong>${sub ? `<small>${sub}</small>` : ""}</span>${st ? `<span class="time stat"><strong>${esc(st)}</strong><small>${esc(T(STAT[st]))}</small></span>` : `<span class="time" data-conv="${esc(r.m)}" data-ev="${esc(ev.title)}" role="button"><strong>${esc(tShow(r.m))}</strong>${r.pv && !/^(NT|NS|--)$/i.test(r.pv) ? `<small>${T("antes")} ${esc(r.pv)}</small>` : ""}${+r.pts ? `<em>${esc(r.pts)} pts</em>` : ""}</span>`}</div>${badges.length ? `<div class="bdgs">${badges.join("")}</div>` : ""}${legs}${splits}</a>`;
+  }).join("");
+  const nm = x ? x.n : flipName(name).replace(/\s+[A-Z]\.?(?=\s|$)/g, "");
+  $app.innerHTML = `
+  <a class="back" href="#/m/${enc(id)}">‹ ${esc(cleanMeet(meet.name))}</a>
+  <section class="thead smhead">${x ? face(x, 72) : avatarHtml(nm, g0, 72)}<div><h1>${x ? `<a href="#/n/${x.i}">${esc(nm)} ›</a>` : esc(nm)}</h1><p class="sub">${crest(team, 18)} <a href="#/m/${enc(id)}/t/${enc(team)}">${esc(td)}</a>${x?.y ? " · " + esc(yrLabel(x.y)) : ""}</p></div></section>
+  <div class="smstats"><span><b>${swims.length}</b>${T("Pruebas")}</span><span><b>${pts % 1 ? pts.toFixed(1) : pts}</b>pts</span><span><b>${pods}</b>${T("podios")}</span><span><b>${pbs}</b>${T("mejores marcas")}</span></div>
+  <div class="list smlist">${cards || `<div class="card muted">${T("No hay resultados de este nadador en esta competición.")}</div>`}</div>
+  <p class="foot">${T("Mejor marca personal: es su mejor tiempo en todos los resultados guardados en la app.")} ${T("Mínimas oficiales 2026-27 de NCAA D-II, D-III y NAIA (en yardas). La NCAA D-I y USA Swimming (US Open, Trials) no publican mínimas que se puedan leer.")}</p>`;
+  if (live) scheduleRefresh(() => swimmerMeetView(id, name, team));
+}
+
+// ── Mejores tiempos del país por prueba (web/data/tops-<Y|M><0|1>.json) ──
+async function topsView(c = "Y", g = "M", ev = "", filt = "all", si = "0") {
+  setTab("rec");
+  loading();
+  c = c === "M" ? "M" : "Y"; g = g === "W" ? "W" : "M"; si = si === "1" ? "1" : "0";
+  await Promise.all([loadLogos().catch(() => {}), loadUnis().catch(() => {})]);
+  const [D, C, sw] = await Promise.all([loadData(`tops-${c}${si}`).catch(() => null), loadData("cortes").catch(() => null), loadSwimmers().catch(() => [])]);
+  if (!D?.ev) return errorView("Los mejores tiempos todavía no están disponibles.");
+  const evs = Object.keys(D.ev).filter((k) => k.startsWith(g + "|")).map((k) => k.slice(2)).sort((a, b) => evOrder(a) - evOrder(b));
+  if (!evs.includes(ev)) ev = evs.includes(c === "Y" ? "100 Y Free" : "100 M Free") ? (c === "Y" ? "100 Y Free" : "100 M Free") : evs[0] || "";
+  setTitle(T("Mejores tiempos"));
+  const byN = new Map(unis.map((u) => [u.n, u]));
+  const confOf = (u) => (g === "W" ? u?.cw : u?.cm) || u?.cw || u?.cm || "";
+  const keep = (row) => { const u = byN.get(row[1]); if (filt === "all") return true; if (filt.startsWith("c:")) return confOf(u) === filt.slice(2); return u?.div === filt; };
+  const rows = (D.ev[g + "|" + ev] || []).filter(keep).slice(0, 100);
+  const confs = [...new Set(unis.filter((u) => (g === "W" ? u.women : u.men)).map(confOf).filter(Boolean))].sort((a, b) => confName(a).localeCompare(confName(b)));
+  const href = (o = {}) => `#/top/${o.c || c}/${o.g || g}/${enc(o.ev ?? ev)}/${enc(o.f || filt)}/${o.si || si}`;
+  const relay = /Relay/.test(ev);
+  const label = (k) => { const [d, , s, r] = k.split(" "); return r ? `${d} ${T(s === "Medley" ? "Relevo estilos" : "Relevo libre")}` : `${d} ${T(STROKE_ES[s] || s)}`; };
+  const cutDiv = ["D2", "D3", "NAIA"].includes(filt) ? filt : "";
+  const cutsLine = c === "Y" && C?.cuts ? ["D2", "D3", "NAIA"].filter((d) => filt === "all" || d === filt).map((d) => { const x = C.cuts[d]?.[g]?.[ev]; return x ? `<span><b>${d === "NAIA" ? "NAIA" : d.replace("D", "D-")}</b> ${x[0] ? `A ${esc(x[0])}` : ""}${x[0] && x[1] ? " · " : ""}${x[1] ? `B ${esc(x[1])}` : ""}</span>` : ""; }).filter(Boolean).join("") : "";
+  const cutOf = (row) => { const d = byN.get(row[1])?.div; const x = C?.cuts?.[d]?.[g]?.[ev]; if (!x || c !== "Y") return ""; const s = tSecs(row[3]); return x[0] && s <= tSecs(x[0]) ? `<span class="bdg cut a">${x[1] ? "A" : "✓"}</span>` : x[1] && s <= tSecs(x[1]) ? `<span class="bdg cut">B</span>` : ""; };
+  const row = (r, i) => {
+    const u = byN.get(r[1]);
+    const x = relay ? null : findSwimmer(sw, r[0], r[1]);
+    const who = relay ? `${esc(r[1])}${r[2] ? " " + esc(r[2]) : ""}` : esc(x ? x.n : r[0]);
+    const link = relay ? `#/uni/${enc(r[1])}` : x ? `#/n/${x.i}` : `#/np/${enc(r[0])}/${enc(r[1])}`;
+    const sub = relay ? esc(r[0]) : `${esc(r[1])}${r[2] && yrLabel(r[2]) ? " · " + esc(yrLabel(r[2])) : ""}`;
+    return `<div class="tprow"><span class="rkpos ${i < 3 ? "p" + (i + 1) : ""}">${i + 1}</span>${relay ? crest(r[1], 36) : x ? `<span class="rphoto">${face(x, 38)}<i>${crest(r[1], 16)}</i></span>` : `<span class="rphoto">${avatarHtml(r[0], g, 38)}<i>${crest(r[1], 16)}</i></span>`}<span class="uinfo"><a href="${link}"><b>${who}</b></a><small>${sub}</small><a class="tpmeet" href="#/m/${enc(r[4])}">${r[5] ? esc(fmtDate(r[5])) : "›"}</a></span><span class="tptime"><b class="time" data-conv="${esc(r[3])}" data-ev="${esc(ev)}" role="button">${esc(r[3])}</b>${r[6] ? `<small>${T(r[6] === "L" ? "pl" : "pc")}</small>` : ""}${cutOf(r)}</span></div>`;
+  };
+  $app.innerHTML = `<a class="back" href="#/rec">‹ ${T("Récords")}</a>
+  <section class="rechero"><span class="recico">⏱️</span><div><h1>${T("Mejores tiempos")}</h1><p>${T("Los más rápidos del país en cada prueba")} · ${esc(D.season || "")}</p></div></section>
+  <div class="seg recseg"><a class="${c === "Y" ? "on" : ""}" href="${href({ c: "Y", ev: "" })}">${T("Yardas")}</a><a class="${c === "M" ? "on" : ""}" href="${href({ c: "M", ev: "" })}">${T("Metros")}</a></div>
+  <div class="seg recseg"><a class="${g === "M" ? "on" : ""}" href="${href({ g: "M" })}">♂ ${T("Chicos")}</a><a class="${g === "W" ? "on" : ""}" href="${href({ g: "W" })}">♀ ${T("Chicas")}</a></div>
+  <div class="mini-seg seasonseg"><a class="${si === "0" ? "on" : ""}" href="${href({ si: "0" })}">${T("Esta temporada")}</a><a class="${si === "1" ? "on" : ""}" href="${href({ si: "1" })}">${T("Temporada anterior")}</a></div>
+  <div class="chips tpdiv">${[["all", T("Todas")], ["D1", "D-I"], ["D2", "D-II"], ["D3", "D-III"], ["NAIA", "NAIA"]].map(([k, l]) => `<a class="chip${filt === k ? " on" : ""}" href="${href({ f: k })}">${l}</a>`).join("")}<select id="tpconf" class="chip"><option value="">${T("Todas las conferencias")}</option>${confs.map((k) => `<option value="c:${esc(k)}"${filt === "c:" + k ? " selected" : ""}>${esc(confName(k))}</option>`).join("")}</select></div>
+  <div class="tpevs">${evs.map((k) => `<a class="chip${k === ev ? " on" : ""}" href="${href({ ev: k })}">${esc(label(k))}</a>`).join("")}</div>
+  ${cutsLine ? `<div class="tpcuts"><small>${T("Mínimas 2026-27")}</small>${cutsLine}</div>` : ""}
+  <div class="glist tplist">${rows.map(row).join("") || `<div class="card muted">${T("Aún no hay tiempos de esta prueba.")}</div>`}</div>
+  <p class="foot">${T("Sacado de todas las competiciones guardadas en la app (resultados oficiales de las universidades). Un tiempo por nadador. No incluye lo que solo está en SwimCloud o Meet Mobile, que no se pueden leer.")} ${c === "Y" ? T("Mínimas oficiales 2026-27 de NCAA D-II, D-III y NAIA (en yardas). La NCAA D-I y USA Swimming (US Open, Trials) no publican mínimas que se puedan leer.") : ""} ${D.updated ? T("Actualizado: {d}.", { d: fmtDate(D.updated) }) : ""}</p>`;
+  const sel = document.getElementById("tpconf");
+  if (sel) sel.onchange = () => (location.hash = href({ f: sel.value || "all" }));
+  document.querySelector(".tpevs .chip.on")?.scrollIntoView({ inline: "center", block: "nearest" });
+}
+
 function route() {
   clearInterval(refreshTimer);
   applySettings();
@@ -2238,6 +2405,7 @@ function route() {
   if (parts[0] === "m" && parts[1]) {
     if (parts[2] === "e" && parts[3]) return eventView(parts[1], parts[3]);
     if (parts[2] === "t" && parts[3]) return teamView(parts[1], parts[3]);
+    if (parts[2] === "s" && parts[3]) return swimmerMeetView(parts[1], parts[3], parts[4] || "");
     return meetView(parts[1], parts[2] || "pruebas");
   }
   if (parts[0] === "u" && parts[1]) return favTeamView(parts[1]);
@@ -2245,6 +2413,7 @@ function route() {
   if (parts[0] === "rank" && parts[1] && parts[2]) return rankView(parts[1], parts[2], parts[3], parts[4]);
   if (parts[0] === "coach" && parts[1] && parts[2]) return coachView(parts[1], parts[2]);
   if (parts[0] === "ajustes") return settingsView();
+  if (parts[0] === "top") return topsView(parts[1], parts[2], parts[3] || "", parts[4] || "all", parts[5] || "0");
   if (parts[0] === "rec" && parts[1] === "unis") return recUnisView();
   if (parts[0] === "rec" && parts[1] === "uni") return recUniView(parts[2] || "", parts[3] || "");
   if (parts[0] === "rec") return recordsView(parts[1] || "D1", parts[2] || "M");

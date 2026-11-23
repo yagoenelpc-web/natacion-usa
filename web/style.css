@@ -845,3 +845,57 @@ header.top { background: var(--solid); -webkit-backdrop-filter: none; backdrop-f
 @media (max-width: 380px) { .frow { gap: 5px; } .fchip { padding: 7px 8px; font-size: 12.5px; } }
 .recuni { display: block; }
 .recuni small { text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--muted) 40%, transparent); text-underline-offset: 2px; }
+
+/* Buscador de nadadores dentro de una competición y lo que nadó cada uno. */
+.pshits { margin-top: 12px; }
+.pshits h3 { margin: 10px 4px 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.smhead { align-items: center; }
+.smhead .sub a { color: inherit; font-weight: 600; }
+.smhead .sub .crest { vertical-align: -4px; }
+.smstats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 4px 0 14px; }
+.smstats span { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px; border-radius: 18px; background: var(--glass); border: 1px solid var(--glass-line); box-shadow: var(--hi), var(--shadow); font-size: 11px; font-weight: 600; color: var(--muted); text-align: center; line-height: 1.2; }
+.smstats b { font-size: 21px; font-weight: 800; color: var(--text); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.smlist > .smcard { display: block; padding: 12px 14px; color: inherit; }
+.smcard .smtop { display: flex; align-items: center; gap: 12px; }
+.smcard .who strong { white-space: normal; font-size: 15px; line-height: 1.25; }
+.smcard .time { flex: none; }
+.smcard .time small { font-size: 12px; }
+.smcard .splits, .smcard .swimmers { padding: 8px 0 0 44px; }
+.smcard .swimmers b { color: var(--text); }
+.bdgs { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 0 0 44px; }
+.bdg { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; background: rgba(120, 140, 170, 0.14); color: var(--text); white-space: nowrap; }
+.bdg.pb { background: rgba(245, 180, 0, 0.18); color: #8a6100; }
+.bdg.rec { background: rgba(10, 91, 181, 0.14); color: var(--brand); }
+.bdg.cut { background: rgba(30, 160, 90, 0.14); color: #127a40; }
+.bdg.cut.a { background: #1aa05a; color: #fff; }
+:root[data-theme="dark"] .bdg.pb { color: #ffd257; }
+:root[data-theme="dark"] .bdg.cut { color: #6fe0a0; }
+:root[data-theme="dark"] .bdg.cut.a { color: #fff; }
+
+/* Mejores tiempos por prueba. */
+.tpdiv { margin-top: 12px; gap: 8px; }
+.tpdiv .chip, .tpevs .chip { padding: 7px 14px; border: 1px solid var(--glass-line); background: var(--glass); color: var(--text); font: inherit; font-weight: 700; font-size: 13px; }
+.tpdiv .chip.on, .tpevs .chip.on { background: var(--brand); color: #fff; border-color: transparent; }
+.tpdiv select.chip { appearance: none; -webkit-appearance: none; padding-right: 26px; max-width: 200px; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: calc(100% - 14px) 52%, calc(100% - 9px) 52%; background-size: 5px 5px; background-repeat: no-repeat; }
+.tpevs { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 10px; margin: 6px 0 4px; scrollbar-width: none; scroll-snap-type: x proximity; }
+.tpevs::-webkit-scrollbar { display: none; }
+.tpevs .chip { flex: none; scroll-snap-align: center; }
+.tpcuts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 0 2px 12px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.tpcuts small { width: 100%; color: var(--muted); font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: 0.04em; }
+.tpcuts span { padding: 4px 10px; border-radius: 999px; background: var(--glass); border: 1px solid var(--glass-line); }
+.tprow { display: flex; align-items: center; gap: 12px; padding: 10px 14px; }
+.tprow .uinfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.tprow .uinfo a { color: inherit; }
+.tprow .uinfo b { font-size: 15px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tprow .uinfo small { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tprow .tpmeet { font-size: 12px; color: var(--brand) !important; }
+.tptime { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.tptime .time { font-size: 17px; font-weight: 800; cursor: pointer; }
+.tptime small { font-size: 10px; font-weight: 700; color: var(--muted); }
+.tptime .bdg { padding: 1px 8px; font-size: 11px; }
+.tprow .rphoto .avatar { font-size: 13px !important; }
+.card.warn { background: rgba(255, 170, 0, 0.14); border-color: rgba(255, 170, 0, 0.35); color: var(--text); font-size: 14px; line-height: 1.4; margin: 10px 0; }
+.cscaa { margin: 12px 0; }
+.cscaa h3 { margin: 0 4px 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.cscaa .article { display: flex; flex-direction: column; gap: 2px; }
+.cscaa .article small { color: var(--muted); font-weight: 500; }
