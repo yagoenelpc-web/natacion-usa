@@ -569,10 +569,10 @@ const PARSER_V = 3;
 idx.rr ||= {};
 const badOld = new Map();
 if (!process.env.URLS) {
-  const cur = seasonOf(new Date().toISOString().slice(0, 10));
+  const cur = seasonOf(new Date().toISOString().slice(0, 10)), prevS = seasonOf(new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10));
   let marked = 0;
   for (const m of meetsById.values()) {
-    if (m.s !== cur || !m.src || idx.rr[m.src] === PARSER_V || badOld.size >= +(process.env.REREAD_MAX || 150)) continue;
+    if ((m.s !== cur && m.s !== prevS) || !m.src || idx.rr[m.src] === PARSER_V || badOld.size >= +(process.env.REREAD_MAX || 400)) continue;
     const x = await readJSON(`web/data/m/${m.id.slice(2)}.json`, null);
     if (!x?.ev || x.alias) continue;
     const r = badRatio(x.ev.map((e) => [e.ti, e.res.map((z) => z[4])]));
