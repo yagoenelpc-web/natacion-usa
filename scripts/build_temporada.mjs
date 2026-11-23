@@ -47,16 +47,35 @@ const archivo = await readJSON("web/data/archivo.json", { meets: [] });
 const byUrl = new Map(archivo.meets.map((m) => [m.url, m]));
 const feeds = ["https://swimswam.com/feed/", "https://swimswam.com/feed/?paged=2", "https://swimswam.com/feed/?paged=3", "https://swimswam.com/feed/?paged=4", "https://swimswam.com/feed/?paged=5", "https://swimswam.com/feed/?paged=6", "https://swimswam.com/feed/?paged=7", "https://swimswam.com/feed/?paged=8", "https://swimswam.com/tag/live-results/feed/?paged=2", "https://swimswam.com/tag/live-results/feed/?paged=3", "https://swimswam.com/tag/live-results/feed/", "https://swimswam.com/category/college/feed/", "https://swimswam.com/category/college/feed/?paged=2"];
 const found = [];
+// Titulares de los rankings de la CSCAA (su web no publica el Top 25 como texto): solo título, enlace y fecha.
+const polls = new Map();
+const pollHeads = (x, src) => {
+  for (const it of x.split(/<item\b/i).slice(1)) {
+    const title = (/<title>([\s\S]*?)<\/title>/i.exec(it)?.[1] || "").replace(/<!\[CDATA\[|\]\]>/g, "").replace(/&#8217;/g, "’").replace(/&#8211;/g, "–").replace(/&amp;/g, "&").replace(/&#0?38;/g, "&").trim();
+    const link = (/<link>([\s\S]*?)<\/link>/i.exec(it)?.[1] || "").trim();
+    const date = new Date(Date.parse(/<pubDate>([\s\S]*?)<\/pubDate>/i.exec(it)?.[1] || "") || 0).toISOString().slice(0, 10);
+    if (!/\bCSCAA\b/i.test(title) || !/(poll|top 25|rank)/i.test(title) || !/^https:\/\//.test(link)) continue;
+    const div = /division iii|\bd-?iii\b|\bd3\b/i.test(title) ? "D3" : /division ii\b|\bd-?ii\b|\bd2\b/i.test(title) ? "D2" : /\bnaia\b/i.test(title) ? "NAIA" : /division i\b|\bd-?i\b|\bd1\b/i.test(title) ? "D1" : "";
+    if (!polls.has(link)) polls.set(link, { t: title, u: link, d: date, div, src });
+  }
+};
 for (const f of feeds) {
   const x = await get(f);
-  if (x) for (const m of parseFeed(x)) found.push({ url: m.url, name: m.name, article: m.article, src: "swimswam" });
+  if (x) { pollHeads(x, "SwimSwam"); for (const m of parseFeed(x)) found.push({ url: m.url, name: m.name, article: m.article, src: "swimswam" }); }
 }
 // Swimming World: igual que SwimSwam, solo titulares y los enlaces a resultados HY-TEK de sus noticias.
 for (const f of ["https://www.swimmingworldmagazine.com/news/feed/", "https://www.swimmingworldmagazine.com/news/feed/?paged=2"]) {
   const x = await get(f, 1);
   const n0 = found.length;
-  if (x) for (const m of parseFeed(x)) found.push({ url: m.url, name: m.name, article: m.article, src: "swimmingworld" });
+  if (x) { pollHeads(x, "Swimming World"); for (const m of parseFeed(x)) found.push({ url: m.url, name: m.name, article: m.article, src: "swimmingworld" }); }
   console.log("Swimming World:", f, x ? found.length - n0 : "no carga");
+}
+{
+  const prevP = (await readJSON("web/data/cscaa.json", { p: [] })).p || [];
+  const all = new Map([...prevP.map((x) => [x.u, x]), ...polls]);
+  const list = [...all.values()].sort((a, b) => b.d.localeCompare(a.d)).slice(0, 20);
+  await writeFile("web/data/cscaa.json", JSON.stringify({ updated: new Date().toISOString().slice(0, 10), p: list }));
+  console.log("titulares del ranking CSCAA:", polls.size, "nuevos · guardados:", list.length, list.slice(0, 3).map((x) => x.d + " " + x.t).join(" | "));
 }
 const calJ = await readJSON("web/data/calendario.json", { live: [], cal: {} });
 for (const l of calJ.live || []) found.push({ url: normalizeMeetUrl(l), src: "web" });

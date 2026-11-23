@@ -45,5 +45,6 @@ jobs:
       - run: node scripts/auditar.mjs
       - run: node scripts/split_nadadores.mjs
       - run: node scripts/auditar.mjs despues
+      - run: node scripts/build_tops.mjs
       - name: Guardar
         run: scripts/datos-rama.sh subir
