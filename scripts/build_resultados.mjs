@@ -206,11 +206,61 @@ function parseDualFormat(text) {
   for (const e of events) delete e.run;
   return { name, start, end, events: events.filter((e) => e.title && e.results.length >= 2) };
 }
+// Resultados "accesibles" (texto en tabla con cabeceras: "Event 1: Women 200 Yard Medley Relay", "Place  Swimmer  Age
+// School  Seed time  Final time  Points", "Relay swimmers: 1) …", "Splits: …"). Las columnas se cortan por la cabecera.
+function parseAccessible(text) {
+  const lines = text.replace(/\f/g, "\n").split(/\r?\n/);
+  const MON = { january: 1, february: 2, march: 3, april: 4, may: 5, june: 6, july: 7, august: 8, september: 9, october: 10, november: 11, december: 12 };
+  const name = (lines.find((l) => l.trim()) || "").trim();
+  let start = "";
+  const dm = /\b(January|February|March|April|May|June|July|August|September|October|November|December) (\d{1,2}), (\d{4})/i.exec(text.slice(0, 600));
+  if (dm) start = `${dm[3]}-${String(MON[dm[1].toLowerCase()]).padStart(2, "0")}-${String(dm[2]).padStart(2, "0")}`;
+  const events = [], byTitle = new Map(), scores = [];
+  let ev = null, cols = null, last = null, inScores = false;
+  const cut = (l) => { const o = {}; cols.forEach((c, i) => { o[c.k] = l.slice(i ? c.s - 1 : 0, cols[i + 1] ? cols[i + 1].s - 1 : undefined).trim(); }); return o; };
+  const flip = (n) => n.replace(/\s+\d{1,2}$/, "").replace(/^([^,]+),\s*(.+?)(\s+[A-Z])?$/, "$2 $1").trim();
+  for (const raw of lines) {
+    const l = raw.replace(/\s+$/, "");
+    if (!l.trim()) continue;
+    if (/^Team scores/i.test(l.trim())) { inScores = true; continue; }
+    const e = /^\s*Event\s+\d+:\s*(.+?)(\s*\(continued\))?\s*$/i.exec(l);
+    if (e) {
+      inScores = false; cols = null; last = null;
+      const t = e[1].trim();
+      ev = byTitle.get(t);
+      if (!ev) { ev = { title: t, relay: /relay/i.test(t), results: [], scores: [] }; byTitle.set(t, ev); events.push(ev); }
+      continue;
+    }
+    if (/^\s*(Place|Division)\s{2,}/.test(l)) {
+      cols = [...l.matchAll(/\S+(?: \S+)*/g)].map((m) => ({ s: m.index, k: m[0].toLowerCase() }));
+      continue;
+    }
+    if (!cols) continue;
+    if (inScores) { const o = cut(l); const g = /^women/i.test(o.division) ? "W" : /^men/i.test(o.division) ? "M" : ""; if (g && o.team && o.points) scores.push({ p: +o.place || 0, t: o.team, pts: o.points, g }); continue; }
+    if (!ev) continue;
+    const rs = /^\s*Relay swimmers:\s*(.+)$/i.exec(l);
+    if (rs && last) { last.sw = rs[1].split(/;\s*/).map((x) => flip(x.replace(/^\d\)\s*/, ""))); continue; }
+    const sp = /^\s*Splits:\s*(.+)$/i.exec(l);
+    if (sp && last) { last.sp = sp[1].split(/,\s*/).map((x) => x.replace(/\s*\(.*\)/, "").trim()).filter(Boolean); continue; }
+    const o = cut(l);
+    const pl = (o.place || "").replace(/^\*/, "");
+    const time = (o["final time"] || o.time || "").trim();
+    if (!/^(\d{1,3}|--|-|DQ)$/i.test(pl) || !time) continue;
+    const team = ev.relay ? o.team || o.school || "" : o.school || o.team || "";
+    last = { p: /^\d+$/.test(pl) ? pl : "--", n: ev.relay ? team : flip(o.swimmer || o.name || ""), t: team, y: o.year || "", m: time, pv: (o["seed time"] || "").replace(/^NT$/, ""), pts: (o.points || "").replace(/^-$/, ""), l: o.relay || "", sp: [], ...(ev.relay ? { sw: [] } : {}) };
+    if (!last.n) continue;
+    ev.results.push(last);
+  }
+  // Puntos por equipo: en la última prueba de cada sexo.
+  for (const g of ["W", "M"]) { const sc = scores.filter((x) => x.g === g); const le = events.filter((e) => e.results.length && (g === "W" ? /^Women/ : /^Men/).test(e.title)).pop(); if (sc.length && le) le.scores = sc; }
+  return { name, start, end: start, events: events.filter((e) => e.results.length) };
+}
 function parsePdfMeet(text, url) {
   // Cabeceras sin espacios al sacar el texto del PDF: "Event1Women400YardMedleyRelay" → "Event 1 Women 400 Yard Medley Relay".
   // Algunos PDF usan caracteres de control en lugar de espacios.
   text = text.replace(/[\x01-\x08\x0B\x0E-\x1F\u00A0]/g, " ");
   text = text.replace(/\b(Seed|Finals|Prelims?|Swim-?off)Time\b/g, "$1 Time").replace(/^(\s*\(?)Event\s*(\d+)\s*((?:Women|Men|Girls|Boys|Mixed)\S*.*)$/gm, (m, a, n, rest) => /\s{2,}\S/.test(rest.trim()) && !/^(Women|Men|Girls|Boys|Mixed)\d/.test(rest) ? m : `${a}Event ${n} ${rest.replace(/([a-z])([A-Z0-9])/g, "$1 $2").replace(/(\d)([A-Za-z])/g, "$1 $2").replace(/\s+/g, " ").trim()}`);
+  if (/^\s*Event\s+\d+:\s*(Women|Men|Girls|Boys|Mixed)\b/m.test(text) && /^\s*Place\s{2,}(Swimmer|Team)\b/m.test(text)) { const ac = parseAccessible(text); if (ac.events.length) return ac; }
   if (/HY-TEK/.test(text.slice(0, 3000)) && /\bPl\s+Pts\s+Pts\s+Pl\b/.test(text)) { const du = parseDualFormat(text); if (du.events.length) return du; }
   if (/^\s*Event\s*#\s*\d+\s*-\s*\d/m.test(text) && !/^\s*\(?Event\s+\d+\s+(Women|Men|Girls|Boys)/m.test(text)) { const alt = parseAltMeet(text); if (alt.events.length) return alt; }
   // Programas, psych sheets y horarios no son resultados (llevan marcas de inscripción).
