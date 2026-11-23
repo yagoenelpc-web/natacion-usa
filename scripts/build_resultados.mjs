@@ -60,19 +60,19 @@ function pdfText(buf) {
   let t = "";
   try { t = execFileSync("pdftotext", ["-layout", "-enc", "UTF-8", f, "-"], { maxBuffer: 64e6, timeout: 60000 }).toString("utf8"); } catch {}
   // PDF escaneado (solo imagen, sin texto): se lee con OCR (tesseract), como mucho 12 páginas y 15 PDF por ejecución.
-  if (t.replace(/\s/g, "").length < 80 && ocrLeft > 0) {
+  if (t.replace(/\s/g, "").length < 80 && ocrLeft > 0 && Date.now() - T0 < (MAX_MIN - 10) * 60e3) {
     try {
       ocrLeft--;
       const base = f.replace(/\.pdf$/, "");
-      execFileSync("pdftoppm", ["-r", "220", "-gray", "-png", "-l", "12", f, base], { timeout: 120000 });
+      execFileSync("pdftoppm", ["-r", "220", "-gray", "-png", "-l", "6", f, base], { timeout: 60000 });
       const pages = readdirSync(TMP).filter((x) => x.startsWith(base.split("/").pop() + "-") && x.endsWith(".png")).sort();
-      t = pages.map((pg) => { try { return execFileSync("tesseract", [join(TMP, pg), "-", "--psm", "6", "-c", "preserve_interword_spaces=1"], { maxBuffer: 16e6, timeout: 90000 }).toString("utf8"); } catch { return ""; } finally { try { unlinkSync(join(TMP, pg)); } catch {} } }).join("\f");
+      t = pages.map((pg) => { try { return execFileSync("tesseract", [join(TMP, pg), "-", "--psm", "6", "-c", "preserve_interword_spaces=1"], { maxBuffer: 16e6, timeout: 40000 }).toString("utf8"); } catch { return ""; } finally { try { unlinkSync(join(TMP, pg)); } catch {} } }).join("\f");
       ocrUsed++;
     } catch {}
   }
   return t;
 }
-let ocrLeft = +(process.env.OCR_MAX || 15), ocrUsed = 0;
+let ocrLeft = +(process.env.OCR_MAX || 10), ocrUsed = 0;
 
 const NOISE = /HY-TEK'?s MEET MANAGER|Hy-Tek'?s MEET MANAGER|MEET MANAGER \d|Site License|Licensed to|^\s*Page \d+\s*$|\bPage \d+\s*$/i;
 // Convierte el texto de un PDF de resultados HY-TEK en { name, start, end, events: [ev...] } (mismo formato que parseEvent).
