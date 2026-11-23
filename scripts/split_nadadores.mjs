@@ -135,7 +135,7 @@ for (const grp of ["joseph joe joey jo", "john jack johnny jon", "michael mike m
   let purged = 0;
   for (const s of d.swimmers) for (const [ev, v] of Object.entries(s.b || {})) if (/^(\d+) ([YM]) (Free|Back|Breast|Fly|IM)$/.test(ev) && !okMark(ev, v[0], s.g)) { delete s.b[ev]; purged++; }
   console.log("marcas imposibles borradas:", purged);
-  let added = 0, better = 0, files = 0, taFiles = 0;
+  let added = 0, better = 0, files = 0, taFiles = 0, badSheets = 0;
   const taAll = {};
   const aliasOf = {};
   for (const f of await readdir("web/data/m").catch(() => [])) {
@@ -168,6 +168,8 @@ for (const grp of ["joseph joe joey jo", "john jack johnny jon", "michael mike m
       for (const [k, v] of Object.entries(x.ta || {})) taAll[k + "|" + id] = v;
     }
     d.mi[id] ||= [x.n, x.d];
+    // Hoja mal leída (marcada por build_resultados con q = % de tiempos imposibles): sus marcas no cuentan.
+    if (x.q) { badSheets++; continue; }
     for (const ev of x.ev || []) {
       if (ev.r || /diving/i.test(ev.ti || "")) continue;
       const evn = evOf(ev.ti || "");
@@ -380,7 +382,7 @@ for (const grp of ["joseph joe joey jo", "john jack johnny jon", "michael mike m
   // Últimas 15 competiciones de cada uno, de la más antigua a la más reciente.
   const dt = (x) => (d.mi[x] ? d.mi[x][1] : "") || "";
   for (const sw of d.swimmers) if (sw.m.length > 1) sw.m = sw.m.sort((a, b) => dt(a).localeCompare(dt(b))).slice(-15);
-  console.log("códigos de equipo resueltos por competición:", Object.keys(taAll).length, "· ficheros actualizados:", taFiles);
+  console.log("códigos de equipo resueltos por competición:", Object.keys(taAll).length, "· ficheros actualizados:", taFiles, "· hojas mal leídas sin contar:", badSheets);
   console.log("competiciones guardadas leídas:", files, "· marcas mejoradas:", better, "· nadadores nuevos:", added);
 }
 
@@ -508,7 +510,7 @@ for (const f of await readdir("web/data/m").catch(() => [])) {
   let x;
   try { x = JSON.parse(await readFile("web/data/m/" + f, "utf8")); } catch { continue; }
   const S = seasons[which(x.d)];
-  if (!S) continue;
+  if (!S || x.q) continue;
   S.meets++;
   for (const ev of x.ev || []) {
     const evn = shortEv(ev.ti || "");

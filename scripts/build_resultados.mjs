@@ -258,7 +258,49 @@ function parseAccessible(text) {
   for (const g of ["W", "M"]) { const sc = scores.filter((x) => x.g === g); const le = events.filter((e) => e.results.length && (g === "W" ? /^Women/ : /^Men/).test(e.title)).pop(); if (sc.length && le) le.scores = sc; }
   return { name, start, end: start, events: events.filter((e) => e.results.length) };
 }
-function parsePdfMeet(text, url) {
+// Calidad de lo leído: parte de los tiempos con un ritmo imposible para su prueba (0 = bien; más de 0.2 = hoja mal leída,
+// casi siempre un PDF a dos columnas cuyas pruebas se han mezclado). evs: [[título, [tiempos]]].
+const PACE = { Free: 0.9, Back: 1.0, Fly: 1.0, Breast: 1.1, IM: 1.0 };
+const tsec = (t) => { const m = /^(?:(\d+):)?(\d+\.\d+)/.exec(String(t || "").replace(/^[xX*]/, "")); return m ? (+m[1] || 0) * 60 + +m[2] : Infinity; };
+function badRatio(evs) {
+  let n = 0, bad = 0;
+  for (const [title, times] of evs) {
+    if (/diving|dive|\bmtr\b|board/i.test(title)) continue;
+    const d = /(\d{2,4})\s+(Yard|Meter|Metre|LC|SC)/i.exec(title);
+    const st = /relay/i.test(title) ? (/medley/i.test(title) ? "IM" : "Free") : /individual medley|\bIM\b/i.test(title) ? "IM" : /free/i.test(title) ? "Free" : /back/i.test(title) ? "Back" : /breast/i.test(title) ? "Breast" : /butterfly|\bfly\b/i.test(title) ? "Fly" : "";
+    if (!d || !st) continue;
+    const cap = PACE[st] * (/meter|metre|\bLC\b|\bSC\b/i.test(title) ? 1.12 : 1);
+    for (const t of times) { const x = tsec(t); if (x === Infinity) continue; n++; const pc = x / +d[1]; if (!(pc >= 0.36 && pc <= cap)) bad++; }
+  }
+  return n >= 20 ? bad / n : 0;
+}
+const meetBad = (meet) => badRatio(meet.events.map((e) => [e.title, e.results.map((r) => r.m)]));
+// Hueco vertical que separa dos columnas de resultados (sin cabeceras de prueba en la misma línea): una columna de
+// espacios en casi todas las líneas, con filas "puesto + Apellido, Nombre" a los dos lados.
+const ROWSTART = /^\s*(\d{1,3}|---|\*\d{1,3})\s+[A-Z][A-Za-z'.-]+/;
+const HEADER = /\bEvent\s+\d+\b/;
+function gutterCut(ls) {
+  const body = ls.filter((l) => l.trim() && !NOISE.test(l));
+  if (body.length < 12) return 0;
+  const W = Math.max(...body.map((l) => l.length));
+  if (W < 90) return 0;
+  let best = 0, bestScore = -1;
+  for (let c = Math.floor(W * 0.3); c <= Math.floor(W * 0.7); c++) {
+    let clear = 0, lp = 0, rp = 0;
+    for (const l of body) {
+      if (l.length <= c || !l.slice(c - 1, c + 1).trim()) clear++;
+      const L = l.slice(0, c), R = l.slice(c + 1);
+      if (ROWSTART.test(L) || HEADER.test(L)) lp++;
+      if (ROWSTART.test(R) || HEADER.test(R)) rp++;
+    }
+    if (clear / body.length < 0.97 || lp < body.length * 0.12 || rp < body.length * 0.12) continue;
+    const score = clear / body.length - Math.abs(c - W / 2) / W;
+    if (score > bestScore) { bestScore = score; best = c; }
+  }
+  return best;
+}
+let splitFixed = 0, rereadBetter = 0, rereadSame = 0;
+function parsePdfMeet(text, url, opts = {}) {
   // Cabeceras sin espacios al sacar el texto del PDF: "Event1Women400YardMedleyRelay" → "Event 1 Women 400 Yard Medley Relay".
   // Algunos PDF usan caracteres de control en lugar de espacios.
   text = text.replace(/[\x01-\x08\x0B\x0E-\x1F\u00A0]/g, " ");
@@ -275,6 +317,7 @@ function parsePdfMeet(text, url) {
   const pages = text.split("\f").map((page) => {
     const ls = page.split(/\r?\n/);
     const cuts = ls.map((l) => TWO.exec(l)?.[1].length).filter(Boolean);
+    if (!cuts.length && opts.split) { const g = gutterCut(ls); if (g) cuts.push(g); }
     if (!cuts.length) return page;
     const cut = Math.min(...cuts);
     // Las líneas de cabecera (nombre del encuentro, página) van enteras en la izquierda.
@@ -510,6 +553,27 @@ const hostUni = {};
 for (const [uni, list] of Object.entries(cal.src || {})) for (const e of list) { const h = /https?:\/\/([^/]+)/.exec(e)?.[1]; if (h) hostUni[h] = uni; }
 const uniOf = (u) => hostUni[/https?:\/\/([^/]+)/.exec(u)?.[1]] || "";
 const seasonOf = (d) => { const [yy, mm] = (d || "").split("-").map(Number); return yy ? label(mm >= 8 ? yy : yy - 1) : ""; };
+// Hojas guardadas que salieron mal leídas (más de 1 de cada 5 tiempos imposibles): se vuelven a leer una vez por versión
+// del lector, como mucho REREAD_MAX por ejecución. Si la nueva lectura no es claramente mejor, se queda la de antes.
+const PARSER_V = 2;
+idx.rr ||= {};
+const badOld = new Map();
+if (!process.env.URLS) {
+  const cur = seasonOf(new Date().toISOString().slice(0, 10));
+  let marked = 0;
+  for (const m of meetsById.values()) {
+    if (m.s !== cur || !m.src || idx.rr[m.src] === PARSER_V || badOld.size >= +(process.env.REREAD_MAX || 150)) continue;
+    const x = await readJSON(`web/data/m/${m.id.slice(2)}.json`, null);
+    if (!x?.ev || x.alias) continue;
+    const r = badRatio(x.ev.map((e) => [e.ti, e.res.map((z) => z[4])]));
+    if (r > 0.2 && !x.q) { x.q = Math.round(r * 100); await writeFile(`web/data/m/${m.id.slice(2)}.json`, JSON.stringify(x)); marked++; }
+    if (r <= 0.2) continue;
+    badOld.set(m.src, { id: m.id, r });
+    if (done[m.src] === m.id) delete done[m.src];
+    if (!cand.some((c) => c.url === m.src)) cand.push({ url: m.src, uni: m.u[0] || "", g: "", d: m.d, o: "", season: m.s });
+  }
+  console.log("hojas mal leídas que se vuelven a leer:", badOld.size, "· marcadas como dudosas:", marked);
+}
 // Volver a leer los documentos que antes no dieron resultados (tras mejorar el lector).
 if (process.env.RETRY_EMPTY) for (const [u, v] of Object.entries(done)) if (v === 0 && !cand.some((c) => c.url === u)) { delete done[u]; cand.push({ url: u, uni: uniOf(u), g: "", d: "", o: "", season: "" }); }
 // Prueba con enlaces concretos (no guarda).
@@ -558,6 +622,14 @@ await pool(cand, 6, async (c) => {
     const pre = /<pre[^>]*>([\s\S]*?)<\/pre>/i.exec(String(r.body));
     const text = String(pre ? pre[1] : r.body).replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"');
     meet = parsePdfMeet(text, c.url);
+    // Hoja mal leída: se prueba otra vez cortando las páginas por el hueco entre columnas.
+    const b0 = meetBad(meet);
+    if (b0 > 0.2) {
+      const m2 = parsePdfMeet(text, c.url, { split: true });
+      const b2 = meetBad(m2), n0 = meet.events.reduce((a, e) => a + e.results.length, 0), n2 = m2.events.reduce((a, e) => a + e.results.length, 0);
+      if (DEBUG) console.log("DOS-COLUMNAS", c.url, "raros antes", Math.round(b0 * 100) + "%", "después", Math.round(b2 * 100) + "%", "filas", n0, "→", n2);
+      if (b2 < b0 - 0.05 && n2 >= n0 * 0.7) { meet = m2; splitFixed++; }
+    }
   } else {
     meet = await parseHtmlMeet(c.url);
     if (!meet) { fail++; return; }
@@ -568,6 +640,16 @@ await pool(cand, 6, async (c) => {
   meet.end ||= meet.start;
   meet.name = (meet.name || "").replace(/(\s+-\s+copied)+$/i, "").trim();
   if (!meet.name || meet.name.length < 4 || /^(results?|dual meet)$/i.test(meet.name)) meet.name = !c.o ? (decodeURIComponent(c.url.split("/").pop().replace(/\.pdf.*$/i, "")).replace(/[_+]+/g, " ").replace(/\b(results?|scores?|final)\b/gi, "").replace(/\s+/g, " ").trim() || c.uni) : EVENTY.test(c.o) ? c.o : `${c.uni} ${/^(at|vs)\b/i.test(c.o) ? "" : "vs "}${c.o}`.replace(/\s+/g, " ");
+  const q = meetBad(meet);
+  // Relectura de una hoja que antes salió mal: solo se cambia si ahora sale claramente mejor.
+  const old = badOld.get(c.url);
+  if (old) {
+    idx.rr[c.url] = PARSER_V;
+    if (q >= old.r - 0.05) { done[c.url] = old.id; rereadSame++; return; }
+    meetsById.delete(old.id);
+    await rm(`web/data/m/${old.id.slice(2)}.json`, { force: true }).catch(() => {});
+    rereadBetter++;
+  }
   const id = "r:" + createHash("sha1").update(sigOf(meet)).digest("hex").slice(0, 12);
   done[c.url] = id;
   const prev = meetsById.get(id);
@@ -578,11 +660,12 @@ await pool(cand, 6, async (c) => {
   const entry = { id, n: meet.name.slice(0, 120), d: meet.start, e: meet.end, u: [c.uni].filter(Boolean), s: c.season || seasonOf(meet.start), src: c.url, ev: meet.events.length };
   meetsById.set(id, entry);
   newMeets.push({ entry, meet });
-  await writeFile(`web/data/m/${id.slice(2)}.json`, JSON.stringify({ n: entry.n, d: entry.d, e: entry.e, u: entry.u, src: c.url, ev: meet.events.map(compact) }));
+  await writeFile(`web/data/m/${id.slice(2)}.json`, JSON.stringify({ n: entry.n, d: entry.d, e: entry.e, u: entry.u, src: c.url, ...(q > 0.2 ? { q: Math.round(q * 100) } : {}), ev: meet.events.map(compact) }));
   ok++;
 });
 console.log("motivos sin resultados:", JSON.stringify(whyC));
 console.log("PDF escaneados leídos con OCR:", ocrUsed);
+console.log("PDF a dos columnas arreglados por el hueco entre columnas:", splitFixed, "· hojas mal leídas releídas mejor:", rereadBetter, "· igual o peor (se queda la anterior):", rereadSame);
 console.log("leídos ahora:", ok, "sin resultados:", empty, "fallos:", fail, "· encuentros guardados:", meetsById.size, "· minutos:", ((Date.now() - T0) / 60e3).toFixed(1));
 
 // ---------- Mejores marcas ----------
@@ -710,7 +793,7 @@ await writeFile("web/data/nadadores.json", JSON.stringify({ ...sw, swimmers: lis
   console.log("universidades añadidas a sus competiciones:", added);
 }
 const meets = [...meetsById.values()].sort((a, b) => (b.d || "").localeCompare(a.d || ""));
-await writeFile("web/data/encuentros.json", JSON.stringify({ v: VER, updated: new Date().toISOString().slice(0, 10), meets, done, pastDone: [...pastDone], recapDone: idx.recapDone || [] }));
+await writeFile("web/data/encuentros.json", JSON.stringify({ v: VER, updated: new Date().toISOString().slice(0, 10), meets, done, pastDone: [...pastDone], recapDone: idx.recapDone || [], rr: idx.rr }));
 console.log("nadadores:", list.length, "marcas nuevas o mejoradas:", marks, "· con marcas:", list.filter((s) => Object.keys(s.b).length).length);
 console.log("ejemplos:", meets.slice(0, 15).map((m) => `${m.d} ${m.n} [${m.u.join(", ")}] ${m.ev} pruebas`).join("\n"));
 await rm(TMP, { recursive: true, force: true });
