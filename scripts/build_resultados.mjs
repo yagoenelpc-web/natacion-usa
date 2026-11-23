@@ -300,6 +300,16 @@ function gutterCut(ls) {
   return best;
 }
 let splitFixed = 0, rereadBetter = 0, rereadSame = 0;
+// Hoja mal leída: se prueba otra vez cortando las páginas por el hueco entre columnas; se queda la lectura mejor.
+function retrySplit(meet, text, url) {
+  const b0 = meetBad(meet);
+  if (b0 <= 0.2) return meet;
+  const m2 = parsePdfMeet(text, url, { split: true });
+  const b2 = meetBad(m2), n0 = meet.events.reduce((a, e) => a + e.results.length, 0), n2 = m2.events.reduce((a, e) => a + e.results.length, 0);
+  if (DEBUG) console.log("DOS-COLUMNAS", url, "raros antes", Math.round(b0 * 100) + "%", "después", Math.round(b2 * 100) + "%", "filas", n0, "→", n2);
+  if (b2 < b0 - 0.05 && n2 >= n0 * 0.7) { splitFixed++; return m2; }
+  return meet;
+}
 function parsePdfMeet(text, url, opts = {}) {
   // Cabeceras sin espacios al sacar el texto del PDF: "Event1Women400YardMedleyRelay" → "Event 1 Women 400 Yard Medley Relay".
   // Algunos PDF usan caracteres de control en lugar de espacios.
@@ -555,7 +565,7 @@ const uniOf = (u) => hostUni[/https?:\/\/([^/]+)/.exec(u)?.[1]] || "";
 const seasonOf = (d) => { const [yy, mm] = (d || "").split("-").map(Number); return yy ? label(mm >= 8 ? yy : yy - 1) : ""; };
 // Hojas guardadas que salieron mal leídas (más de 1 de cada 5 tiempos imposibles): se vuelven a leer una vez por versión
 // del lector, como mucho REREAD_MAX por ejecución. Si la nueva lectura no es claramente mejor, se queda la de antes.
-const PARSER_V = 2;
+const PARSER_V = 3;
 idx.rr ||= {};
 const badOld = new Map();
 if (!process.env.URLS) {
@@ -614,22 +624,14 @@ await pool(cand, 6, async (c) => {
     if (!/pdf/i.test(r.type) && r.body.slice(0, 4).toString() !== "%PDF") { if (DEBUG && dbg.np++ < 6) console.log("NO-PDF", c.url, "→", r.url, r.type, r.body.slice(0, 200).toString().replace(/\s+/g, " ")); done[c.url] = 0; empty++; return; }
     const text = fixLig(pdfText(r.body));
     if (DEBUG > 1 && samples < 3 && text) { samples++; console.log("=== MUESTRA", c.url, "\n" + text.split("\n").slice(0, 70).join("\n")); }
-    meet = parsePdfMeet(text, c.url);
+    meet = retrySplit(parsePdfMeet(text, c.url), text, c.url);
     if (DEBUG) meet.text = text;
   } else if (isTxt(c.url)) {
     const r = await get(c.url);
     if (!r) { fail++; return; }
     const pre = /<pre[^>]*>([\s\S]*?)<\/pre>/i.exec(String(r.body));
     const text = String(pre ? pre[1] : r.body).replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#39;|&apos;/g, "'").replace(/&quot;/g, '"');
-    meet = parsePdfMeet(text, c.url);
-    // Hoja mal leída: se prueba otra vez cortando las páginas por el hueco entre columnas.
-    const b0 = meetBad(meet);
-    if (b0 > 0.2) {
-      const m2 = parsePdfMeet(text, c.url, { split: true });
-      const b2 = meetBad(m2), n0 = meet.events.reduce((a, e) => a + e.results.length, 0), n2 = m2.events.reduce((a, e) => a + e.results.length, 0);
-      if (DEBUG) console.log("DOS-COLUMNAS", c.url, "raros antes", Math.round(b0 * 100) + "%", "después", Math.round(b2 * 100) + "%", "filas", n0, "→", n2);
-      if (b2 < b0 - 0.05 && n2 >= n0 * 0.7) { meet = m2; splitFixed++; }
-    }
+    meet = retrySplit(parsePdfMeet(text, c.url), text, c.url);
   } else {
     meet = await parseHtmlMeet(c.url);
     if (!meet) { fail++; return; }
