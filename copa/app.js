@@ -193,7 +193,7 @@ function vHome(){
   const max=Math.max(...clubs.map(c=>R.tot[c]))||1;
   const doneN=PROGRAM.filter(e=>e.g===g&&(S.ev[e.n]||{}).done).length;
   const ms=START-new Date(); const days=Math.max(0,Math.floor(ms/864e5)), hrs=Math.max(0,Math.floor(ms%864e5/36e5));
-  let h=`<section class="hero"><div class="k">XXXVI Copa de España de Clubes</div><h1>División de Honor ${gTxt(g)}</h1>
+  let h=`<section class="hero"><img class="logo" src="icons/mark.png" alt="CNSO DH Simulator"><div class="k">XXXVI Copa de España de Clubes</div><h1>División de Honor ${gTxt(g)}</h1>
    <div class="row"><span>📍 Can Llong, Sabadell</span><span>📅 18 al 20 de diciembre de 2026</span><span>🏊 25 m · 10 calles</span></div>
    ${ms>0?`<div class="count"><div><b>${days}</b><span>días</span></div><div><b>${hrs}</b><span>horas</span></div></div>`:''}</section>`;
   h+=`<div class="row" style="justify-content:space-between"><h2 style="margin:6px 0">Clasificación ${doneN?'en directo + previsión':'prevista'}</h2>
@@ -355,14 +355,14 @@ function vProb(){
       <span class="c pct" style="color:var(--gold)">${pc(win)}</span><span class="c pct">${pc(pod)}</span><span class="c pct" style="color:${rel>.05?'var(--red)':'var(--mut)'}">${pc(rel)}</span></a>`; }
   h+=`</div><h2>Puesto más probable</h2><div class="card">`;
   for(const c of S.clubs[g].slice().sort((a,b)=>P[b].pts-P[a].pts)){ const p=P[c].pos;
-    h+=`<div class="li">${badge(c,28)}<div class="grow"><b>${esc(cname(c))}</b><div style="display:flex;gap:2px;margin-top:5px">${p.map((v,i)=>`<div title="${i+1}º ${pc(v)}" style="flex:1;height:22px;border-radius:4px;background:rgba(10,132,255,${Math.max(.06,Math.min(1,v*1.6)).toFixed(2)});display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:600;color:${v>.3?'#fff':'var(--mut)'}">${i+1}º</div>`).join('')}</div></div><span class="mut small" style="width:52px;text-align:right">${pfmt(P[c].pts)}</span></div>`; }
+    h+=`<div class="li">${badge(c,28)}<div class="grow"><b>${esc(cname(c))}</b><div style="display:flex;gap:2px;margin-top:5px">${p.map((v,i)=>`<div title="${i+1}º ${pc(v)}" style="flex:1;height:22px;border-radius:4px;background:rgba(26,154,82,${Math.max(.06,Math.min(1,v*1.6)).toFixed(2)});display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:600;color:${v>.3?'#fff':'var(--mut)'}">${i+1}º</div>`).join('')}</div></div><span class="mut small" style="width:52px;text-align:right">${pfmt(P[c].pts)}</span></div>`; }
   h+=`</div><div class="row"><button class="btn ghost" id="again">🎲 Volver a simular</button></div>`;
   setTimeout(()=>{ $('#again').onclick=()=>{ PROB={}; render(); toast('Nueva simulación hecha'); }; });
   return h;
 }
 function pc(v){ return v<0.005&&v>0?'<1%':Math.round(v*100)+'%'; }
 function vMas(){
-  return `<h1>Más</h1><div class="list card">
+  return `<img class="applogo" src="icons/logo.jpg" alt="CNSO DH Simulator"><h1>Más</h1><div class="list card">
    <a class="li" href="#/2025"><span style="font-size:22px">🏆</span><div class="grow"><b>Copa 2025: resultados reales</b><span class="mut small">Clasificación y todas las pruebas de Sabadell 2025</span></div>›</a>
    <a class="li" href="#/clubes"><span style="font-size:22px">🔁</span><div class="grow"><b>Clubes participantes</b><span class="mut small">Cambia qué 8 clubes compiten (para inventar escenarios)</span></div>›</a>
    <a class="li" href="#/reglamento"><span style="font-size:22px">📘</span><div class="grow"><b>Reglamento 2026</b><span class="mut small">Pruebas, puntos, ascensos y descensos</span></div>›</a>
