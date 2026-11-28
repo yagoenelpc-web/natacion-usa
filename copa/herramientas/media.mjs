@@ -68,6 +68,9 @@ async function escudos() {
   for (const club of D.clubs) {
     if (ONLY.length && !ONLY.includes(club.id)) continue;
     const cfg = CFG[club.id] || {}; const tries = [];
+    // Solo escudos revisados a mano: Wikipedia y las webs daban fotos que no eran el escudo
+    if (!cfg.logo) { if (OUT.escudos[club.id]) delete OUT.escudos[club.id]; continue; }
+    if (OUT.escudos[club.id] && OUT.escudos[club.id].url === cfg.logo) continue;
     for (const [lang, title] of (cfg.wiki || [])) {
       const e = await wdEntityFromWiki(title, lang); if (!e) continue;
       if (e.qid) { const cl = await wdClaims(e.qid); const logo = cl.P154 && cl.P154[0].mainsnak.datavalue?.value; if (logo) tries.push(['wikidata', commons(logo, 400), 'Wikimedia Commons']);
@@ -76,7 +79,6 @@ async function escudos() {
       await sleep(300);
     }
     if (cfg.logo) tries.unshift(['manual', cfg.logo, cfg.web || 'web del club']);
-    if (cfg.web) for (const u of await logoFromSite(cfg.web)) tries.push(['web', u, cfg.web]);
     let ok = null;
     for (const [src, url, credit] of tries) { const f = await save(url, 'escudos/' + club.id); if (f) { ok = { f, src, url, credit }; break; } }
     if (ok) OUT.escudos[club.id] = ok;

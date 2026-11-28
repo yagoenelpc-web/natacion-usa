@@ -19,6 +19,7 @@ jobs:
         timeout-minutes: 30
         env:
           MAX_MIN: "25"
+          SOLO_ESCUDOS: "1"
       - name: Guardar
         if: always()
         run: |
