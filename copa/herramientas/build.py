@@ -81,9 +81,16 @@ for div,f in [('dh','parsed.json'),('p1','parsed1.json')]:
             else:
                 dist=re.match(r'R(\d+)',k).group(1)
                 ids=[]
+                order=['L','L','L','L']
+                if k.endswith('X'):
+                    # El PDF no lista las postas en orden: braza es la más lenta de las dos centrales
+                    try:
+                        t1=secs(r['sw'][1][2]); t2=secs(r['sw'][2][2])
+                        order=['E','B','M','L'] if t1>t2 else ['E','M','B','L']
+                    except Exception: order=['E','M','B','L']
                 for i,(nm,yb,lt) in enumerate(r['sw']):
                     s=getsw(nm,yb,g,c); ids.append(s['id'])
-                    stroke = ['E','B','M','L'][i] if k.endswith('X') else 'L'
+                    stroke = order[i]
                     ek=dist+stroke
                     try: lt=secs(lt)
                     except: continue
@@ -126,7 +133,7 @@ for s in swl:
       da=int(a[:-1]); db=int(b[:-1]); d=abs(__import__('math').log(da/db))
       sc=d-0.01*r[1]
       if best is None or sc<best[0]: best=(sc,round(t*r[0],2))
-    if best and best[0]<1.5: e[a]=best[1]; added+=1
+    if best and best[0]<0.75: e[a]=best[1]; added+=1
   if e: s['e']=e
 print('estimaciones',added, len(ratio))
 # Reserva: estimación entre estilos distintos, solo para rellenar huecos de la alineación

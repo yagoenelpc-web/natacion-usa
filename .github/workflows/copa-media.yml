@@ -9,13 +9,18 @@ permissions:
 jobs:
   media:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
+    concurrency: { group: copa-media, cancel-in-progress: true }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
       - run: node copa/herramientas/media.mjs
+        timeout-minutes: 30
+        env:
+          MAX_MIN: "25"
       - name: Guardar
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

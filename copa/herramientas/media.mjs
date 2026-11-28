@@ -23,6 +23,11 @@ fs.mkdirSync(ROOT + 'escudos', { recursive: true });
 fs.mkdirSync(ROOT + 'fotos', { recursive: true });
 const OUT = fs.existsSync(ROOT + 'media.json') ? JSON.parse(fs.readFileSync(ROOT + 'media.json', 'utf8')) : { escudos: {}, fotos: {} };
 const ONLY = (process.env.SOLO || '').split(',').filter(Boolean);
+const T0 = Date.now(); const BUDGET = (+process.env.MAX_MIN || 25) * 60000;
+function flush() { fs.writeFileSync(ROOT + 'media.json', JSON.stringify(OUT, null, 1)); fs.writeFileSync(ROOT + 'media.js', 'window.COPA_MEDIA=' + JSON.stringify(OUT) + ';\n'); }
+process.on('SIGTERM', () => { flush(); process.exit(0); });
+const wdCache = {};
+async function wdMany(ids) { const need = ids.filter(i => !wdCache[i]); for (let i = 0; i < need.length; i += 40) { const j = await json(`https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&props=claims|labels&languages=es|en&ids=${need.slice(i, i + 40).join('|')}`); if (j && j.entities) Object.assign(wdCache, j.entities); } return ids.map(i => wdCache[i]).filter(Boolean); }
 
 async function wdEntityFromWiki(title, lang) {
   const j = await json(`https://${lang}.wikipedia.org/w/api.php?action=query&prop=pageprops|pageimages&piprop=original&format=json&redirects=1&titles=${encodeURIComponent(title)}`);
@@ -79,43 +84,70 @@ async function escudos() {
   }
 }
 function norm(s) { return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z ]/g, ' ').replace(/\s+/g, ' ').trim(); }
-async function fotos() {
-  const adults = D.swimmers.filter(s => s.y && s.y <= 2007);
+async function wikiFotos() {
   let n = 0;
-  for (const s of adults) {
-    if (OUT.fotos[s.id] && !process.env.REHACER) continue;
-    const parts = s.n.split(' ');
-    const queries = [s.n, parts.slice(0, -1).join(' ')].filter((q, i, a) => q.split(' ').length >= 2 && a.indexOf(q) === i);
-    let found = null;
-    for (const q of queries) {
-      const j = await json(`https://www.wikidata.org/w/api.php?action=wbsearchentities&format=json&language=es&type=item&limit=5&search=${encodeURIComponent(q)}`);
-      await sleep(150);
-      for (const it of (j && j.search) || []) {
-        const cl = await wdClaims(it.id); await sleep(100);
-        const occ = (cl.P106 || []).map(x => x.mainsnak.datavalue?.value.id);
-        if (!occ.includes('Q10843402')) continue; // nadador
-        const born = cl.P569 && cl.P569[0].mainsnak.datavalue?.value.time; const by = born ? +born.slice(1, 5) : null;
-        if (by && Math.abs(by - s.y) > 1) continue;
-        const nat = (cl.P27 || []).map(x => x.mainsnak.datavalue?.value.id);
-        const label = norm(it.label || ''); const nn = norm(s.n);
-        const fam = nn.split(' ').slice(1);
-        if (!fam.some(w => w.length > 2 && label.includes(w))) continue;
-        if (!by && !nat.includes('Q29')) continue;
-        const img = cl.P18 && cl.P18[0].mainsnak.datavalue?.value;
-        found = { qid: it.id, img, label: it.label };
-        break;
-      }
-      if (found) break;
+  for (const s of D.swimmers) {
+    if (Date.now() - T0 > BUDGET) { console.log('Tiempo agotado'); break; }
+    if (OUT.fotos[s.id]) continue;
+    const j = await json(`https://www.wikidata.org/w/api.php?action=wbsearchentities&format=json&language=es&type=item&limit=4&search=${encodeURIComponent(s.n)}`);
+    const ids = ((j && j.search) || []).map(x => x.id); if (!ids.length) continue;
+    const ents = await wdMany(ids); let found = null;
+    for (const en of ents) {
+      const cl = en.claims || {}; const occ = (cl.P106 || []).map(x => x.mainsnak.datavalue?.value.id);
+      if (!occ.includes('Q10843402')) continue;
+      const born = cl.P569 && cl.P569[0].mainsnak.datavalue?.value.time; const by = born ? +born.slice(1, 5) : null;
+      if (by && s.y && Math.abs(by - s.y) > 1) continue;
+      const label = norm((en.labels.es || en.labels.en || {}).value || ''); const fam = norm(s.n).split(' ').slice(1);
+      if (!fam.some(w => w.length > 2 && label.includes(w))) continue;
+      const img = cl.P18 && cl.P18[0].mainsnak.datavalue?.value; if (!img) continue;
+      found = { qid: en.id, img }; break;
     }
-    if (found && found.img) {
-      const f = await save(commons(found.img, 360), 'fotos/' + s.id);
-      if (f) { OUT.fotos[s.id] = { f, qid: found.qid, file: found.img }; n++; }
-    }
-    console.log('@@FOTO', s.id, s.n, s.y, found ? `${found.qid} ${found.label} ${found.img || 'sin imagen'}` : '-');
+    if (found) { const f = await save(commons(found.img, 360), 'fotos/' + s.id); if (f) { OUT.fotos[s.id] = { f, src: 'wikimedia', qid: found.qid, file: found.img }; n++; console.log('@@FOTO wiki', s.n, found.img); } }
+    if (n && n % 10 === 0) flush();
   }
-  console.log('Fotos nuevas', n, 'de', adults.length, 'adultos');
+  console.log('Fotos Wikimedia nuevas:', n);
 }
-if (!process.env.SOLO_FOTOS) await escudos();
-if (!process.env.SOLO_ESCUDOS) await fotos();
-fs.writeFileSync(ROOT + 'media.json', JSON.stringify(OUT, null, 1));
-fs.writeFileSync(ROOT + 'media.js', 'window.COPA_MEDIA=' + JSON.stringify(OUT) + ';\n');
+// Fotos en las webs de los clubes: páginas de equipo/nadadores con <img alt="Nombre Apellido">
+async function clubFotos() {
+  let n = 0;
+  for (const club of D.clubs) {
+    if (Date.now() - T0 > BUDGET) break;
+    const site = (CFG[club.id] || {}).web; if (!site) continue;
+    const mine = D.swimmers.filter(s => s.c === club.id && !OUT.fotos[s.id]); if (!mine.length) continue;
+    const r = await get(site); if (!r || !r.ok) { console.log('@@WEB', club.id, 'no carga', site); continue; }
+    const home = await r.text(); const pages = new Set([r.url]);
+    for (const m of home.matchAll(/<a[^>]+href=["']([^"'#]+)["'][^>]*>([\s\S]{0,120}?)<\/a>/gi)) {
+      const t = norm(m[2].replace(/<[^>]+>/g, ' ') + ' ' + m[1]);
+      if (/equip|nadador|plantilla|deportist|esportist|natacio|natacion|swim|absolut|competicio|squad|team/.test(t)) { const u = absUrl(m[1], r.url); if (u && u.startsWith(new URL(r.url).origin)) pages.add(u); }
+      if (pages.size > 25) break;
+    }
+    let found = 0;
+    for (const pg of pages) {
+      const rr = pg === r.url ? { ok: true, text: async () => home, url: r.url } : await get(pg); if (!rr || !rr.ok) continue;
+      const html = await rr.text();
+      const imgs = [...html.matchAll(/<img[^>]+>/gi)].map(m => m[0]);
+      // también bloques <figure>/<div> con nombre cerca de la imagen
+      const blocks = [...html.matchAll(/<img[^>]+>[\s\S]{0,300}?(?=<img|$)/gi)].map(m => m[0]);
+      for (const s of mine) {
+        if (OUT.fotos[s.id]) continue;
+        const tok = norm(s.n).split(' '); const first = tok[0], last = tok[1];
+        if (!last || last.length < 3) continue;
+        for (const blk of blocks) {
+          const txt = norm(blk.replace(/<img[^>]*alt=["']([^"']*)["'][^>]*>/i, ' $1 ').replace(/<[^>]+>/g, ' '));
+          if (!(txt.includes(first) && txt.includes(last))) continue;
+          const src = (blk.match(/\s(?:data-src|data-lazy-src|src)=["']([^"']+)["']/i) || [])[1]; const u = src && absUrl(src, rr.url);
+          if (!u || /logo|icon|sprite|banner/i.test(u)) continue;
+          const f = await save(u, 'fotos/' + s.id); if (f) { OUT.fotos[s.id] = { f, src: 'club', url: u, page: rr.url }; n++; found++; console.log('@@FOTO club', club.id, s.n, u); }
+          break;
+        }
+      }
+      if (Date.now() - T0 > BUDGET) break;
+    }
+    console.log('@@WEB', club.id, 'páginas', pages.size, 'fotos', found);
+    flush();
+  }
+  console.log('Fotos de clubes nuevas:', n);
+}
+if (!process.env.SOLO_FOTOS) { await escudos(); flush(); }
+if (!process.env.SOLO_ESCUDOS) { await clubFotos(); await wikiFotos(); }
+flush();
