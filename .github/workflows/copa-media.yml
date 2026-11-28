@@ -1,0 +1,25 @@
+name: Copa DH - escudos y fotos
+on:
+  push:
+    branches: [claude/project-thread-8lektv]
+    paths: ['copa/herramientas/media.mjs','copa/herramientas/clubes-web.json']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - run: node copa/herramientas/media.mjs
+      - name: Guardar
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add copa/escudos copa/fotos copa/media.json copa/media.js
+          git commit -m "Copa DH: escudos y fotos" || exit 0
+          git pull --rebase origin ${GITHUB_REF_NAME}
+          git push origin HEAD:${GITHUB_REF_NAME}
