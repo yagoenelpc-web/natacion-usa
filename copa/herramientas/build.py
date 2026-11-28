@@ -101,3 +101,55 @@ js='window.COPA_DATA='+json.dumps(out,ensure_ascii=False,separators=(',',':'))+'
 open('/home/claude/copa/data.js','w').write(js)
 print(len(swl),len(js))
 print([s for s in swl if 'Yago' in s['n']])
+
+# ---- Estimaciones de pruebas que faltan (mismo estilo, cociente mediano) ----
+import statistics
+IND=['50L','100L','200L','400L','800L','1500L','50E','100E','200E','50B','100B','200B','50M','100M','200M','100X','200X','400X']
+def stroke(k): return k[-1]
+ratio={}
+for g in 'MF':
+  for a in IND:
+    for b in IND:
+      if a==b or stroke(a)!=stroke(b): continue
+      v=[s['t'][a]/s['t'][b] for s in swl if s['g']==g and a in s['t'] and b in s['t']]
+      if len(v)>=4: ratio[(g,a,b)]=(statistics.median(v),len(v))
+added=0
+for s in swl:
+  e=s.get('e',{})
+  for a in IND:
+    if a in s['t'] or a in e: continue
+    best=None
+    for b,t in s['t'].items():
+      r=ratio.get((s['g'],a,b))
+      if not r: continue
+      # preferir distancias cercanas y con más datos
+      da=int(a[:-1]); db=int(b[:-1]); d=abs(__import__('math').log(da/db))
+      sc=d-0.01*r[1]
+      if best is None or sc<best[0]: best=(sc,round(t*r[0],2))
+    if best and best[0]<1.5: e[a]=best[1]; added+=1
+  if e: s['e']=e
+print('estimaciones',added, len(ratio))
+# Reserva: estimación entre estilos distintos, solo para rellenar huecos de la alineación
+xr={}
+for g in 'MF':
+  for a_ in IND:
+    for b_ in IND:
+      if a_==b_: continue
+      v=[s['t'][a_]/s['t'][b_] for s in swl if s['g']==g and a_ in s['t'] and b_ in s['t']]
+      if len(v)>=4: xr[(g,a_,b_)]=(statistics.median(v),len(v))
+fb=0
+for s in swl:
+  e=s.get('e',{}); f={}
+  for a_ in IND:
+    if a_ in s['t'] or a_ in e: continue
+    best=None
+    for b_,t in list(s['t'].items())+list(e.items()):
+      r=xr.get((s['g'],a_,b_))
+      if not r: continue
+      da=int(a_[:-1]); db=int(b_[:-1]); sc=abs(__import__('math').log(da/db))-0.01*r[1]
+      if best is None or sc<best[0]: best=(sc,round(t*r[0],2))
+    if best: f[a_]=best[1]; fb+=1
+  if f: s['f']=f
+print('reserva',fb)
+out={'clubs':clubs,'swimmers':swl,'res2025':res}
+open('/home/claude/copa/data.js','w').write('window.COPA_DATA='+json.dumps(out,ensure_ascii=False,separators=(',',':'))+';\n')

@@ -2,6 +2,7 @@
 (function(){
 'use strict';
 const D = window.COPA_DATA;
+const M = window.COPA_MEDIA || {escudos:{},fotos:{}};
 const $ = s => document.querySelector(s);
 const app = $('#app');
 
@@ -40,11 +41,11 @@ function swimmers(){
   for(const b of D.swimmers.concat(S.add)){
     const e=S.sw[b.id]||{};
     if(e.del) continue;
-    out.push({id:b.id,n:b.n,y:b.y,g:b.g,c:e.c||b.c,t:Object.assign({},b.t,e.t||{}),e:b.e||{},off:!!e.off,added:!!b.added,moved:!!e.c&&e.c!==b.c});
+    out.push({id:b.id,n:b.n,y:b.y,g:b.g,c:e.c||b.c,t:Object.assign({},b.t,e.t||{}),e:b.e||{},f:b.f||{},off:!!e.off,added:!!b.added,moved:!!e.c&&e.c!==b.c});
   }
   return out;
 }
-function bestTime(s,k){ if(s.t[k]!=null) return {t:s.t[k],est:false}; if(s.e[k]!=null) return {t:s.e[k],est:true}; return null; }
+function bestTime(s,k,fb){ if(s.t[k]!=null) return {t:s.t[k],est:false}; if(s.e[k]!=null) return {t:s.e[k],est:true}; if(fb&&s.f&&s.f[k]!=null) return {t:s.f[k],est:true}; return null; }
 
 /* ---------- Tiempos ---------- */
 function fmt(t){ if(t==null||isNaN(t)) return '—'; if(t>=60){ const m=Math.floor(t/60); const s=(t-m*60).toFixed(2).padStart(5,'0'); return m+':'+s; } return t.toFixed(2); }
@@ -67,7 +68,7 @@ function buildLineup(g){
   const byClub={}; clubs.forEach(c=>byClub[c]=pool.filter(s=>s.c===c));
   // campo inicial: 2 mejores por club y prueba
   let field={};
-  for(const e of evs){ field[e.n]=[]; for(const c of clubs){ const cand=byClub[c].map(s=>({s,b:bestTime(s,e.k)})).filter(x=>x.b).sort((a,b)=>a.b.t-b.b.t).slice(0,2); cand.forEach(x=>field[e.n].push({c,t:x.b.t})); } }
+  for(const e of evs){ field[e.n]=[]; for(const c of clubs){ const cand=byClub[c].map(s=>({s,b:bestTime(s,e.k,true)})).filter(x=>x.b).sort((a,b)=>a.b.t-b.b.t).slice(0,2); cand.forEach(x=>field[e.n].push({c,t:x.b.t})); } }
   let lineup;
   for(let iter=0;iter<2;iter++){
     lineup={};
@@ -75,7 +76,7 @@ function buildLineup(g){
       const opts=[];
       for(const e of evs) for(const s of byClub[c]){ const b=bestTime(s,e.k); if(!b) continue;
         const faster=field[e.n].filter(x=>x.c!==c&&x.t<b.t).length; const pts=PTS_IND[faster]||0;
-        opts.push({s,e,t:b.t,est:b.est,v:pts+(b.est?-0.3:0)}); }
+        opts.push({s,e,t:b.t,est:b.est,v:pts+(b.est?-1.5:0)}); }
       opts.sort((a,b)=>b.v-a.v||a.t-b.t);
       const cnt={},ses={},slot={},roster=new Set();
       const L=lineup[c]={};
@@ -88,6 +89,11 @@ function buildLineup(g){
         if(!roster.has(sid)&&roster.size>=MAX_ROSTER) continue;
         (L[en]=L[en]||[]).push(o); slot[en]=(slot[en]||0)+1; cnt[sid]=(cnt[sid]||0)+1; ses[sid+'|'+o.e.s]=(ses[sid+'|'+o.e.s]||0)+1; roster.add(sid);
       }
+      // repaso: rellenar huecos con quien aún pueda nadar (aunque puntúe poco)
+      for(const e of evs){ while((slot[e.n]||0)<PER_EVENT){
+        const cand=byClub[c].map(s=>({s,b:bestTime(s,e.k,true)})).filter(x=>x.b&&(cnt[x.s.id]||0)<MAX_IND&&(ses[x.s.id+'|'+e.s]||0)<MAX_SESSION&&!(L[e.n]||[]).some(o=>o.s.id===x.s.id)&&(roster.has(x.s.id)||roster.size<MAX_ROSTER)).sort((a,b)=>a.b.t-b.b.t)[0];
+        if(!cand) break; const sid=cand.s.id;
+        (L[e.n]=L[e.n]||[]).push({s:cand.s,e,t:cand.b.t,est:cand.b.est,v:0}); slot[e.n]=(slot[e.n]||0)+1; cnt[sid]=(cnt[sid]||0)+1; ses[sid+'|'+e.s]=(ses[sid+'|'+e.s]||0)+1; roster.add(sid); } }
       L._roster=roster;
     }
     field={}; for(const e of evs){ field[e.n]=[]; for(const c of clubs) (lineup[c][e.n]||[]).forEach(o=>field[e.n].push({c,t:o.t})); }
@@ -166,8 +172,14 @@ function montecarlo(g,N){
 }
 
 /* ---------- Piezas visuales ---------- */
-function badge(c,size){ const k=CLUB[c]||{a:'?',c1:'#555',c2:'#fff'}; size=size||36; const fs=Math.round(size*(k.a.length>3?.28:.34));
-  return `<span class="badge" style="width:${size}px;height:${size}px;font-size:${fs}px;background:linear-gradient(135deg,${k.c1} 0 58%,${k.c2==='#ffffff'?shade(k.c1):k.c2} 58%);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5)">${k.a}</span>`; }
+function badge(c,size){ size=size||36; const m=M.escudos[c];
+  if(m) return `<span class="crest" style="width:${size}px;height:${size}px"><img src="${m.f}" alt="${esc((CLUB[c]||{}).s||'')}" loading="lazy"></span>`;
+  const k=CLUB[c]||{a:'?',c1:'#555',c2:'#fff'}; const fs=Math.round(size*(k.a.length>3?.28:.34));
+  return `<span class="badge" style="width:${size}px;height:${size}px;font-size:${fs}px;background:linear-gradient(135deg,${k.c1} 0 58%,${k.c2==='#ffffff'?shade(k.c1):k.c2} 58%)">${k.a}</span>`; }
+function ava(s,size){ size=size||36; const f=M.fotos[s.id]; const k=CLUB[s.c]||{c1:'#888'};
+  const ini=s.n.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  const inner=f?`<img src="${f.f}" alt="" loading="lazy">`:ini;
+  return `<span class="ava" style="width:${size}px;height:${size}px;font-size:${Math.round(size*.36)}px;background:${f?'#ddd':`linear-gradient(135deg,${k.c1},${shade(k.c1)})`}">${inner}</span>`; }
 function shade(hex){ const n=parseInt(hex.slice(1),16); const r=Math.max(0,(n>>16)-50),g=Math.max(0,((n>>8)&255)-50),b=Math.max(0,(n&255)-50); return `rgb(${r},${g},${b})`; }
 function cname(c){ return (CLUB[c]||{s:c}).s; }
 function esc(s){ return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
@@ -205,13 +217,13 @@ function raceChart(g,R){
   const max=Math.max(...clubs.map(c=>R.tot[c]))||1;
   const x=s=>P.l+(W-P.l-P.r)*s/4, y=v=>H-P.b-(H-P.t-P.b)*v/max;
   let svg=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Puntos acumulados por sesión">`;
-  for(let i=0;i<=4;i++){ svg+=`<line x1="${x(i)}" x2="${x(i)}" y1="${P.t}" y2="${H-P.b}" stroke="rgba(255,255,255,.08)"/>`; svg+=`<text x="${x(i)}" y="${H-6}" text-anchor="middle">${i?'S'+i:'0'}</text>`; }
+  for(let i=0;i<=4;i++){ svg+=`<line x1="${x(i)}" x2="${x(i)}" y1="${P.t}" y2="${H-P.b}" stroke="var(--sep)"/>`; svg+=`<text x="${x(i)}" y="${H-6}" text-anchor="middle">${i?'S'+i:'0'}</text>`; }
   const labels=[];
   clubs.forEach(c=>{ const k=CLUB[c]; const pts=[0,1,2,3,4].map(s=>s?R.bySes[s][c]:0);
-    svg+=`<polyline fill="none" stroke="${k.c1==='#ffcc00'||k.c1==='#ffd400'?k.c1:k.c1}" stroke-width="${c===S.mine?3.5:2.2}" stroke-linejoin="round" points="${pts.map((v,i)=>x(i)+','+y(v)).join(' ')}" style="filter:drop-shadow(0 0 1px rgba(255,255,255,.6))"/>`;
+    svg+=`<polyline fill="none" stroke="${k.c1==='#ffcc00'||k.c1==='#ffd400'?k.c1:k.c1}" stroke-width="${c===S.mine?3.5:2.2}" stroke-linejoin="round" points="${pts.map((v,i)=>x(i)+','+y(v)).join(' ')}"/>`;
     labels.push({c,y:y(pts[4]),k}); });
   labels.sort((a,b)=>a.y-b.y); for(let i=1;i<labels.length;i++) if(labels[i].y-labels[i-1].y<11) labels[i].y=labels[i-1].y+11;
-  labels.forEach(l=>{ svg+=`<circle cx="${x(4)}" cy="${y(R.tot[l.c])}" r="3" fill="${l.k.c1}"/><text x="${x(4)+6}" y="${l.y+3}" style="fill:#dbe8f7">${esc(l.k.s.length>12?l.k.a:l.k.s)}</text>`; });
+  labels.forEach(l=>{ svg+=`<circle cx="${x(4)}" cy="${y(R.tot[l.c])}" r="3" fill="${l.k.c1}"/><text x="${x(4)+6}" y="${l.y+3}" style="fill:var(--txt)">${esc(l.k.s.length>12?l.k.a:l.k.s)}</text>`; });
   return svg+`</svg><div class="note">S1 viernes tarde · S2 sábado mañana · S3 sábado tarde · S4 domingo mañana</div>`;
 }
 function vPruebas(){
@@ -237,7 +249,7 @@ function vPrueba(n){
    <label class="toggle"><input type="checkbox" id="doneTg" ${ov.done?'checked':''}><div><b>Ya se ha nadado</b><div class="note">Márcalo cuando metas los tiempos reales. Así la clasificación mezcla lo real con la previsión.</div></div></label><div class="spacer"></div>
    <div class="card"><div class="list">`;
   r.forEach(x=>{ const pl=x.place, cls=pl===1?'g':pl===2?'s':pl===3?'b':'';
-    h+=`<div class="li"><div class="place ${cls}">${pl||'DQ'}</div>${badge(x.c,32)}<div class="grow"><b>${e.relay?esc(CLUB[x.c].s):esc(x.s.n)}</b><span class="mut small">${e.relay?'Relevo':esc(cname(x.c))+(x.s.y?' · '+x.s.y:'')}${x.est?'<span class="est">ESTIMADO</span>':''}</span></div>
+    h+=`<div class="li"><div class="place ${cls}">${pl||'DQ'}</div>${e.relay?badge(x.c,34):ava(x.s,36)}<div class="grow"><b>${e.relay?esc(CLUB[x.c].s):esc(x.s.n)}</b><span class="mut small" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">${e.relay?'Relevo':badge(x.c,15)+esc(cname(x.c))+(x.s.y?' · '+x.s.y:'')}${x.est?'<span class="est">ESTIMADO</span>':''}</span></div>
       <input class="timein ${x.ov?'ov':''}" inputmode="decimal" data-k="${x.key}" value="${x.t==='DQ'?'DQ':fmt(x.t)}"><div class="ptag">${x.pts?pfmt(x.pts):'0'}</div></div>`; });
   h+=`</div></div><div class="row"><button class="btn ghost sm" id="resetEv">Volver a los tiempos de previsión</button></div>
   <p class="note">Escribe un tiempo (por ejemplo 1:43.50 o 23.10) o DQ si descalifican. Los tiempos cambiados se ven en dorado. ${e.relay?'Los relevos parten del tiempo de cada club en la Copa 2025.':'Las marcas en ESTIMADO salen de su posta en un relevo de 2025 (salida lanzada corregida).'}</p>`;
@@ -277,7 +289,7 @@ function vEquipo(c){
   const sorted=all.sort((a,b)=>(roster.has(b.id)-roster.has(a.id))||((ptsOf[b.id]||0)-(ptsOf[a.id]||0)));
   h+=`<div class="card"><div class="list">`;
   for(const s of sorted){ const evs=evOf[s.id]||[];
-    h+=`<a class="li" href="#/nadador/${s.id}"><div class="grow"><b>${esc(s.n)}${s.off?' <span class="chip">No nada</span>':''}${s.moved?' <span class="chip acc">Fichaje</span>':''}</b>
+    h+=`<a class="li" href="#/nadador/${s.id}">${ava(s,40)}<div class="grow"><b>${esc(s.n)}${s.off?' <span class="chip">No nada</span>':''}${s.moved?' <span class="chip acc">Fichaje</span>':''}</b>
      <div class="chips" style="margin-top:4px">${evs.length?evs.map(e=>`<span class="chip">${evName(e.k)}</span>`).join(''):`<span class="mut small">${s.off?'Fuera del equipo':roster.has(s.id)?'Relevos':'Sin prueba en la alineación'}</span>`}</div></div>
      <div class="ptag">${ptsOf[s.id]?pfmt(ptsOf[s.id]):''}</div></a>`; }
   h+=`</div></div>`;
@@ -292,7 +304,8 @@ function vNadador(id){
   const R=simulate(s.g); const myEv=[];
   for(const e of PROGRAM.filter(e=>e.g===s.g&&!e.relay)){ const x=R.events[e.n].find(z=>z.s&&z.s.id===id); if(x) myEv.push([e,x]); }
   const keys=['50L','100L','200L','400L','800L','1500L','50E','100E','200E','50B','100B','200B','50M','100M','200M','100X','200X','400X'];
-  let h=`<a class="back" href="#/equipo/${s.c}">‹ ${esc(cname(s.c))}</a><div class="teamhead">${badge(s.c,56)}<div><h1 style="margin:0">${esc(s.n)}</h1><div class="mut small">${esc(CLUB[s.c].n)}${s.y?' · '+s.y:''}</div></div></div>`;
+  const ph=M.fotos[s.id];
+  let h=`<a class="back" href="#/equipo/${s.c}">‹ ${esc(cname(s.c))}</a><div class="teamhead">${ava(s,84)}<div><h1 style="margin:0;font-size:28px">${esc(s.n)}</h1><div class="mut small" style="display:flex;align-items:center;gap:6px;margin-top:4px">${badge(s.c,20)}${esc(CLUB[s.c].n)}${s.y?' · '+s.y:''}</div>${ph?`<div class="credit">Foto: <a href="https://commons.wikimedia.org/wiki/File:${encodeURIComponent(ph.file)}" target="_blank" rel="noopener">Wikimedia Commons</a></div>`:''}</div></div>`;
   h+=`<h2>En la Copa 2026 (previsión)</h2>`;
   h+= myEv.length?`<div class="card"><div class="list">${myEv.map(([e,x])=>`<a class="li" href="#/prueba/${e.n}"><div class="grow"><b>${evName(e.k)}</b><span class="mut small">Sesión ${e.s}</span></div><span class="t">${fmt(x.t)}</span><div class="ptag">${x.place?x.place+'º':''}</div></a>`).join('')}</div></div>`:`<div class="empty">No entra en ninguna prueba individual de la alineación automática.</div>`;
   h+=`<h2>Mejores marcas (piscina 25 m)</h2><div class="card"><div class="list">`;
@@ -317,16 +330,16 @@ function vNadador(id){
 function vFichar(c){
   const g=S.g; const k=CLUB[c];
   let h=`<a class="back" href="#/equipo/${c}">‹ ${esc(k.s)}</a><h1>Añadir nadador</h1>
-   <div class="card"><h3>Nuevo nadador</h3><div class="row"><input type="text" id="newName" placeholder="Nombre y apellidos" style="flex:1;min-width:180px"><input type="text" id="newYear" placeholder="Año" inputmode="numeric" style="width:80px"></div><div class="spacer"></div><button class="btn" id="addBtn">Añadir a ${esc(k.s)}</button>
+   <div class="card pad"><h3>Nuevo nadador</h3><div class="row"><input type="text" id="newName" placeholder="Nombre y apellidos" style="flex:1;min-width:180px"><input type="text" id="newYear" placeholder="Año" inputmode="numeric" style="width:80px"></div><div class="spacer"></div><button class="btn" id="addBtn">Añadir a ${esc(k.s)}</button>
    <p class="note">Después podrás ponerle sus marcas.</p></div>
-   <div class="card"><h3>Fichar de otro club</h3><input type="search" id="q" placeholder="Busca por nombre"><div class="list" id="res" style="margin-top:6px"></div></div>`;
+   <div class="card pad"><h3>Fichar de otro club</h3><input type="search" id="q" placeholder="Busca por nombre"><div class="list" id="res" style="margin-top:6px"></div></div>`;
   setTimeout(()=>{
     $('#addBtn').onclick=()=>{ const n=$('#newName').value.trim(); if(!n){ toast('Escribe el nombre'); return; } const y=parseInt($('#newYear').value)||null;
       const id=S.nextId++; S.add.push({id,n,y,g,c,t:{},added:true}); invalidate(); location.hash='#/nadador/'+id; };
     const q=$('#q'), res=$('#res');
     const run=()=>{ const v=q.value.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); if(v.length<2){ res.innerHTML='<div class="mut small">Escribe al menos 2 letras</div>'; return; }
       const hits=swimmers().filter(s=>s.g===g&&s.c!==c&&s.n.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').includes(v)).slice(0,30);
-      res.innerHTML=hits.map(s=>`<div class="li">${badge(s.c,28)}<div class="grow"><b>${esc(s.n)}</b><span class="mut small">${esc(cname(s.c))}${s.y?' · '+s.y:''}</span></div><button class="btn sm" data-id="${s.id}">Fichar</button></div>`).join('')||'<div class="mut small">Nadie con ese nombre</div>';
+      res.innerHTML=hits.map(s=>`<div class="li">${ava(s,34)}<div class="grow"><b>${esc(s.n)}</b><span class="mut small">${esc(cname(s.c))}${s.y?' · '+s.y:''}</span></div><button class="btn sm" data-id="${s.id}">Fichar</button></div>`).join('')||'<div class="mut small">Nadie con ese nombre</div>';
       res.querySelectorAll('button').forEach(b=>b.onclick=()=>{ const id=+b.dataset.id; S.sw[id]=S.sw[id]||{}; S.sw[id].c=c; invalidate(); toast('Fichado por '+k.s); run(); }); };
     q.oninput=run; run();
   });
@@ -342,7 +355,7 @@ function vProb(){
       <span class="c pct" style="color:var(--gold)">${pc(win)}</span><span class="c pct">${pc(pod)}</span><span class="c pct" style="color:${rel>.05?'var(--red)':'var(--mut)'}">${pc(rel)}</span></a>`; }
   h+=`</div><h2>Puesto más probable</h2><div class="card">`;
   for(const c of S.clubs[g].slice().sort((a,b)=>P[b].pts-P[a].pts)){ const p=P[c].pos;
-    h+=`<div class="li">${badge(c,28)}<div class="grow"><b>${esc(cname(c))}</b><div style="display:flex;gap:2px;margin-top:5px">${p.map((v,i)=>`<div title="${i+1}º ${pc(v)}" style="flex:1;height:22px;border-radius:4px;background:rgba(54,197,240,${Math.min(1,v*1.6).toFixed(2)});display:flex;align-items:center;justify-content:center;font-size:9.5px;color:${v>.3?'#03213f':'#9fb6d3'}">${i+1}º</div>`).join('')}</div></div><span class="mut small" style="width:52px;text-align:right">${pfmt(P[c].pts)}</span></div>`; }
+    h+=`<div class="li">${badge(c,28)}<div class="grow"><b>${esc(cname(c))}</b><div style="display:flex;gap:2px;margin-top:5px">${p.map((v,i)=>`<div title="${i+1}º ${pc(v)}" style="flex:1;height:22px;border-radius:4px;background:rgba(10,132,255,${Math.max(.06,Math.min(1,v*1.6)).toFixed(2)});display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:600;color:${v>.3?'#fff':'var(--mut)'}">${i+1}º</div>`).join('')}</div></div><span class="mut small" style="width:52px;text-align:right">${pfmt(P[c].pts)}</span></div>`; }
   h+=`</div><div class="row"><button class="btn ghost" id="again">🎲 Volver a simular</button></div>`;
   setTimeout(()=>{ $('#again').onclick=()=>{ PROB={}; render(); toast('Nueva simulación hecha'); }; });
   return h;
@@ -386,7 +399,7 @@ function vClubes(){
   return h;
 }
 function vReglamento(){
-  return `<a class="back" href="#/mas">‹ Más</a><h1>Reglamento 2026</h1><div class="card note" style="font-size:14px;color:var(--txt);line-height:1.6">
+  return `<a class="back" href="#/mas">‹ Más</a><h1>Reglamento 2026</h1><div class="card pad note" style="font-size:14px;color:var(--txt);line-height:1.6">
   <p><b>Cuándo y dónde:</b> 18 al 20 de diciembre de 2026, piscina Can Llong (Sabadell), 25 metros y 10 calles. 4 sesiones.</p>
   <p><b>Clubes:</b> 8 por categoría. Masculina: Terrassa, Sabadell, Sant Andreu, Real Canoe, Nados Castellón, Gredos San Diego y los ascendidos Mediterrani y Santa Olaya. Femenina: Sant Andreu, Real Canoe, Sabadell, Gredos San Diego, CN Barcelona, Ferca-San José y las ascendidas Terrassa y El Valle.</p>
   <p><b>Nadadores:</b> hasta 14 por club. 2 por prueba individual y 1 relevo por prueba. Cada nadador puede hacer 4 pruebas individuales, como mucho 2 en la misma sesión. Máximo 3 nacidos en 2012-2013 y 2 que no sean de formación local.</p>
@@ -398,13 +411,13 @@ function vReglamento(){
 }
 function vInstalar(){
   return `<a class="back" href="#/mas">‹ Más</a><h1>Instalar en el móvil</h1>
-  <div class="card"><h3>iPhone (Safari)</h3><p class="note">Toca el botón Compartir (el cuadrado con la flecha) y luego “Añadir a pantalla de inicio”.</p></div>
-  <div class="card"><h3>Android (Chrome)</h3><p class="note">Toca los tres puntos de arriba a la derecha y luego “Instalar aplicación” o “Añadir a pantalla de inicio”.</p>${deferred?'<button class="btn" id="inst">Instalar ahora</button>':''}</div>
+  <div class="card pad"><h3>iPhone (Safari)</h3><p class="note">Toca el botón Compartir (el cuadrado con la flecha) y luego “Añadir a pantalla de inicio”.</p></div>
+  <div class="card pad"><h3>Android (Chrome)</h3><p class="note">Toca los tres puntos de arriba a la derecha y luego “Instalar aplicación” o “Añadir a pantalla de inicio”.</p>${deferred?'<button class="btn" id="inst">Instalar ahora</button>':''}</div>
   <p class="note">Funciona sin conexión una vez abierta. Tus cambios se guardan en el móvil.</p>`;
 }
 function vReset(){
   setTimeout(()=>{ $('#yes').onclick=()=>{ localStorage.removeItem(KEY); S=load(); invalidate(); location.hash='#/'; toast('Todo como al principio'); }; });
-  return `<a class="back" href="#/mas">‹ Más</a><h1>Empezar de cero</h1><div class="card"><p>Se borrarán los tiempos que hayas cambiado, los fichajes, los nadadores añadidos y las pruebas marcadas como nadadas.</p><button class="btn red" id="yes">Sí, borrar mis cambios</button></div>`;
+  return `<a class="back" href="#/mas">‹ Más</a><h1>Empezar de cero</h1><div class="card pad"><p>Se borrarán los tiempos que hayas cambiado, los fichajes, los nadadores añadidos y las pruebas marcadas como nadadas.</p><button class="btn red" id="yes">Sí, borrar mis cambios</button></div>`;
 }
 
 /* ---------- Navegación ---------- */
