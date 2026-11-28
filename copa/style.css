@@ -159,3 +159,24 @@ input[type=text],input[type=search],select{background:var(--fill);border:0;borde
 .hero .logo{position:absolute;right:16px;top:16px;width:74px;height:74px;border-radius:20px;box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:2}
 .hero .k,.hero h1{padding-right:86px}
 .applogo{display:block;width:min(260px,70%);margin:6px auto 14px;border-radius:28px;box-shadow:var(--glass-shadow)}
+
+/* Modo entrenador */
+.seg.wide{display:flex;width:100%}
+.seg.wide a{flex:1;text-align:center;padding:8px 4px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--mut);text-decoration:none}
+.seg.wide a.on{background:var(--glass-strong);color:var(--txt);box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.warn{border-color:rgba(255,59,48,.45)!important;background:rgba(255,59,48,.08)!important}
+.warn ul{margin:6px 0 0;padding-left:18px;font-size:14px}
+.chip.bad{background:rgba(255,59,48,.15);color:var(--red)}
+.soev{display:block;padding:12px 14px;border-radius:20px;margin:8px 0;color:inherit;text-decoration:none}
+.li.slim{padding:6px 0;border:0;gap:10px}
+.empty-slot .ava{background:var(--fill);color:var(--mut)}
+.leg{display:flex;align-items:center;gap:8px;margin:6px 0}
+.leg .lg{flex:none;width:62px;font-size:12.5px;font-weight:700;color:var(--mut)}
+.leg select,.leg input{flex:1;min-width:0}
+.leg .t{flex:none;width:62px;text-align:right}
+.relsum{display:flex;gap:8px;margin:10px 0 4px}
+.relsum>div{flex:1;background:var(--fill);border-radius:14px;padding:8px 10px;display:flex;flex-direction:column}
+.relsum b{font-size:18px;font-variant-numeric:tabular-nums}
+.mini{display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600}
+.toggle.bare{background:none!important;border:0!important;box-shadow:none!important;padding:0}
+.top .chip{font-size:12.5px}

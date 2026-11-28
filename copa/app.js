@@ -26,11 +26,11 @@ const STROKES = {L:'Libre',E:'Espalda',B:'Braza',M:'Mariposa',X:'Estilos'};
 function evName(k){ const r=k[0]==='R'; const m=k.replace('R','').match(/(\d+)(\w)/); return (r?'4x':'')+m[1]+' '+STROKES[m[2]]; }
 
 /* ---------- Estado guardado en el móvil ---------- */
-const KEY='copadh26';
+const KEY='copadh26'; const MINE='santaolaya';
 let S = load();
 function load(){
   let s={}; try{ s=JSON.parse(localStorage.getItem(KEY))||{}; }catch(e){}
-  return Object.assign({g:'M', clubs:{M:OFFICIAL.M.slice(),F:OFFICIAL.F.slice()}, mine:'santaolaya', sw:{}, add:[], ev:{}, rel:{}, nextId:100000}, s);
+  return Object.assign({g:'M', clubs:{M:OFFICIAL.M.slice(),F:OFFICIAL.F.slice()}, mine:'santaolaya', sw:{}, add:[], ev:{}, rel:{}, nextId:100000, man:{on:false,ev:{}}, legs:{}}, s, {g:'M', mine:MINE});
 }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
 
@@ -58,7 +58,7 @@ function parseT(v){ v=String(v).trim().replace(',','.'); if(!v) return null; if(
 const REL2025 = {};
 for(const div of ['p1','dh']) for(const n in D.res2025[div]){ const ev=D.res2025[div][n]; if(ev.k[0]!=='R') continue;
   for(const r of ev.rows) if(r.t!=null) REL2025[ev.g+'|'+ev.k+'|'+r.c]=r.t; } // División de Honor tiene prioridad
-function relayTime(g,k,c){ const o=S.rel[g+'|'+k+'|'+c]; if(o!=null) return {t:o,ov:true}; const b=REL2025[g+'|'+k+'|'+c]; return b!=null?{t:b,ov:false}:null; }
+function relayTime(g,k,c){ if(c===MINE){ const q=soRelay(k); if(q&&q.use&&q.est!=null) return {t:q.est,ov:true,sum:true}; } const o=S.rel[g+'|'+k+'|'+c]; if(o!=null) return {t:o,ov:true}; const b=REL2025[g+'|'+k+'|'+c]; return b!=null?{t:b,ov:false}:null; }
 
 /* ---------- Alineación automática (respeta el reglamento) ---------- */
 function buildLineup(g){
@@ -73,6 +73,7 @@ function buildLineup(g){
   for(let iter=0;iter<2;iter++){
     lineup={};
     for(const c of clubs){
+      if(c===MINE&&S.man.on){ lineup[c]=manualLineup(evs); continue; }
       const opts=[];
       for(const e of evs) for(const s of byClub[c]){ const b=bestTime(s,e.k); if(!b) continue;
         const faster=field[e.n].filter(x=>x.c!==c&&x.t<b.t).length; const pts=PTS_IND[faster]||0;
@@ -96,6 +97,7 @@ function buildLineup(g){
         (L[e.n]=L[e.n]||[]).push({s:cand.s,e,t:cand.b.t,est:cand.b.est,v:0}); slot[e.n]=(slot[e.n]||0)+1; cnt[sid]=(cnt[sid]||0)+1; ses[sid+'|'+e.s]=(ses[sid+'|'+e.s]||0)+1; roster.add(sid); } }
       L._roster=roster;
     }
+    if(lineup[MINE]) for(const k in S.legs) for(const id of (S.legs[k].ids||[])) if(id) lineup[MINE]._roster.add(id);
     field={}; for(const e of evs){ field[e.n]=[]; for(const c of clubs) (lineup[c][e.n]||[]).forEach(o=>field[e.n].push({c,t:o.t})); }
   }
   return lineup;
@@ -242,16 +244,16 @@ function vPruebas(){
 }
 function vPrueba(n){
   n=+n; const e=PROGRAM.find(x=>x.n===n); if(!e) return vPruebas();
-  if(e.g!==S.g){ S.g=e.g; save(); syncSeg(); }
+  if(e.g!=='M') return vPruebas();
   const R=simulate(e.g), r=R.events[n], ov=S.ev[n]||{};
   let h=`<a class="back" href="#/pruebas">‹ Pruebas</a><h1>${evName(e.k)} ${e.g==='M'?'masculino':'femenino'}</h1>
    <p class="mut small" style="margin-top:0">Prueba ${n} · Sesión ${e.s} (${SESSIONS[e.s]}) · ${e.relay?'1 equipo por club':'2 nadadores por club, contrarreloj en 2 series'}</p>
    <label class="toggle"><input type="checkbox" id="doneTg" ${ov.done?'checked':''}><div><b>Ya se ha nadado</b><div class="note">Márcalo cuando metas los tiempos reales. Así la clasificación mezcla lo real con la previsión.</div></div></label><div class="spacer"></div>
    <div class="card"><div class="list">`;
   r.forEach(x=>{ const pl=x.place, cls=pl===1?'g':pl===2?'s':pl===3?'b':'';
-    h+=`<div class="li"><div class="place ${cls}">${pl||'DQ'}</div>${e.relay?badge(x.c,34):ava(x.s,36)}<div class="grow"><b>${e.relay?esc(CLUB[x.c].s):esc(x.s.n)}</b><span class="mut small" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">${e.relay?'Relevo':badge(x.c,15)+esc(cname(x.c))+(x.s.y?' · '+x.s.y:'')}${x.est?'<span class="est">ESTIMADO</span>':''}</span></div>
+    h+=`<div class="li"><div class="place ${cls}">${pl||(x.t==='DQ'?'DQ':'—')}</div>${e.relay?badge(x.c,34):ava(x.s,36)}<div class="grow"><b>${e.relay?esc(CLUB[x.c].s):esc(x.s.n)}</b><span class="mut small" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">${e.relay?'Relevo':badge(x.c,15)+esc(cname(x.c))+(x.s.y?' · '+x.s.y:'')}${x.est?'<span class="est">ESTIMADO</span>':''}</span></div>
       <input class="timein ${x.ov?'ov':''}" inputmode="decimal" data-k="${x.key}" value="${x.t==='DQ'?'DQ':fmt(x.t)}"><div class="ptag">${x.pts?pfmt(x.pts):'0'}</div></div>`; });
-  h+=`</div></div><div class="row"><button class="btn ghost sm" id="resetEv">Volver a los tiempos de previsión</button></div>
+  h+=`</div></div><div class="row"><a class="btn sm" href="${e.relay?'#/so/relevos':'#/so/prueba/'+n}">Cambiar nadadores del Santa Olaya</a><button class="btn ghost sm" id="resetEv">Volver a los tiempos de previsión</button></div>
   <p class="note">Escribe un tiempo (por ejemplo 1:43.50 o 23.10) o DQ si descalifican. Los tiempos cambiados se ven en dorado. ${e.relay?'Los relevos parten del tiempo de cada club en la Copa 2025.':'Las marcas en ESTIMADO salen de su posta en un relevo de 2025 (salida lanzada corregida).'}</p>`;
   setTimeout(()=>{
     $('#doneTg').onchange=ev=>{ S.ev[n]=Object.assign(S.ev[n]||{}, {done:ev.target.checked}); invalidate(); toast(ev.target.checked?'Prueba marcada como nadada':'Prueba vuelve a previsión'); };
@@ -280,7 +282,7 @@ function vEquipo(c){
   const pos=R.order.indexOf(c)+1;
   let h=`<a class="back" href="#/equipos">‹ Equipos</a><div class="teamhead">${badge(c,64)}<div><h1 style="margin:0">${esc(k.n)}</h1><div class="mut small">${esc(k.city)} · ${g==='M'?'Masculino':'Femenino'}</div>
    ${inComp?`<div class="chips" style="margin-top:6px"><span class="chip acc">${pos}º previsto</span><span class="chip">${pfmt(R.tot[c])} puntos</span><span class="chip">${roster.size}/14 nadadores</span></div>`:'<div class="chip" style="margin-top:6px">No está en la División de Honor elegida</div>'}</div></div>`;
-  h+=`<div class="row"><button class="btn sm ${S.mine===c?'':'ghost'}" id="mineBtn">${S.mine===c?'★ Es mi club':'☆ Marcar como mi club'}</button><a class="btn ghost sm" href="#/fichar/${c}">+ Añadir nadador</a></div>`;
+  h+=`<div class="row">${c===MINE?'<a class="btn sm" href="#/so">Abrir modo entrenador</a>':''}<a class="btn ghost sm" href="#/fichar/${c}">+ Añadir nadador</a></div>`;
   if(inComp) h+=`<h2>Relevos (${pfmt(relPts)} pts)</h2><div class="card"><div class="list">${PROGRAM.filter(e=>e.g===g&&e.relay).map(e=>{ const x=R.events[e.n].find(z=>z.c===c);
      return `<div class="li"><div class="grow"><b>${evName(e.k)}</b><span class="mut small">${x?x.place+'º previsto':'Sin tiempo'}</span></div>
      <input class="timein relin ${x&&x.ov?'ov':''}" inputmode="decimal" data-k="${e.k}" value="${x?fmt(x.t):''}" placeholder="—"><div class="ptag">${x?pfmt(x.pts):0}</div></div>`; }).join('')}</div></div>`;
@@ -294,7 +296,6 @@ function vEquipo(c){
      <div class="ptag">${ptsOf[s.id]?pfmt(ptsOf[s.id]):''}</div></a>`; }
   h+=`</div></div>`;
   setTimeout(()=>{
-    $('#mineBtn').onclick=()=>{ S.mine=S.mine===c?'':c; invalidate(); render(); };
     document.querySelectorAll('.relin').forEach(inp=>inp.onchange=()=>{ const v=parseT(inp.value); if(v==null||v==='DQ'){ toast('Tiempo no válido'); return; } S.rel[g+'|'+inp.dataset.k+'|'+c]=v; invalidate(); render(); });
   });
   return h;
@@ -401,7 +402,7 @@ function vClubes(){
 function vReglamento(){
   return `<a class="back" href="#/mas">‹ Más</a><h1>Reglamento 2026</h1><div class="card pad note" style="font-size:14px;color:var(--txt);line-height:1.6">
   <p><b>Cuándo y dónde:</b> 18 al 20 de diciembre de 2026, piscina Can Llong (Sabadell), 25 metros y 10 calles. 4 sesiones.</p>
-  <p><b>Clubes:</b> 8 por categoría. Masculina: Terrassa, Sabadell, Sant Andreu, Real Canoe, Nados Castellón, Gredos San Diego y los ascendidos Mediterrani y Santa Olaya. Femenina: Sant Andreu, Real Canoe, Sabadell, Gredos San Diego, CN Barcelona, Ferca-San José y las ascendidas Terrassa y El Valle.</p>
+  <p><b>Clubes:</b> 8. Masculina: Terrassa, Sabadell, Sant Andreu, Real Canoe, Nados Castellón, Gredos San Diego y los ascendidos Mediterrani y Santa Olaya.</p>
   <p><b>Nadadores:</b> hasta 14 por club. 2 por prueba individual y 1 relevo por prueba. Cada nadador puede hacer 4 pruebas individuales, como mucho 2 en la misma sesión. Máximo 3 nacidos en 2012-2013 y 2 que no sean de formación local.</p>
   <p><b>Formato:</b> todo contrarreloj. Primera serie con el segundo mejor de cada club y segunda serie con el mejor.</p>
   <p><b>Puntos:</b> individuales 19-16-14-13-12-11-10-9-8-7-6-5-4-3-2-1. Relevos 38-32-28-26-24-22-20-18. Si hay empate se reparten los puntos. Si empatan dos clubes al final, gana el que tenga más primeros puestos, luego segundos, etc.</p>
@@ -420,6 +421,164 @@ function vReset(){
   return `<a class="back" href="#/mas">‹ Más</a><h1>Empezar de cero</h1><div class="card pad"><p>Se borrarán los tiempos que hayas cambiado, los fichajes, los nadadores añadidos y las pruebas marcadas como nadadas.</p><button class="btn red" id="yes">Sí, borrar mis cambios</button></div>`;
 }
 
+/* ---------- Modo entrenador: Santa Olaya ---------- */
+const LANZADA=0.6; // segundos que se ganan por cada salida lanzada en un relevo
+function soAll(){ return swimmers().filter(s=>s.g==='M'&&s.c===MINE); }
+function soById(id){ return swimmers().find(s=>s.id===id); }
+function manualLineup(evs){
+  const L={}, roster=new Set();
+  for(const e of evs) for(const id of (S.man.ev[e.n]||[])){ const s=soById(id); if(!s||s.off||s.c!==MINE) continue;
+    const b=bestTime(s,e.k,true); (L[e.n]=L[e.n]||[]).push({s,e,t:b?b.t:null,est:b?b.est:false,v:0}); roster.add(id); }
+  L._roster=roster; return L;
+}
+function manualOn(){ // pasa a manual partiendo de la alineación automática
+  if(S.man.on) return; const was=S.man.on; S.man.on=false; CACHE={}; const L=simulate('M').lineup[MINE]||{};
+  S.man.ev={}; for(const e of PROGRAM.filter(e=>e.g==='M'&&!e.relay)) S.man.ev[e.n]=(L[e.n]||[]).map(o=>o.s.id);
+  S.man.on=true; invalidate();
+}
+function legKeys(k){ const m=k.match(/R(\d+)(\w)/); return m[2]==='X'?['E','B','M','L'].map(x=>m[1]+x):[0,1,2,3].map(()=>m[1]+'L'); }
+function soRelay(k){ const q=S.legs&&S.legs[k]; if(!q) return null; const lk=legKeys(k);
+  const legs=(q.ids||[]).map((id,i)=>{ const s=id&&soById(id); const b=s&&bestTime(s,lk[i],true); return {id,s,t:b?b.t:null,est:b?b.est:false}; });
+  const full=legs.length===4&&legs.every(x=>x.t!=null); const sum=full?legs.reduce((a,x)=>a+x.t,0):null;
+  return {legs,sum,est:sum!=null?Math.round((sum-3*LANZADA)*100)/100:null,use:!!q.use}; }
+function proposeRelay(k){ const lk=legKeys(k); const pool=soAll().filter(s=>!s.off);
+  const top=lk.map(key=>pool.map(s=>({s,b:bestTime(s,key,true)})).filter(x=>x.b).sort((a,b)=>a.b.t-b.b.t).slice(0,5));
+  if(lk[0]===lk[1]) return top[0].slice(0,4).map(x=>x.s.id);
+  let best=null, bt=1e9;
+  for(const a of top[0]) for(const b of top[1]) for(const c of top[2]) for(const d of top[3]){
+    const ids=[a.s.id,b.s.id,c.s.id,d.s.id]; if(new Set(ids).size<4) continue; const t=a.b.t+b.b.t+c.b.t+d.b.t; if(t<bt){ bt=t; best=ids; } }
+  return best||[]; }
+function soCheck(L){
+  const w=[], cnt={}, ses={}; const name=id=>{ const s=soById(+id); return s?s.n:'?'; };
+  for(const e of PROGRAM.filter(e=>e.g==='M'&&!e.relay)){ const arr=L[e.n]||[];
+    if(arr.length<2) w.push({lvl:'info',t:`${evName(e.k)}: ${arr.length?'solo 1 nadador':'nadie inscrito'}`});
+    for(const o of arr){ cnt[o.s.id]=(cnt[o.s.id]||0)+1; const k=o.s.id+'|'+e.s; ses[k]=(ses[k]||0)+1; if(o.t==null) w.push({lvl:'info',t:`${o.s.n} no tiene marca en ${evName(e.k)}`}); } }
+  for(const id in cnt) if(cnt[id]>MAX_IND) w.push({lvl:'err',t:`${name(id)} tiene ${cnt[id]} pruebas individuales (máximo 4)`});
+  for(const k in ses) if(ses[k]>MAX_SESSION){ const [id,se]=k.split('|'); w.push({lvl:'err',t:`${name(id)} nada ${ses[k]} pruebas en la sesión ${se} (máximo 2)`}); }
+  const n=(L._roster||new Set()).size; if(n>MAX_ROSTER) w.push({lvl:'err',t:`Hay ${n} nadadores en el equipo (máximo 14, contando relevos)`});
+  for(const k in S.legs){ const ids=(S.legs[k].ids||[]).filter(Boolean); if(new Set(ids).size<ids.length) w.push({lvl:'err',t:`${evName(k)}: un nadador está repetido`}); }
+  return {w,cnt,ses};
+}
+function soLoad(id,e){ // cuántas pruebas lleva un nadador (total y en esa sesión) en la alineación actual
+  const L=simulate('M').lineup[MINE]||{}; let tot=0, se=0;
+  for(const x of PROGRAM.filter(x=>x.g==='M'&&!x.relay)) if((L[x.n]||[]).some(o=>o.s.id===id)){ tot++; if(e&&x.s===e.s) se++; }
+  return {tot,se}; }
+function vSO(sub,arg){
+  const R=simulate('M'), L=R.lineup[MINE]||{}; const k=CLUB[MINE]; const pos=R.order.indexOf(MINE)+1;
+  const chk=soCheck(L); const errs=chk.w.filter(x=>x.lvl==='err');
+  if(sub==='prueba') return vSOPrueba(+arg,R,L);
+  let h=`<div class="teamhead">${badge(MINE,64)}<div><div class="mut small" style="font-weight:600;text-transform:uppercase;letter-spacing:.04em">Modo entrenador</div><h1 style="margin:0">${esc(k.s)}</h1>
+   <div class="chips" style="margin-top:6px"><span class="chip acc">${pos}º previsto</span><span class="chip">${pfmt(R.tot[MINE])} puntos</span><span class="chip ${(L._roster||new Set()).size>14?'bad':''}">${(L._roster||new Set()).size}/14 nadadores</span></div></div></div>`;
+  const tabs=[['','Alineación'],['relevos','Relevos'],['plantilla','Plantilla'],['calc','Tiempos']];
+  h+=`<div class="seg wide">${tabs.map(([r,t])=>`<a href="#/so${r?'/'+r:''}" class="${(sub||'')===r?'on':''}">${t}</a>`).join('')}</div><div class="spacer"></div>`;
+  if(errs.length) h+=`<div class="card pad warn"><b>⚠️ Fuera de reglamento</b><ul>${errs.map(x=>`<li>${esc(x.t)}</li>`).join('')}</ul></div>`;
+  if(sub==='relevos') h+=soRelevos(R);
+  else if(sub==='plantilla') h+=soPlantilla(R,L);
+  else if(sub==='calc') h+=soCalc();
+  else h+=soAlineacion(R,L,chk);
+  return h;
+}
+function soAlineacion(R,L,chk){
+  const ptsI=PROGRAM.filter(e=>e.g==='M'&&!e.relay).reduce((a,e)=>a+R.events[e.n].filter(x=>x.c===MINE).reduce((b,x)=>b+x.pts,0),0);
+  let h=`<label class="toggle"><input type="checkbox" id="manTg" ${S.man.on?'checked':''}><div><b>Alineación manual</b><div class="note">${S.man.on?'Tú eliges quién nada cada prueba. Toca una prueba para cambiar nadadores.':'Ahora la app elige la mejor alineación sola. Actívalo (o toca cualquier prueba) para elegir tú.'}</div></div></label>`;
+  if(S.man.on) h+=`<div class="row"><button class="btn ghost sm" id="manReset">Volver a la alineación automática</button></div>`;
+  h+=`<h2>Pruebas individuales · ${pfmt(ptsI)} pts</h2>`;
+  let ses=0;
+  for(const e of PROGRAM.filter(e=>e.g==='M'&&!e.relay)){
+    if(e.s!==ses){ ses=e.s; h+=`<div class="sess">Sesión ${ses} · ${SESSIONS[ses]}</div>`; }
+    const ents=R.events[e.n].filter(x=>x.c===MINE); const pts=ents.reduce((a,x)=>a+x.pts,0);
+    h+=`<a class="card soev" href="#/so/prueba/${e.n}"><div class="row" style="justify-content:space-between;margin:0"><b>${e.n}. ${evName(e.k)}</b><span class="chip acc">+${pfmt(pts)}</span></div>`;
+    for(let i=0;i<2;i++){ const x=ents[i];
+      h+= x?`<div class="li slim">${ava(x.s,30)}<div class="grow"><b style="font-size:14.5px">${esc(x.s.n)}</b>${x.est?'<span class="est">ESTIMADO</span>':''}</div><span class="t">${fmt(x.t)}</span><span class="mut small" style="width:34px;text-align:right">${x.place?x.place+'º':'—'}</span></div>`
+          :`<div class="li slim empty-slot"><span class="ava" style="width:30px;height:30px">+</span><div class="grow mut">Hueco libre</div></div>`; }
+    h+=`</a>`;
+  }
+  const info=chk.w.filter(x=>x.lvl==='info'); if(info.length) h+=`<div class="note">${info.map(x=>esc(x.t)).join(' · ')}</div>`;
+  setTimeout(()=>{
+    $('#manTg').onchange=ev=>{ if(ev.target.checked){ manualOn(); toast('Alineación manual: ahora decides tú'); } else { S.man.on=false; invalidate(); toast('Alineación automática'); } render(); };
+    const r=$('#manReset'); if(r) r.onclick=()=>{ S.man.on=false; S.man.ev={}; invalidate(); render(); toast('Alineación automática restaurada'); };
+  });
+  return h;
+}
+function vSOPrueba(n,R,L){
+  const e=PROGRAM.find(x=>x.n===n&&x.g==='M'&&!x.relay); if(!e) return vSO();
+  const cur=(L[n]||[]).map(o=>o.s.id);
+  const others=R.events[n].filter(x=>x.c!==MINE&&typeof x.t==='number').map(x=>x.t);
+  const placeFor=t=>t==null?null:others.filter(o=>o<t).length+1;
+  const cands=soAll().filter(s=>!s.off).map(s=>({s,b:bestTime(s,e.k,true),ld:soLoad(s.id,e)})).sort((a,b)=>(a.b?a.b.t:1e9)-(b.b?b.b.t:1e9));
+  let h=`<a class="back" href="#/so">‹ Alineación</a><h1>${evName(e.k)}</h1><p class="mut small" style="margin-top:0">Prueba ${n} · Sesión ${e.s} (${SESSIONS[e.s]}) · 2 nadadores por club</p>`;
+  h+=`<h2>Nadan por el Santa Olaya</h2><div class="card"><div class="list">`;
+  for(let i=0;i<2;i++){ const id=cur[i]; const x=id&&R.events[n].find(z=>z.s&&z.s.id===id);
+    h+= x?`<div class="li">${ava(x.s,38)}<div class="grow"><b>${esc(x.s.n)}</b><span class="mut small">${x.place?x.place+'º previsto · '+pfmt(x.pts)+' pts':'Sin marca'}</span></div><span class="t">${fmt(x.t)}</span><button class="btn red sm" data-out="${id}">Quitar</button></div>`
+       :`<div class="li"><span class="ava" style="width:38px;height:38px">+</span><div class="grow mut">Hueco libre: mete a alguien de la lista</div></div>`; }
+  h+=`</div></div><h2>Plantilla</h2><div class="card"><div class="list">`;
+  for(const c of cands){ if(cur.includes(c.s.id)) continue; const pl=placeFor(c.b&&c.b.t);
+    const over=c.ld.tot>=MAX_IND||c.ld.se>=MAX_SESSION;
+    h+=`<div class="li">${ava(c.s,34)}<div class="grow"><b>${esc(c.s.n)}</b><span class="mut small" style="${over?'color:var(--red)':''}">${c.ld.tot}/4 · sesión ${c.ld.se}/2</span>${c.b&&c.b.est?' <span class="est">ESTIMADO</span>':''}</div>
+     <span class="t">${c.b?fmt(c.b.t):'—'}</span><span class="mut small" style="width:30px;text-align:right">${pl?pl+'º':''}</span><button class="btn sm ${over?'ghost':''}" data-in="${c.s.id}">Meter</button></div>`; }
+  h+=`</div></div><p class="note">El puesto de la derecha es el que sacaría contra los rivales previstos. Puedes meter a alguien aunque se pase del máximo: la app te avisará arriba en rojo. Para cambiar una marca toca el nadador en Plantilla.</p>`;
+  setTimeout(()=>{
+    document.querySelectorAll('[data-out]').forEach(b=>b.onclick=()=>{ manualOn(); S.man.ev[n]=(S.man.ev[n]||[]).filter(x=>x!==+b.dataset.out); invalidate(); render(); });
+    document.querySelectorAll('[data-in]').forEach(b=>b.onclick=()=>{ manualOn(); const a=S.man.ev[n]=S.man.ev[n]||[]; if(a.length>=2){ toast('Ya hay 2: quita primero a uno'); return; } a.push(+b.dataset.in); invalidate(); render(); toast('Metido en '+evName(e.k)); });
+  });
+  return h;
+}
+function soRelevos(R){
+  const pool=soAll().filter(s=>!s.off).sort((a,b)=>a.n.localeCompare(b.n));
+  let h=`<p class="note" style="margin-top:0">Elige los 4 relevistas. La app suma sus mejores marcas individuales y resta ${LANZADA.toString().replace('.',',')} s por cada una de las 3 salidas lanzadas. Si activas “Usar en la simulación”, ese tiempo es el que cuenta para la clasificación.</p>`;
+  for(const e of PROGRAM.filter(e=>e.g==='M'&&e.relay)){
+    const q=soRelay(e.k)||{legs:[],sum:null,est:null,use:false}; const lk=legKeys(e.k);
+    const x=R.events[e.n].find(z=>z.c===MINE); const b25=REL2025['M|'+e.k+'|'+MINE];
+    h+=`<div class="card pad"><div class="row" style="justify-content:space-between;margin:0 0 6px"><h3 style="margin:0">${e.n}. ${evName(e.k)}</h3><span class="chip acc">${x?x.place+'º · +'+pfmt(x.pts):'Sin tiempo'}</span></div>`;
+    for(let i=0;i<4;i++){ const leg=q.legs[i]||{}; 
+      h+=`<div class="leg"><span class="lg">${lk[0]===lk[1]?(i+1)+'º':STROKES[lk[i].replace(/\d+/,'')]}</span><select data-k="${e.k}" data-i="${i}"><option value="">Elegir…</option>${pool.map(s=>{ const bt=bestTime(s,lk[i],true); return `<option value="${s.id}" ${leg.id===s.id?'selected':''}>${esc(s.n)} · ${bt?fmt(bt.t):'sin marca'}</option>`; }).join('')}</select><span class="t">${leg.t!=null?fmt(leg.t):'—'}</span></div>`; }
+    h+=`<div class="relsum"><div><span class="mut small">Suma</span><b>${fmt(q.sum)}</b></div><div><span class="mut small">Con salidas lanzadas</span><b style="color:var(--acc)">${fmt(q.est)}</b></div><div><span class="mut small">Copa 2025</span><b>${b25?fmt(b25):'—'}</b></div></div>
+      <div class="row"><button class="btn ghost sm" data-prop="${e.k}">Proponer los 4 más rápidos</button><label class="mini"><input type="checkbox" data-use="${e.k}" ${q.use?'checked':''} ${q.est==null?'disabled':''}> Usar en la simulación</label></div></div>`;
+  }
+  setTimeout(()=>{
+    const get=k=>S.legs[k]=S.legs[k]||{ids:[null,null,null,null],use:false};
+    document.querySelectorAll('.leg select').forEach(sel=>sel.onchange=()=>{ const q=get(sel.dataset.k); q.ids[+sel.dataset.i]=sel.value?+sel.value:null; invalidate(); render(); });
+    document.querySelectorAll('[data-prop]').forEach(b=>b.onclick=()=>{ const q=get(b.dataset.prop); q.ids=proposeRelay(b.dataset.prop); if(q.ids.length===4) q.use=true; invalidate(); render(); toast('Relevo propuesto'); });
+    document.querySelectorAll('[data-use]').forEach(c=>c.onchange=()=>{ get(c.dataset.use).use=c.checked; invalidate(); render(); });
+  });
+  return h;
+}
+function soPlantilla(R,L){
+  const all=soAll().sort((a,b)=>a.off-b.off||a.n.localeCompare(b.n)); const roster=L._roster||new Set();
+  const evOf={}; for(const e of PROGRAM.filter(e=>e.g==='M'&&!e.relay)) for(const o of (L[e.n]||[])) (evOf[o.s.id]=evOf[o.s.id]||[]).push(e);
+  const relOf={}; for(const k in S.legs) (S.legs[k].ids||[]).forEach(id=>{ if(id) (relOf[id]=relOf[id]||[]).push(k); });
+  let h=`<div class="row"><a class="btn sm" href="#/fichar/${MINE}">+ Meter nadador</a><span class="mut small">${all.filter(s=>!s.off).length} disponibles · ${roster.size} en la alineación</span></div><div class="card"><div class="list">`;
+  for(const s of all){ const evs=evOf[s.id]||[], rl=relOf[s.id]||[];
+    h+=`<div class="li">${ava(s,40)}<a class="grow" href="#/nadador/${s.id}" style="color:inherit;text-decoration:none"><b>${esc(s.n)}${s.y?` <span class="mut small">${s.y}</span>`:''}${s.moved?' <span class="chip acc">Fichaje</span>':''}${s.added?' <span class="chip acc">Nuevo</span>':''}</b>
+     <div class="chips" style="margin-top:4px">${evs.map(e=>`<span class="chip">${evName(e.k)}</span>`).join('')}${rl.map(k=>`<span class="chip">${evName(k)}</span>`).join('')}${!evs.length&&!rl.length?`<span class="mut small">${s.off?'Quitado del equipo':'Sin pruebas'}</span>`:''}</div></a>
+     <label class="toggle bare" title="Disponible"><input type="checkbox" data-av="${s.id}" ${s.off?'':'checked'}></label></div>`; }
+  h+=`</div></div><p class="note">El interruptor quita o mete a un nadador en el equipo (lesión, no viaja…). Toca su nombre para cambiar sus marcas, borrarlo o cambiarlo de club. Con “Meter nadador” puedes añadir a alguien nuevo con sus tiempos o fichar a uno de otro club.</p>`;
+  setTimeout(()=>{ document.querySelectorAll('[data-av]').forEach(c=>c.onchange=()=>{ const id=+c.dataset.av; S.sw[id]=S.sw[id]||{}; S.sw[id].off=!c.checked; invalidate(); render(); toast(c.checked?'Vuelve al equipo':'Quitado del equipo'); }); });
+  return h;
+}
+function soCalc(){
+  const rows=S.calc&&S.calc.length?S.calc:['','','',''];
+  let h=`<div class="card pad"><h3>Suma de tiempos</h3><p class="note" style="margin-top:0">Escribe parciales o tiempos (por ejemplo 27.85 o 1:02.30) y la app los suma.</p><div id="calcRows">`;
+  rows.forEach((v,i)=>h+=`<div class="leg"><span class="lg">${i+1}</span><input type="text" class="cin" inputmode="decimal" value="${esc(v)}" placeholder="0.00"></div>`);
+  h+=`</div><div class="row"><button class="btn ghost sm" id="cAdd">+ Fila</button><button class="btn ghost sm" id="cClr">Borrar</button></div>
+   <div class="relsum"><div><span class="mut small">Total</span><b id="cTot">—</b></div><div><span class="mut small">Media</span><b id="cAvg">—</b></div><div><span class="mut small">− lanzadas</span><b id="cLz" style="color:var(--acc)">—</b></div></div>
+   <p class="note">“− lanzadas” resta ${LANZADA.toString().replace('.',',')} s a todos menos al primero, como en un relevo.</p></div>
+  <div class="card pad"><h3>Diferencia entre dos tiempos</h3><div class="row"><input type="text" id="dA" inputmode="decimal" placeholder="Tiempo A" style="flex:1"><input type="text" id="dB" inputmode="decimal" placeholder="Tiempo B" style="flex:1"></div><div class="relsum"><div><span class="mut small">Diferencia</span><b id="dD">—</b></div><div><span class="mut small">En %</span><b id="dP">—</b></div></div></div>`;
+  setTimeout(()=>{
+    const calc=()=>{ const vals=[...document.querySelectorAll('.cin')].map(i=>i.value); S.calc=vals; save();
+      const ts=vals.map(v=>parseT(v)).filter(t=>typeof t==='number');
+      const tot=ts.reduce((a,b)=>a+b,0); $('#cTot').textContent=ts.length?fmt(tot):'—'; $('#cAvg').textContent=ts.length?fmt(tot/ts.length):'—';
+      $('#cLz').textContent=ts.length>1?fmt(tot-LANZADA*(ts.length-1)):'—'; };
+    document.querySelectorAll('.cin').forEach(i=>i.oninput=calc); calc();
+    $('#cAdd').onclick=()=>{ S.calc=[...document.querySelectorAll('.cin')].map(i=>i.value).concat(['']); save(); render(); };
+    $('#cClr').onclick=()=>{ S.calc=['','','','']; save(); render(); };
+    const dif=()=>{ const a=parseT($('#dA').value), b=parseT($('#dB').value); if(typeof a!=='number'||typeof b!=='number'){ $('#dD').textContent='—'; $('#dP').textContent='—'; return; }
+      const d=b-a; $('#dD').textContent=(d>0?'+':d<0?'−':'')+fmt(Math.abs(d)); $('#dP').textContent=(d>0?'+':'')+(d/a*100).toFixed(2).replace('.',',')+'%'; };
+    $('#dA').oninput=dif; $('#dB').oninput=dif;
+  });
+  return h;
+}
+
 /* ---------- Navegación ---------- */
 function render(){
   const parts=location.hash.replace(/^#\/?/,'').split('/'); const r=parts[0]||'';
@@ -432,7 +591,8 @@ function render(){
     case 'equipo': h=vEquipo(parts[1]); tab='equipos'; break;
     case 'nadador': h=vNadador(parts[1]); tab='equipos'; break;
     case 'fichar': h=vFichar(parts[1]); tab='equipos'; break;
-    case 'prob': h=vProb(); tab='prob'; break;
+    case 'prob': h=vProb(); tab='home'; break;
+    case 'so': h=vSO(parts[1],parts[2]); tab='so'; break;
     case 'mas': h=vMas(); tab='mas'; break;
     case '2025': h=v2025(parts[1]); tab='mas'; break;
     case 'clubes': h=vClubes(); tab='mas'; break;
@@ -446,8 +606,6 @@ function render(){
   const ib=$('#inst'); if(ib) ib.onclick=()=>{ deferred.prompt(); deferred=null; };
 }
 function syncSeg(){ document.querySelectorAll('#genderSeg button').forEach(b=>b.classList.toggle('on',b.dataset.g===S.g)); }
-document.querySelectorAll('#genderSeg button').forEach(b=>b.onclick=()=>{ S.g=b.dataset.g; save(); syncSeg();
-  if(/^#\/(prueba|nadador|2025\/)/.test(location.hash)){ location.hash=location.hash.startsWith('#/2025')?'#/2025':location.hash.startsWith('#/prueba')?'#/pruebas':'#/equipos'; } else render(); });
 let lastHash=location.hash;
 window.addEventListener('hashchange',()=>{ render(); if(location.hash!==lastHash) window.scrollTo(0,0); lastHash=location.hash; });
 let deferred=null; window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferred=e; });
